@@ -618,7 +618,7 @@ const page = () => {
                         <span className="hidden sm:inline ml-2">{loading ? 'Refreshing...' : 'Refresh'}</span>
                     </Button>
                     <Button 
-                        className='cursor-pointer p-3 sm:p-4 text-sm sm:text-base' 
+                        className='cursor-pointer hidden sm:block p-3 sm:p-4 text-sm sm:text-base' 
                         variant="outline"
                         onClick={async () => {
                             setLoading(true);
@@ -649,7 +649,7 @@ const page = () => {
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                         <DialogTrigger asChild>
                             <Button 
-                                className='cursor-pointer p-3 sm:p-4 text-sm sm:text-base' 
+                                className='cursor-pointer hidden sm:block p-3 sm:p-4 text-sm sm:text-base' 
                                 variant="outline"
                                 onClick={() => {
                                     clearError();
@@ -1222,12 +1222,30 @@ const page = () => {
                     </div>
                 </div>
             </div>
-
-            <BookingTabs
-                tabs={["All Bookings", "PENDING", "CONFIRMED", "CHECKED_IN", "CHECKED_OUT", "CANCELLED"]}
-                onStatusChange={handleStatusChange}
-                activeStatus={activeStatus}
-            />
+            <div className="w-full">
+                <div className="block sm:hidden mb-3">
+                    {/* Mobile: turn tabs into a dropdown for space */}
+                    <select
+                        className="w-full block border-gray-300 rounded p-2 text-sm"
+                        value={activeStatus}
+                        onChange={e => handleStatusChange(e.target.value)}
+                    >
+                        <option value="All Bookings">All Bookings</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="CONFIRMED">Confirmed</option>
+                        <option value="CHECKED_IN">Checked In</option>
+                        <option value="CHECKED_OUT">Checked Out</option>
+                        <option value="CANCELLED">Cancelled</option>
+                    </select>
+                </div>
+                <div className="hidden sm:block">
+                    <BookingTabs
+                        tabs={["All Bookings", "PENDING", "CONFIRMED", "CHECKED_IN", "CHECKED_OUT", "CANCELLED"]}
+                        onStatusChange={handleStatusChange}
+                        activeStatus={activeStatus}
+                    />
+                </div>
+            </div>
 
             {/* Display current active status
             <div className="px-4 py-2">
