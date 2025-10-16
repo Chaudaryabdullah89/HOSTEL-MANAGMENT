@@ -115,7 +115,7 @@ const page = () => {
     const loadingRef = useRef(null);
     const handleStatusChange = (status) => {
         setActiveStatus(status)
-        console.log("Active status changed to:", status)
+        // Status changed
 
     }
     const calculateRemainingAmount = (payment) => {
@@ -249,7 +249,7 @@ const page = () => {
     const initializeData = async () => {
         try {
             await fetch('/api/room/updatestatuses', { method: 'POST' });
-            console.log("Room statuses updated on page load");
+            // Room statuses updated
             // Refresh rooms data to get updated statuses
             refetchRooms();
         } catch (error) {
@@ -279,8 +279,7 @@ const page = () => {
        setCurrentselectedbooking(""); // Reset booking selection
 
        
-       console.log("Selected room:", selectedRoom);
-       console.log("Available users:", users);
+       // Selected room and users data
      
        try {
            const response = await fetch(`/api/room/checkavailability?roomId=${selectedRoom.id}`);
@@ -307,14 +306,14 @@ const page = () => {
      
        const eligibleUsers = users.filter(user => {
            const role = user.role?.toUpperCase();
-           console.log(`User ${user.name} has role: ${role}`);
+           // User role check
            return role === "GUEST" || role === "USER" || role === "STAFF" || role === "WARDEN";
        });
-       console.log("Eligible users:", eligibleUsers);
+       // Eligible users filtered
        
    
        if (eligibleUsers.length === 0 && users.length > 0) {
-           console.log("No users matched role filter, showing all users for debugging");
+           // No users matched role filter
            setFilteredUsers(users);
        } else {
            setFilteredUsers(eligibleUsers);
@@ -379,8 +378,7 @@ const page = () => {
         }
         // Note: paymentintializationpayload will be created after booking is created
         // to use the new booking's ID
-        console.log("Booking payload:", payload);
-        console.log("Status being sent:", paymentStatus);
+        // Booking payload prepared
         try {
            
             const response = await fetch("/api/booking/create", {
@@ -445,10 +443,8 @@ const page = () => {
                     return;
                 }
                 const paymentintializationdata = await paymentintializationresponse.json();
-                console.log("Payment initialization data:", paymentintializationdata);
+                // Payment initialization completed
                 payload.paymentId = paymentintializationdata.id;
-                console.log("Payment ID:", payload.paymentId);
-                console.log("Payload:", payload);
                 setBookings(prevBookings => 
                     prevBookings.map(booking => 
                         booking.id === data.id 
@@ -491,12 +487,12 @@ const page = () => {
         }
     }
     const handlebookingstatuschange = async (bookingId, status) => {
-        console.log("Setting loading for booking:", bookingId);
+        // Setting loading state
         loadingRef.current = bookingId;
         setLoadingBookingId(bookingId);
         
         try {
-            console.log("Changing booking status:", { bookingId, status });
+            // Changing booking status
             
             const response = await fetch(`/api/booking/changebookingstatus`, {
                 method: "PUT",
@@ -733,7 +729,7 @@ const page = () => {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent className="w-full">
-                                                    {hostel.map((hostelItem) => (
+                                                    {hostels.map((hostelItem) => (
                                                         <DropdownMenuItem 
                                                             key={hostelItem.id} 
                                                             onClick={() => handleHostelSelection(hostelItem)}
@@ -1180,7 +1176,7 @@ const page = () => {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button className='p-4 w-full' variant="outline">
-                                {hostel.find(h => h.id === selectedHostelFilter)?.hostelName || "All Hostels"}
+                                {hostels.find(h => h.id === selectedHostelFilter)?.hostelName || "All Hostels"}
                                 <ChevronDown className="h-4 w-4 ml-2" />
                             </Button>
                         </DropdownMenuTrigger>
@@ -1188,7 +1184,7 @@ const page = () => {
                             <DropdownMenuItem onClick={() => setSelectedHostelFilter("All Hostels")}>
                                 All Hostels
                             </DropdownMenuItem>
-                            {hostel.map((hostelItem) => (
+                            {hostels.map((hostelItem) => (
                                 <DropdownMenuItem 
                                     key={hostelItem.id}
                                     onClick={() => setSelectedHostelFilter(hostelItem.id)}
