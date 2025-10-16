@@ -1,4 +1,5 @@
 "use client"
+export const dynamic = 'force-dynamic'
 import React, { useEffect, useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Filter, ChevronDown, Search, Edit, Wifi, Tv,FileText,CheckCircle, XCircle,DotDashed,DollarSign, Wind, Delete, Bin, Trash, Clock, User, Bed, Calendar, CardSim, CreditCard, RefreshCw } from 'lucide-react'
@@ -45,6 +46,7 @@ import { useUsers } from '@/hooks/useUsers'
 
 const page = () => {
     const router = useRouter();
+    const [isClient, setIsClient] = useState(false);
       const[currentselectedhostel,setCurrentselectedhostel] = useState("");
       const[currentselectedroom,setCurrentselectedroom] = useState("");
       const[roomAvailable,setRoomAvailable] = useState(true);
@@ -52,6 +54,11 @@ const page = () => {
       const [currentselectedbooking,setCurrentselectedbooking] = useState("");
       const [optimisticBookings,setOptimisticBookings] = useState([]);
       const [loading,setLoading] = useState(false);
+
+    // Ensure this only runs on the client side
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const { data: bookings = [], isLoading: bookingsLoading, error: bookingsError, refetch: refetchBookings } = useBookings({
         status: activeStatus !== "All Bookings" ? activeStatus : undefined,
@@ -595,6 +602,11 @@ const page = () => {
     console.log("Total bookings:", bookings.length)
     console.log("Filtered bookings:", filteredBookings.length)
     console.log("Current loadingBookingId:", loadingBookingId)
+
+    // Only render on client side
+    if (!isClient) {
+        return <div>Loading...</div>;
+    }
 
     return (
         <div className='p-2'>

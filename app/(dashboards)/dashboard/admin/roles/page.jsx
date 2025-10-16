@@ -1,9 +1,9 @@
 "use client";
+export const dynamic = 'force-dynamic'
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { toast, Toaster } from 'react-hot-toast';
 import { useUsers, useUpdateUserRole } from '@/hooks/useUsers';
-import dynamic from 'next/dynamic';
 import {
   Plus,
   Filter,
@@ -89,10 +89,16 @@ const page = () => {
   // Data management
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [summary, setSummary] = useState(null);
+  const [isClient, setIsClient] = useState(false);
 
   // React Query hooks
   const { data: users = [], isLoading: loading, error: queryError, refetch: refetchUsers } = useUsers();
   const updateUserRoleMutation = useUpdateUserRole();
+
+  // Ensure this only runs on the client side
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   // Dialog states
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
@@ -233,6 +239,11 @@ const page = () => {
         </div>
       </div>
     );
+  }
+
+  // Only render on client side
+  if (!isClient) {
+    return <div>Loading...</div>;
   }
 
   return (
