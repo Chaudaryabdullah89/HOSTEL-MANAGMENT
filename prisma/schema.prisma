@@ -1,0 +1,415 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model UserAddress {
+  id      String @id @default(uuid())
+  street  String
+  city    String
+  state   String
+  country String
+  zipcode String
+  User    User?
+}
+
+model User {
+  id           String        @id @default(uuid())
+  name         String?
+  email        String        @unique
+  password     String
+  phone        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  image        String?
+  addressId    String?       @unique
+  role         UserRole?
+  hostelId     String?
+  admin        Admin?
+  bookings     Booking[]
+  guest        Guest?
+  ownedHostels Hostel[]
+  maintenances Maintenance[]
+  payments     Payment[]
+  address      UserAddress?  @relation(fields: [addressId], references: [id])
+  wardens      Warden[]
+  manages      Hostel[]      @relation("HostelWardens")
+  assignedMaintenance Maintenance[] @relation("MaintenanceAssignee")
+  expenses     Expense[]
+  approvedExpenses Expense[] @relation("ExpenseApprover")
+}
+
+model Guest {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  hostelId     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  Hostel       Hostel?  @relation(fields: [hostelId], references: [id])
+  user         User     @relation(fields: [userId], references: [id])
+  guestInRooms Room[]   @relation("GuestInRooms")
+}
+
+model Warden {
+  id       String  @id @default(uuid())
+  userId   String
+  hostelId String?
+  hostel   Hostel? @relation(fields: [hostelId], references: [id])
+  user     User    @relation(fields: [userId], references: [id])
+
+  @@unique([userId, hostelId])
+}
+
+model Admin {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Hostel {
+  id            String        @id @default(uuid())
+  addressId     String        @unique
+  amenities     String[]
+  contact       Int?
+  createdAt     DateTime      @default(now())
+  description   String?
+  floors        Int?
+  hostelName    String
+  hostelType    HostelType?
+  hostelsStatus HostelStatus?
+  updatedAt     DateTime      @updatedAt
+  userId        String
+  wardensIds    String[]
+  bookings      Booking[]
+  guests        Guest[]
+  address       HostelAddress @relation(fields: [addressId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+  maintenances  Maintenance[]
+  payments      Payment[]
+  rooms         Room[]
+  Warden        Warden[]
+  staff         staff[]
+  wardens       User[]        @relation("HostelWardens")
+  expenses      Expense[]
+}
+
+model staff {
+  id                String             @id @default(uuid())
+  name              String
+  email             String
+  phone             String
+  hostelId          String
+  baseSalary        Float?
+  createdAt         DateTime           @default(now())
+  department        String?
+  hourlyRate        Float?
+  isActive          Boolean            @default(true)
+  joinDate          DateTime?
+  position          String?
+  updatedAt         DateTime           @updatedAt
+  salaries          Salary[]
+  salaryAdjustments SalaryAdjustment[]
+  hostel            Hostel             @relation(fields: [hostelId], references: [id])
+}
+
+model HostelAddress {
+  id      String  @id @default(uuid())
+  street  String
+  city    String
+  state   String
+  country String
+  zipcode String
+  hostel  Hostel?
+}
+
+model Booking {
+  id                       String         @id @default(uuid())
+  userId                   String
+  hostelId                 String
+  roomId                   String?
+  checkin                  DateTime
+  checkout                 DateTime
+  price                    Float?
+  bookingType              BookingType?
+  cancelledBy              String?
+  createdAt                DateTime       @default(now())
+  duration                 Int?
+  notes                    String?
+  status                   BookingStatus?
+  updatedAt                DateTime       @updatedAt
+  checkinconfirmationdate  DateTime?
+  checkoutconfirmationdate DateTime?
+  hostel                   Hostel         @relation(fields: [hostelId], references: [id])
+  room                     Room?          @relation(fields: [roomId], references: [id])
+  user                     User           @relation(fields: [userId], references: [id])
+  payment                  Payment?
+}
+
+model Room {
+  id            String        @id @default(uuid())
+  roomNumber    String
+  floor         Int
+  capacity      Int
+  pricePerNight Float
+  pricePerMonth Float
+  notes         String?
+  amenities     String[]
+  hostelId      String
+  createdAt     DateTime      @default(now())
+  image         String?
+  status        RoomStatus
+  type          RoomType
+  updatedAt     DateTime      @updatedAt
+  bookings      Booking[]
+  maintenances  Maintenance[]
+  payments      Payment[]
+  hostel        Hostel        @relation(fields: [hostelId], references: [id], onDelete: Cascade)
+  guestsInRooms Guest[]       @relation("GuestInRooms")
+}
+
+model Payment {
+  id            String         @id @default(uuid())
+  userId        String?
+  hostelId      String?
+  bookingId     String?        @unique
+  method        PaymentMethod?
+  status        PaymentStatus?
+  roomId        String?
+  amount        Float
+  createdAt     DateTime       @default(now())
+  notes         String?
+  transactionId String?
+  updatedAt     DateTime       @updatedAt
+  // Approval fields
+  approvalStatus ApprovalStatus @default(PENDING)
+  approvedBy     String?
+  approvedAt     DateTime?
+  rejectedBy     String?
+  rejectedAt     DateTime?
+  rejectionReason String?
+  booking       Booking?       @relation(fields: [bookingId], references: [id])
+  hostel        Hostel?        @relation(fields: [hostelId], references: [id])
+  room          Room?          @relation(fields: [roomId], references: [id])
+  user          User?          @relation(fields: [userId], references: [id])
+}
+
+model Maintenance {
+  id            String               @id @default(uuid())
+  title         String
+  description   String
+  priority      MaintenancePriority  @default(MEDIUM)
+  status        MaintenanceStatus    @default(PENDING)
+  reportedBy    String
+  assignedTo    String?
+  roomId        String?
+  hostelId      String
+  estimatedCost Float?
+  actualCost    Float?
+  notes         String?
+  images        String[]
+  reportedAt    DateTime             @default(now())
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  hostel        Hostel               @relation(fields: [hostelId], references: [id], onDelete: Cascade)
+  room          Room?                @relation(fields: [roomId], references: [id])
+  user          User?                @relation(fields: [reportedBy], references: [id])
+  assignee      User?                @relation("MaintenanceAssignee", fields: [assignedTo], references: [id])
+}
+
+model Salary {
+  id             String       @id @default(uuid())
+  staffId        String
+  amount         Float
+  currency       String       @default("PKR")
+  payPeriod      PayPeriod
+  payDate        DateTime
+  status         SalaryStatus @default(PENDING)
+  baseAmount     Float
+  overtimeAmount Float        @default(0)
+  bonusAmount    Float        @default(0)
+  deductions     Float        @default(0)
+  netAmount      Float
+  notes          String?
+  processedBy    String?
+  processedAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  staff          staff        @relation(fields: [staffId], references: [id], onDelete: Cascade)
+}
+
+model Expense {
+  id            String        @id @default(uuid())
+  title         String
+  description   String
+  amount        Float
+  currency      String        @default("PKR")
+  category      ExpenseCategory
+  status        ExpenseStatus @default(PENDING)
+  submittedBy   String
+  approvedBy    String?
+  hostelId      String
+  receiptUrl    String?
+  notes         String?
+  submittedAt   DateTime      @default(now())
+  approvedAt    DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  user          User          @relation(fields: [submittedBy], references: [id])
+  approver      User?         @relation("ExpenseApprover", fields: [approvedBy], references: [id])
+  hostel        Hostel        @relation(fields: [hostelId], references: [id], onDelete: Cascade)
+}
+
+model SalaryAdjustment {
+  id            String               @id @default(uuid())
+  staffId       String
+  type          SalaryAdjustmentType
+  amount        Float
+  reason        String
+  effectiveDate DateTime
+  isActive      Boolean              @default(true)
+  approvedBy    String?
+  approvedAt    DateTime?
+  notes         String?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  staff         staff                @relation(fields: [staffId], references: [id], onDelete: Cascade)
+}
+
+enum BookingType {
+  DAILY
+  MONTHLY
+}
+
+enum UserRole {
+  GUEST
+  WARDEN
+  ADMIN
+  USER
+  STAFF
+}
+
+enum HostelType {
+  BUDGET
+  STANDARD
+  PREMIUM
+}
+
+enum HostelStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum RoomType {
+  SINGLE
+  DOUBLE
+  TRIPLE
+  QUAD
+  DORMITORY
+}
+
+enum RoomStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+  OUT_OF_ORDER
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CHECKED_IN
+  CHECKED_OUT
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  BANK_TRANSFER
+  DIGITAL_WALLET
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum MaintenancePriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum MaintenanceStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ExpenseCategory {
+  MAINTENANCE
+  UTILITIES
+  SUPPLIES
+  EQUIPMENT
+  MARKETING
+  ADMINISTRATIVE
+  OTHER
+}
+
+enum ExpenseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+}
+
+enum NotificationType {
+  BOOKING
+  PAYMENT
+  MAINTENANCE
+  SYSTEM
+  GENERAL
+}
+
+enum PayPeriod {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  ANNUAL
+}
+
+enum SalaryStatus {
+  PENDING
+  PROCESSED
+  PAID
+  FAILED
+  CANCELLED
+}
+
+enum SalaryAdjustmentType {
+  RAISE
+  BONUS
+  DEDUCTION
+  OVERTIME
+  COMMISSION
+  PENALTY
+  OTHER
+}
