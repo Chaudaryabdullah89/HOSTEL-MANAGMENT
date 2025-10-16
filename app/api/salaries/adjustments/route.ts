@@ -61,7 +61,6 @@ export async function GET(request: NextRequest) {
     }
 }
 
-// Create new salary adjustment
 export async function POST(request: NextRequest) {
     try {
         const session = await getServerSession(request);
@@ -90,7 +89,7 @@ export async function POST(request: NextRequest) {
         }
 
         const staff = await prisma.staff.findUnique({
-            where: { role: UserRole.STAFF }
+            where: { id: staffId }
         });
 
         if (!staff) {

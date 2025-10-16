@@ -36,7 +36,7 @@ export async function PUT(request: NextRequest) {
             }
 
             // Update payment approval status and booking status in a transaction
-            const result = await prisma.$transaction(async (tx) => {
+            const result = await prisma.$transaction(async (tx: any) => {
                 // Update payment approval status
                 const updatedPayment = await tx.payment.update({
                     where: { id: paymentId },

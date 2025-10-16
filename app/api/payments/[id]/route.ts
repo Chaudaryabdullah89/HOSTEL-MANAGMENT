@@ -3,14 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/server-auth";
 
 // Update payment
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(request);
         if (!session) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const paymentId = await params.id;
+        const { id: paymentId } = await params;
         const body = await request.json();
         const { status, amount, method, transactionId, notes } = body;
 
@@ -77,14 +77,13 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // Delete payment
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const { id: paymentId } = await params;
         const session = await getServerSession(request);
         if (!session) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
-
-        const paymentId = params.id;
 
         // Validate payment exists
         const existingPayment = await prisma.payment.findUnique({

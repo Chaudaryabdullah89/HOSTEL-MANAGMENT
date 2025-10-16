@@ -4,7 +4,6 @@ import { RoomStatus } from "@prisma/client";
 // Function to check and update room status based on capacity
 export async function updateRoomStatusBasedOnCapacity(roomId: string) {
     try {
-        // Get room with current bookings
         const room = await prisma.room.findUnique({
             where: { id: roomId },
             include: {
@@ -29,7 +28,6 @@ export async function updateRoomStatusBasedOnCapacity(roomId: string) {
         console.log(`Room ${room.roomNumber}: ${activeBookingsCount}/${roomCapacity} capacity used`);
         console.log(`Current room status: ${room.status}`);
 
-        // Update room status based on capacity
         let newStatus: RoomStatus;
         if (activeBookingsCount >= roomCapacity) {
             newStatus = RoomStatus.OCCUPIED;
@@ -39,7 +37,6 @@ export async function updateRoomStatusBasedOnCapacity(roomId: string) {
 
         console.log(`Calculated new status: ${newStatus}`);
 
-        // Only update if status has changed
         if (room.status !== newStatus) {
             console.log(`Status changed from ${room.status} to ${newStatus}, updating...`);
             await prisma.room.update({

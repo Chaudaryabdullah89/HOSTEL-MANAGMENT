@@ -2,15 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/server-auth";
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(request);
         if (!session) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        const { id: expenseId } = await params;
         const expense = await prisma.expense.findUnique({
-            where: { id: params.id },
+            where: { id: expenseId },
             include: {
                 user: {
                     select: {
@@ -52,13 +53,14 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(request);
         if (!session) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        const { id: expenseId } = await params;
         const body = await request.json();
         const {
             title,
@@ -87,7 +89,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         if (notes !== undefined) updateData.notes = notes;
 
         const expense = await prisma.expense.update({
-            where: { id: params.id },
+            where: { id: expenseId },
             data: updateData,
             include: {
                 user: {
@@ -126,8 +128,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const { id: expenseId } = await params;
         const session = await getServerSession(request);
         if (!session) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -135,7 +138,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
         // Check if user has permission to delete (admin or the one who submitted)
         const expense = await prisma.expense.findUnique({
-            where: { id: params.id },
+            where: { id: expenseId },
             select: { submittedBy: true, status: true }
         });
 
@@ -153,7 +156,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
         }
 
         await prisma.expense.delete({
-            where: { id: params.id }
+            where: { id: expenseId }
         });
 
         return NextResponse.json({ message: "Expense deleted successfully" });

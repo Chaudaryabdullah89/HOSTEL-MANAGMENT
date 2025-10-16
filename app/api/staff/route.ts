@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/server-auth";
 
-// Get all staff members
 export async function GET(request: NextRequest) {
     try {
         const session = await getServerSession(request);
@@ -27,7 +26,6 @@ export async function GET(request: NextRequest) {
             whereClause.department = department;
         }
 
-        // First, get existing staff records
         const existingStaff = await prisma.staff.findMany({
             where: whereClause,
             include: {
@@ -43,13 +41,11 @@ export async function GET(request: NextRequest) {
             }
         });
 
-        // Then, get users with staff roles who don't have staff records yet
         const usersWithStaffRoles = await prisma.user.findMany({
             where: {
                 role: {
                     in: ["STAFF", "WARDEN", "ADMIN"]
                 },
-                // Exclude users who already have staff records
                 email: {
                     notIn: existingStaff.map((staff: any) => staff.email)
                 }
@@ -64,7 +60,6 @@ export async function GET(request: NextRequest) {
             }
         });
 
-        // Convert users to staff format
         const usersAsStaff = usersWithStaffRoles.map((user: any) => ({
             id: user.id,
             name: user.name || 'Unknown User',
@@ -82,7 +77,6 @@ export async function GET(request: NextRequest) {
             hourlyRate: null
         }));
 
-        // Combine existing staff and users as staff
         const allStaff = [...existingStaff, ...usersAsStaff];
 
         return NextResponse.json(allStaff);
@@ -95,7 +89,6 @@ export async function GET(request: NextRequest) {
     }
 }
 
-// Create new staff member
 export async function POST(request: NextRequest) {
     try {
         const session = await getServerSession(request);
@@ -116,7 +109,6 @@ export async function POST(request: NextRequest) {
             joinDate
         } = body;
 
-        // Validate required fields
         if (!name || !email || !phone || !hostelId) {
             return NextResponse.json(
                 { error: "Missing required fields: name, email, phone, hostelId" },
@@ -124,7 +116,6 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check if hostel exists
         const hostel = await prisma.hostel.findUnique({
             where: { id: hostelId }
         });
@@ -136,7 +127,6 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check if email already exists
         const existingStaff = await prisma.staff.findUnique({
             where: { email }
         });

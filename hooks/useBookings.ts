@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { toast } from 'react-hot-toast';
 
-// Fetch all bookings with optional filters
 export function useBookings(filters?: {
   status?: string;
   hostelId?: string;

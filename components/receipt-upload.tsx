@@ -5,18 +5,25 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { toast } from 'react-hot-toast'
 
+interface ReceiptUploadProps {
+    onUploadSuccess: (url: string) => void;
+    onUploadError: (error: string) => void;
+    currentFile?: string | null;
+    onRemove: () => void;
+}
+
 export default function ReceiptUpload({ 
     onUploadSuccess, 
     onUploadError, 
     currentFile,
     onRemove 
-}) {
+}: ReceiptUploadProps) {
     const [uploading, setUploading] = useState(false)
     const [uploadProgress, setUploadProgress] = useState(0)
     const [dragActive, setDragActive] = useState(false)
-    const fileInputRef = useRef(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
-    const handleFileSelect = async (file) => {
+    const handleFileSelect = async (file: File) => {
         // Validate file type
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf']
         if (!allowedTypes.includes(file.type)) {
@@ -59,11 +66,8 @@ export default function ReceiptUpload({
 
             if (response.ok) {
                 const result = await response.json()
-                onUploadSuccess(result.filePath, result.fileName)
-                toast({
-                    title: "Upload Successful",
-                    description: "Receipt uploaded successfully",
-                })
+                onUploadSuccess(result.filePath)
+                toast.success("Receipt uploaded successfully")
             } else {
                 const error = await response.json()
                 onUploadError(error.error || 'Upload failed')
@@ -76,7 +80,7 @@ export default function ReceiptUpload({
         }
     }
 
-    const handleDrag = (e) => {
+    const handleDrag = (e: React.DragEvent) => {
         e.preventDefault()
         e.stopPropagation()
         if (e.type === "dragenter" || e.type === "dragover") {
@@ -86,7 +90,7 @@ export default function ReceiptUpload({
         }
     }
 
-    const handleDrop = (e) => {
+    const handleDrop = (e: React.DragEvent) => {
         e.preventDefault()
         e.stopPropagation()
         setDragActive(false)
@@ -96,7 +100,7 @@ export default function ReceiptUpload({
         }
     }
 
-    const handleFileInputChange = (e) => {
+    const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             handleFileSelect(e.target.files[0])
         }
@@ -218,7 +222,7 @@ export default function ReceiptUpload({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => onUploadSuccess('', '')}
+                        onClick={() => onUploadSuccess('')}
                         className="text-gray-500 hover:text-gray-700"
                     >
                         Skip receipt upload

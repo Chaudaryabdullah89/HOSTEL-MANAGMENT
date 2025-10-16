@@ -28,7 +28,7 @@ export default function DebugPage() {
           info.tokenExpired = payload.exp * 1000 < Date.now();
           info.tokenExpiresAt = new Date(payload.exp * 1000).toLocaleString();
         } catch (e) {
-          info.tokenDecodeError = e.message;
+          info.tokenDecodeError = e instanceof Error ? e.message : 'Unknown error';
         }
       }
       
@@ -46,7 +46,7 @@ export default function DebugPage() {
           data: await response.json()
         };
       } catch (error) {
-        info.sessionsError = error.message;
+        info.sessionsError = error instanceof Error ? error.message : 'Unknown error';
       }
       
       setDebugInfo(info);

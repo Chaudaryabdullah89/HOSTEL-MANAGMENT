@@ -119,15 +119,15 @@ export async function GET(request: NextRequest) {
                 avgCost: costStats._avg.actualCost || 0,
                 costCount: costStats._count.actualCost || 0
             },
-            statusBreakdown: statusCounts.map(item => ({
+            statusBreakdown: statusCounts.map((item: any) => ({
                 status: item.status,
                 count: item._count.id
             })),
-            priorityBreakdown: priorityCounts.map(item => ({
+            priorityBreakdown: priorityCounts.map((item: any) => ({
                 priority: item.priority,
                 count: item._count.id
             })),
-            commonIssues: commonIssues.map(item => ({
+            commonIssues: commonIssues.map((item: any) => ({
                 title: item.title,
                 count: item._count.title
             }))

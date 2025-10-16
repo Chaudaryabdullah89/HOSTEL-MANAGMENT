@@ -128,7 +128,7 @@ export function SalaryReports() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {Object.entries(reportData.summary.payrollByMonth || {}).map(([month, amount]) => (
+              {Object.entries((reportData.summary as any).payrollByMonth || {}).map(([month, amount]) => (
                 <div key={month} className="flex items-center justify-between">
                   <span className="text-sm font-medium">{month}</span>
                   <span className="text-sm">${(amount as number).toLocaleString()}</span>

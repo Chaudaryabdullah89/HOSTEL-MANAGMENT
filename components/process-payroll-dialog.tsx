@@ -187,7 +187,7 @@ export function ProcessPayrollDialog({ onSuccess }: ProcessPayrollDialogProps) {
                   <Calendar
                     mode="single"
                     selected={formData.payDate}
-                    onSelect={(date) => date && setFormData(prev => ({ ...prev, payDate: date }))}
+                    onSelect={(date: Date | undefined) => date && setFormData(prev => ({ ...prev, payDate: date }))}
                     initialFocus
                   />
                 </PopoverContent>

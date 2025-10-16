@@ -5,15 +5,14 @@ import { getServerSession } from "@/lib/server-auth";
 // Get single salary
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id: salaryId } = await params;
         const session = await getServerSession(request);
         if (!session) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
-
-        const salaryId = params.id;
 
         const salary = await prisma.salary.findUnique({
             where: { id: salaryId },
@@ -55,15 +54,14 @@ export async function GET(
 // Update salary
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id: salaryId } = await params;
         const session = await getServerSession(request);
         if (!session) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
-
-        const salaryId = params.id;
         const body = await request.json();
         const {
             amount,
@@ -132,15 +130,14 @@ export async function PUT(
 // Delete salary
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id: salaryId } = await params;
         const session = await getServerSession(request);
         if (!session) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
-
-        const salaryId = params.id;
 
         // Check if salary exists
         const existingSalary = await prisma.salary.findUnique({

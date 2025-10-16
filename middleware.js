@@ -1,20 +1,16 @@
 import { NextResponse } from "next/server";
 
-// Simple JWT verification function for Edge Runtime
 function verifyJWT(token, secret) {
     try {
-        // Split the token into parts
         const parts = token.split('.');
         if (parts.length !== 3) {
             throw new Error('Invalid token format');
         }
 
-        // Decode the payload (middle part)
         const payload = parts[1];
         const decodedPayload = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
         const parsedPayload = JSON.parse(decodedPayload);
 
-        // Check if token is expired
         const currentTime = Math.floor(Date.now() / 1000);
         if (parsedPayload.exp && parsedPayload.exp < currentTime) {
             throw new Error('Token expired');
@@ -30,15 +26,12 @@ export default async function middleware(request) {
     const { pathname } = request.nextUrl;
     
     console.log("🔍 Middleware running for path:", pathname);
-    
-    // Define public routes that don't require authentication
     const isPublicRoute = pathname.startsWith("/api/auth") || 
                          pathname.startsWith("/auth") || 
                          pathname === "/" ||
                          pathname.startsWith("/_next") ||
                          pathname.startsWith("/static");
     
-    // Check if the route is a dashboard route
     const isDashboardRoute = pathname.startsWith("/dashboard");
     
     console.log("📋 Route analysis:", {
@@ -47,21 +40,17 @@ export default async function middleware(request) {
         isDashboardRoute
     });
     
-    // If it's a public route, allow access
     if (isPublicRoute) {
         console.log("✅ Public route, allowing access");
         return NextResponse.next();
     }
     
-    // If it's a dashboard route, check authentication
     if (isDashboardRoute) {
         console.log("🔐 Dashboard route detected, checking authentication");
         
-        // Get all cookies for debugging
         const allCookies = request.cookies.getAll();
         console.log("🍪 All cookies:", allCookies);
         
-        // Get the custom JWT token from cookies
         const token = request.cookies.get("token")?.value;
         console.log("🎫 Token found:", !!token);
         if (token) {
@@ -92,7 +81,7 @@ export default async function middleware(request) {
                 "USER": ["/dashboard/user"]
             };
             
-            // Special case: if accessing generic /dashboard, redirect to role-specific dashboard
+          
             if (pathname === "/dashboard") {
                 console.log(`🔄 Generic dashboard access, redirecting ${role} to their specific dashboard`);
                 if (role === "GUEST") {
@@ -103,13 +92,13 @@ export default async function middleware(request) {
                 }
                 else if (role === "ADMIN") {
                     return NextResponse.redirect(new URL("/dashboard/admin", request.url));
-                }
+                }  
                 else if (role === "USER") {
                     return NextResponse.redirect(new URL("/dashboard/user", request.url));
                 }
             }
             
-            // Check if user is trying to access their allowed route
+           
             const allowedRoutes = roleRoutes[role] || [];
             const isAllowedRoute = allowedRoutes.some(route => pathname.startsWith(route));
             

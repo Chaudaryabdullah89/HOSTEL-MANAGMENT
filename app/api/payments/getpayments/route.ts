@@ -20,6 +20,22 @@ export async function GET(request: Request) {
                 rejectedBy: true,
                 rejectedAt: true,
                 rejectionReason: true,
+                expense : {
+                    select : {
+                        id : true,
+                        title : true,
+                        amount : true,
+                        status : true,
+                    }
+                },
+                approver : {
+                    select : {
+                        id : true,
+                        name : true,
+                        email : true,
+                        phone : true,
+                    }
+                },
                 booking: {
                     select: {
                         id: true,

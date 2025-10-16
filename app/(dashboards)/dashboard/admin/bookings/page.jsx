@@ -53,7 +53,6 @@ const page = () => {
       const [optimisticBookings,setOptimisticBookings] = useState([]);
       const [loading,setLoading] = useState(false);
 
-    // React Query hooks
     const { data: bookings = [], isLoading: bookingsLoading, error: bookingsError, refetch: refetchBookings } = useBookings({
         status: activeStatus !== "All Bookings" ? activeStatus : undefined,
         hostelId: selectedHostelFilter !== "All Hostels" ? selectedHostelFilter : undefined,
@@ -238,10 +237,7 @@ const page = () => {
 
         return matchesStatus && matchesHostel && matchesSearch;
     });
-    // Remove fetchusers - now handled by React Query
-    // Remove fetchhostels - now handled by React Query
-    // Remove fetchbookings - now handled by React Query
-    // Remove fetchrooms - now handled by React Query
+  
    useEffect(() => {
     const initializeData = async () => {
         try {

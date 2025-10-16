@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
         }
 
         const { searchParams } = new URL(request.url);
-        const type = searchParams.get('type') || 'all'; // 'all', 'booking', 'salary'
+        const type = searchParams.get('type') || 'all';
         const status = searchParams.get('status') || 'all';
 
         let whereClause: any = {};
@@ -89,6 +89,40 @@ export async function GET(request: NextRequest) {
             },
             orderBy: {
                 createdAt: 'desc'
+            }
+        });
+
+        const expenses  = await prisma.expense.findMany(
+            {
+                where : {},
+            include : {
+                
+                user :{
+                    select : {
+                        id : true,
+                        name : true,
+                        email : true,
+                        phone : true,
+                        role : true
+                    }
+                },
+                hostel :{
+                    select : {
+                        id : true,
+                        hostelName : true
+                    }
+                },
+                approver :{
+                    select : {
+                        id : true,
+                        name : true,
+                        email : true,
+                        phone : true
+                    }
+                }
+            },
+            orderBy : {
+                createdAt : 'desc'
             }
         });
 

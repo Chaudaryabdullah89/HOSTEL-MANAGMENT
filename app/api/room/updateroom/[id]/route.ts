@@ -4,10 +4,10 @@ import jwt from "jsonwebtoken";
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const roomId = params.id;
+    const { id: roomId } = await params;
     const body = await request.json();
     const {
       roomnumber,
