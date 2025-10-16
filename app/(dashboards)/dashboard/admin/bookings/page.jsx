@@ -55,6 +55,11 @@ const page = () => {
       const [optimisticBookings,setOptimisticBookings] = useState([]);
       const [loading,setLoading] = useState(false);
 
+    // State to track the active booking status - MUST BE BEFORE useBookings hook
+    const [activeStatus, setActiveStatus] = useState("All Bookings")
+    const [selectedHostelFilter, setSelectedHostelFilter] = useState("All Hostels")
+    const [searchTerm, setSearchTerm] = useState('')
+
     // Ensure this only runs on the client side
     useEffect(() => {
         setIsClient(true);
@@ -85,11 +90,6 @@ const page = () => {
         // Filtered data for cascading dropdowns
         const [filteredRooms, setFilteredRooms] = useState([]);
         const [filteredUsers, setFilteredUsers] = useState([]);
-    // State to track the active booking status
-    const [activeStatus, setActiveStatus] = useState("All Bookings")
-    const [selectedHostelFilter, setSelectedHostelFilter] = useState("All Hostels")
-
-    const [searchTerm, setSearchTerm] = useState('')
 
     // --- State variables for Add Room form ---
 
