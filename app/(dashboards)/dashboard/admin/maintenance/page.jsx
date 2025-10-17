@@ -37,6 +37,7 @@ import {
 import { toast } from 'react-hot-toast'
 import { useMaintenance, useMaintenanceStats, useCreateMaintenance, useUpdateMaintenance, useDeleteMaintenance } from '@/hooks/useMaintenance'
 import { useHostelsData, useStaffData, useRoomsByHostel } from '@/lib/contexts/AppDataContext'
+import { PageLoadingSkeleton, LoadingSpinner, ItemLoadingOverlay } from '@/components/ui/loading-skeleton'
 
 const page = () => {
     const [refreshing, setRefreshing] = useState(false);
@@ -132,12 +133,13 @@ const page = () => {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                    <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-                    <p className="text-muted-foreground">Loading maintenance data...</p>
-                </div>
-            </div>
+            <PageLoadingSkeleton 
+                title={true}
+                statsCards={4}
+                filterTabs={4}
+                searchBar={true}
+                contentCards={5}
+            />
         );
     }
 

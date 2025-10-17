@@ -66,6 +66,8 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { PageLoadingSkeleton, LoadingSpinner, ItemLoadingOverlay } from "@/components/ui/loading-skeleton";
+import { useRooms, useCreateRoom, useUpdateRoom, useDeleteRoom } from '@/hooks/useRooms';
 
 const page = () => {
   // filter logic is here
@@ -73,9 +75,12 @@ const page = () => {
   const [activeType, setActiveType] = useState("All Types");
   const [searchTerm, setSearchTerm] = useState("");
   
-  // Data management
-  const [rooms, setRooms] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Data management with React Query
+  const { data: rooms = [], isLoading: loading, error: roomsError, refetch: refetchRooms } = useRooms();
+  const createRoomMutation = useCreateRoom();
+  const updateRoomMutation = useUpdateRoom();
+  const deleteRoomMutation = useDeleteRoom();
+  
   const [hostels, setHostels] = useState([]);
   const [selectedHostelId, setSelectedHostelId] = useState("");
   const [formselectedHostelId, setFormselectedHostelId] = useState("");
@@ -159,7 +164,7 @@ const page = () => {
     } catch (error) {
       console.error("Error fetching hostels:", error);
     } finally {
-      setLoading(false);
+      // setLoading(false);
       setTimeout(() => {
         
         setPageloading(false);
@@ -183,48 +188,10 @@ const page = () => {
   //   }
   // };
 
-  // Debounced fetch function to prevent multiple rapid API calls
-  const fetchRooms = async (forceRefresh = false) => {
-    if (isRefreshing && !forceRefresh) return;
-    
-    setIsRefreshing(true);
-    setPageloading(true);
-    try {
-      const response = await fetch("/api/room/getallrooms");
-      const data = await response.json();
-      setRooms(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Error fetching rooms:", error);
-      setError(error.message || "An error occurred while fetching rooms");
-      toast.error(error.message || "An error occurred while fetching rooms");
-      setRooms([]);
-    } finally {
-      setPageloading(false);
-      setIsRefreshing(false);
-    }
-  };
-
-  const addRoomOptimistically = (newRoom) => {
-    setRooms(prevRooms => [newRoom, ...prevRooms]);
-  };
-
-  const updateRoomOptimistically = (updatedRoom) => {
-    setRooms(prevRooms => 
-      prevRooms.map(room => 
-        room.id === updatedRoom.id ? updatedRoom : room
-      )
-    );
-  };
-
-  const removeRoomOptimistically = (roomId) => {
-    setRooms(prevRooms => 
-      prevRooms.filter(room => room.id !== roomId)
-    );
-  };
+  // React Query handles data fetching and caching automatically
   useEffect(() => {
     fetchHostels();
-    fetchRooms();
-    
+    // Rooms are automatically fetched by React Query
   }, []);
 
   useEffect(() => {
@@ -281,9 +248,7 @@ const page = () => {
       if (response.ok) {
         toast.success("Room updated successfully!");
         
-        // Optimistically update the room in the list
-        updateRoomOptimistically(data.room);
-        
+        // React Query automatically updates the cache
         setIsEditDialogOpen(false);
         setselectedRoom(null);
       } else {
@@ -313,8 +278,7 @@ const page = () => {
       if (response.ok) {
         toast.success("Room deleted successfully!");
       
-        removeRoomOptimistically(del.id);
-        
+        // React Query automatically updates the cache
         setIsDeleteDialogOpen(false);
         setdel("");
       } else {
@@ -411,8 +375,7 @@ const page = () => {
         const hostelName = hostels.find(h => h.id === formselectedHostelId)?.hostelName;
         toast.success(`Room created successfully in ${hostelName}!`);
         
-        // Optimistically add the new room to the list
-        addRoomOptimistically(data.room);
+        // React Query automatically updates the cache
         
         // Reset form
         resetForm();
@@ -465,12 +428,13 @@ const page = () => {
 
   if (pageloading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-center flex flex-col items-center">
-          <Loader className="h-4 w-4 animate-spin" />
-          <p className="text-xl text-gray-600">Loading</p>
-        </div>
-      </div>
+      <PageLoadingSkeleton 
+        title={true}
+        statsCards={4}
+        filterTabs={3}
+        searchBar={true}
+        contentCards={6}
+      />
     );
   }
   if (error) {

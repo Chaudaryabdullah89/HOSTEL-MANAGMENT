@@ -2,11 +2,9 @@
 const https = require('https');
 const http = require('http');
 
-// Configuration
-const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3003';
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3003' || 'https://hostel-managment-alpha.vercel.app/';
 const API_ENDPOINT = '/api/payments/auto-create';
 
-// Function to make HTTP request
 function makeRequest(url, options = {}) {
     return new Promise((resolve, reject) => {
         const isHttps = url.startsWith('https://');

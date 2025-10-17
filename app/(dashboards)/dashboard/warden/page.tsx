@@ -5,6 +5,8 @@ import { Bed, Users,Calendar,TrendingUp, CheckCircle, AlertTriangle, Wrench, Clo
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {Chart as ChartJS} from "chart.js";
 import { Line, Bar, Doughnut } from 'react-chartjs-2'
+import { PageLoadingSkeleton, LoadingSpinner, ItemLoadingOverlay } from "@/components/ui/loading-skeleton";
+import { useState, useEffect } from "react";
 
 import {
   Card,
@@ -19,6 +21,16 @@ import {
 import Link from "next/link";
 import Chart from "@/components/chart"
 export default function Home() {
+  const [loading, setLoading] = useState(true);
+
+  // Simulate loading for demonstration
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1300);
+    return () => clearTimeout(timer);
+  }, []);
+
   const recentActivitiestemp =[
     {
       id: "1",
@@ -53,6 +65,19 @@ export default function Home() {
       user: { name: "John Doe" ,avatar: "https://github.com/shadcn.png"}
     }
   ]
+
+  // Show loading state while data is being fetched
+  if (loading) {
+    return (
+      <PageLoadingSkeleton 
+        title={true}
+        statsCards={4}
+        filterTabs={0}
+        searchBar={false}
+        contentCards={6}
+      />
+    );
+  }
  
     return (
     <div className="px-2">

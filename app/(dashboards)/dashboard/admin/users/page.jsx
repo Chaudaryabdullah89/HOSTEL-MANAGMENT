@@ -28,8 +28,19 @@ import { Badge } from '@/components/ui/badge'
 import BookingTabs from '@/components/menu'
 import { format } from 'date-fns';
 import { Phone, MapPin, Wrench } from 'lucide-react';
+import { PageLoadingSkeleton, LoadingSpinner, ItemLoadingOverlay } from '@/components/ui/loading-skeleton';
+import { useEffect } from 'react';
 
 const page = () => {
+    const [loading, setLoading] = useState(true);
+
+    // Simulate loading for demonstration
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setLoading(false);
+        }, 1000);
+        return () => clearTimeout(timer);
+    }, []);
 
     const [role,setactiveRole] = useState('All Types')
     const [searchTerm ,setSearchTerm] = useState('')
@@ -245,6 +256,19 @@ const guests = [
       const matchesSearch = guest.name.toLowerCase().includes(searchTerm.toLowerCase()) || guest.email.toLowerCase().includes(searchTerm.toLowerCase());
       return matchesRole && matchesSearch;
     });
+
+  // Show loading state while data is being fetched
+  if (loading) {
+    return (
+      <PageLoadingSkeleton 
+        title={true}
+        statsCards={4}
+        filterTabs={3}
+        searchBar={true}
+        contentCards={6}
+      />
+    );
+  }
 
   return (
     <div>

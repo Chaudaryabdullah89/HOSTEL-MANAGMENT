@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react'
 // import { Users,Calendar,TrendingUp, CheckCircle, AlertTriangle, Wrench} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from '@/components/ui/button'
-import { Plus, Filter, Users ,TrendingUp , ChevronDown, Search, Edit, Wifi, Tv, Wind, Delete, Bin, Trash, Clock, User, Bed, Calendar, CardSim, CreditCard, BookIcon, MoreVertical, RefreshCw, AlertTriangle,DollarSign, CheckCircle2, XCircle2 } from 'lucide-react'
+import { Plus, Filter, Users ,TrendingUp , ChevronDown, Search, Edit, Wifi, Tv, Wind, Delete, Bin, Trash, Clock, User, Bed, Calendar, CardSim, CreditCard, BookIcon, MoreVertical, RefreshCw, AlertTriangle,DollarSign, CheckCircle2, XCircle } from 'lucide-react'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -42,6 +42,7 @@ import { format } from 'date-fns';
 import { Phone, MapPin, Wrench } from 'lucide-react';
 import { toast } from 'react-hot-toast'
 import { usePayments, useUpdatePaymentStatus, useDeletePayment, useApprovePayment, useRejectPayment } from '@/hooks/usePayments'
+import { PageLoadingSkeleton } from '@/components/ui/loading-skeleton'
 
 
 
@@ -70,14 +71,10 @@ const page = () => {
     const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false)
     const [isRejectionDialogOpen, setIsRejectionDialogOpen] = useState(false)
     const [rejectionReason, setRejectionReason] = useState('')
+    const [loading, setLoading] = useState(false)
 
-    // React Query hooks
-    const { data: payments = [], isLoading, error, refetch } = usePayments({
-        status: status !== 'All Status' ? status : undefined,
-        paymentType: paymentType !== 'All Types' ? paymentType : undefined,
-        month: !showAllPayments ? selectedMonth : undefined,
-        year: !showAllPayments ? selectedYear : undefined,
-        showAll: showAllPayments
+    const { data: allPayments = [], isLoading, error, refetch } = usePayments({
+        showAll: true
     });
 
     // Mutations
@@ -86,7 +83,6 @@ const page = () => {
     const approvePaymentMutation = useApprovePayment();
     const rejectPaymentMutation = useRejectPayment();
 
-  // Remove fetchPayments - now handled by React Query
 
   const getMonthOptions = () => {
     const months = [
@@ -108,7 +104,7 @@ const page = () => {
 
   const getYearOptions = () => {
     const currentYear = new Date().getFullYear()
-    const years = []
+    const years = []    
     for (let i = 0; i < 3; i++) {
       years.push(currentYear - i)
     }
@@ -214,19 +210,23 @@ const page = () => {
     }
   }
 
-    // Remove useEffect - data fetching now handled by React Query
-
-   
-    const filteredPayments = payments.filter(payment => {
+    // Frontend filtering logic
+    const filteredPayments = allPayments.filter(payment => {
+      // Status filter
       const matchedStatus = status === "All Status" || payment.status === status;
+      
+      // Payment type filter
       const matchedType = paymentType === "All Types" || payment.type === paymentType.toLowerCase();
       
-      const matchedSearch = payment.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      // Search filter
+      const matchedSearch = searchTerm === '' || 
+                           payment.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                            payment.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            payment.booking?.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            payment.salary?.staff?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            payment.salary?.staff?.email?.toLowerCase().includes(searchTerm.toLowerCase());
       
+      // Date filter
       let matchedDate = true;
       if (!showAllPayments && selectedMonth && selectedYear) {
         const paymentDate = new Date(payment.createdAt);
@@ -236,11 +236,62 @@ const page = () => {
       }
       
       return matchedStatus && matchedType && matchedSearch && matchedDate;
-    })
+    });
+
+    // Calculate stats from filtered payments
+    const totalPayments = filteredPayments.length;
+    const pendingPayments = filteredPayments.filter(payment => payment.status === "PENDING").length;
+    const completedPayments = filteredPayments.filter(payment => payment.status === "COMPLETED").length;
+    const totalRevenue = filteredPayments
+      .filter(payment => payment.status === "COMPLETED")
+      .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+
+    // Reset filters when switching to "Show All"
+    useEffect(() => {
+        if (showAllPayments) {
+            setSelectedMonth(currentMonth);
+            setSelectedYear(currentYear);
+        }
+    }, [showAllPayments, currentMonth, currentYear]);
         
     
     
     console.log(filteredPayments);
+    
+    // Show loading state while data is being fetched
+    if (isLoading) {
+        return (
+            <PageLoadingSkeleton 
+                title={true}
+                statsCards={4}
+                filterTabs={3}
+                searchBar={true}
+                contentCards={5}
+            />
+        );
+    }
+
+    // Show error state if there's an error
+    if (error) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <XCircle className="mx-auto h-12 w-12 text-red-400" />
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">Error loading payments</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                        {error.message || "Unable to load payments"}
+                    </p>
+                    <Button 
+                        className="mt-4"
+                        onClick={() => refetch()}
+                    >
+                        Try Again
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
     return (
     <div>
          <div className="flex md:flex-row flex-col justify-between px-4">
@@ -273,14 +324,14 @@ const page = () => {
                      </Button>
                 </div>
             </div>
-        < div className="grid md:grid-cols-2 p-4 lg:grid-cols-4 gap-4">
+        <div className="grid md:grid-cols-2 p-4 lg:grid-cols-4 gap-4">
      <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Payments</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{payments.length}</div>
+            <div className="text-2xl font-bold">{totalPayments}</div>
             <p className="text-xs text-muted-foreground">
               All payments
             </p>
@@ -292,7 +343,7 @@ const page = () => {
             <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{filteredPayments.filter(payment => payment.status === "Pending").length}</div>
+            <div className="text-2xl font-bold">{pendingPayments}</div>
             <p className="text-xs text-muted-foreground">
               Pending payments
             </p>  
@@ -304,7 +355,7 @@ const page = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{filteredPayments.filter(payment => payment.status === "Completed").length}</div>
+            <div className="text-2xl font-bold">{completedPayments}</div>
             <p className="text-xs text-muted-foreground">
                 Completed payments
             </p>
@@ -312,18 +363,15 @@ const page = () => {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0">
-            <CardTitle className="text-sm font-medium">Revenue from Bookings</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
             <Calendar className="w-4 h-4 text-muted-foreground"/>
           </CardHeader>
           <CardContent> 
             <div className="text-2xl font-bold">
-              {filteredPayments
-                .filter(payment => payment.status === "COMPLETED")
-                .reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
-                .toLocaleString()} PKR
+              {totalRevenue.toLocaleString()} PKR
             </div>
             <p className="text-xs text-muted-foreground">
-           Revenue from bookings
+           Revenue from completed payments
             </p>
           </CardContent>
         </Card>
@@ -746,7 +794,7 @@ const page = () => {
                                             </span>
                                         </div>
                                         
-                                        {payment.approvalStatus === 'PENDING' && (
+                                        {/* {payment.approvalStatus === 'PENDING' && (
                                             <div className="flex items-center gap-2">
                                                 <Button
                                                     size="sm"
@@ -767,11 +815,11 @@ const page = () => {
                                                         setIsRejectionDialogOpen(true)
                                                     }}
                                                 >
-                                                    {/* <XCircle2 className="h-4 w-4 mr-1" /> */}
+                                                  
                                                     Reject
                                                 </Button>
                                             </div>
-                                        )}
+                                        )} */}
                                         
                                         {payment.approvalStatus === 'APPROVED' && (
                                             <div className="text-sm text-green-600 font-medium flex items-center gap-1">
@@ -782,7 +830,7 @@ const page = () => {
                                         
                                         {payment.approvalStatus === 'REJECTED' && (
                                             <div className="text-sm text-red-600 font-medium flex items-center gap-1">
-                                                {/* <XCircle2 className="h-4 w-4" /> */}
+                                                {/* <XCircle className="h-4 w-4" /> */}
                                                 Rejected
                                             </div>
                                         )}
@@ -793,7 +841,12 @@ const page = () => {
                     ))
                 ) : (
                     <div className="text-center py-8">
-                        <p className="text-gray-500">No payments found for "{status}"</p>
+                        <p className="text-gray-500">
+                            {searchTerm ? `No payments found matching "${searchTerm}"` : 
+                             status !== "All Status" ? `No ${status.toLowerCase()} payments found` :
+                             paymentType !== "All Types" ? `No ${paymentType.toLowerCase()} payments found` :
+                             "No payments found"}
+                        </p>
                     </div>
                 )}
             </div>

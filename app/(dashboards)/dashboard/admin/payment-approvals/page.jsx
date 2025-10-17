@@ -34,11 +34,11 @@ import {
 import { toast } from "react-hot-toast"
 import { format } from 'date-fns'
 import { SessionContext } from '../../../../context/sessiondata'
+import { PageLoadingSkeleton, LoadingSpinner, ItemLoadingOverlay } from "@/components/ui/loading-skeleton"
+import { usePayments, useUnifiedApprovePayment, useUnifiedRejectPayment } from '@/hooks/usePayments'
 
 export default function PaymentApprovalsPage() {
     const session = useContext(SessionContext)
-    const [payments, setPayments] = useState([])
-    const [loading, setLoading] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
     const [approvalStatus, setApprovalStatus] = useState('All Status')
     const [paymentType, setPaymentType] = useState('All Types')
@@ -47,54 +47,23 @@ export default function PaymentApprovalsPage() {
     const [isRejectionDialogOpen, setIsRejectionDialogOpen] = useState(false)
     const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
     const [rejectionReason, setRejectionReason] = useState('')
-    const [actionLoading, setActionLoading] = useState(false)
 
-    const fetchPayments = async () => {
-        setLoading(true)
-        try {
-            const response = await fetch('/api/payments/unified')
-            const data = await response.json()
-            setPayments(Array.isArray(data) ? data : [])
-            console.log("payments fetched successfully", { count: data.length })
-        } catch (error) {
-            console.error('Error fetching payments:', error)
-            toast.error('Error fetching payments')
-        } finally {
-            setLoading(false)
-        }
-    }
+    // Use React Query hooks for data fetching and mutations
+    const { data: payments = [], isLoading: loading, error, refetch } = usePayments()
+    const approvePaymentMutation = useUnifiedApprovePayment()
+    const rejectPaymentMutation = useUnifiedRejectPayment()
 
     const handleApprove = async (payment) => {
-        setActionLoading(true)
         try {
-            const response = await fetch(`/api/payments/unified/approve`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    paymentId: payment.id, 
-                    type: payment.type 
-                })
+            await approvePaymentMutation.mutateAsync({
+                paymentId: payment.id,
+                type: payment.type
             })
-
-            if (response.ok) {
-                const successMessage = payment.type === 'booking' 
-                    ? 'Payment approved and booking confirmed successfully!'
-                    : payment.type === 'salary' 
-                    ? 'Salary payment approved successfully!'
-                    : 'Payment approved successfully!'
-                toast.success(successMessage)
-                await fetchPayments()
-                setIsApprovalDialogOpen(false)
-                setSelectedPayment(null)
-            } else {
-                const error = await response.json()
-                toast.error(error.error || 'Failed to approve payment')
-            }
+            setIsApprovalDialogOpen(false)
+            setSelectedPayment(null)
         } catch (error) {
+            // Error handling is done in the mutation hook
             console.error('Error approving payment:', error)
-            toast.error('Error approving payment')
-        } finally {
-            setActionLoading(false)
         }
     }
 
@@ -104,38 +73,18 @@ export default function PaymentApprovalsPage() {
             return
         }
 
-        setActionLoading(true)
         try {
-            const response = await fetch(`/api/payments/unified/reject`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    paymentId: selectedPayment.id, 
-                    type: selectedPayment.type,
-                    reason: rejectionReason 
-                })
+            await rejectPaymentMutation.mutateAsync({
+                paymentId: selectedPayment.id,
+                type: selectedPayment.type,
+                reason: rejectionReason
             })
-
-            if (response.ok) {
-                const successMessage = selectedPayment.type === 'booking' 
-                    ? 'Payment rejected and booking cancelled successfully!'
-                    : selectedPayment.type === 'salary' 
-                    ? 'Salary payment rejected successfully!'
-                    : 'Payment rejected successfully!'
-                toast.success(successMessage)
-                await fetchPayments()
-                setIsRejectionDialogOpen(false)
-                setSelectedPayment(null)
-                setRejectionReason('')
-            } else {
-                const error = await response.json()
-                toast.error(error.error || 'Failed to reject payment')
-            }
+            setIsRejectionDialogOpen(false)
+            setSelectedPayment(null)
+            setRejectionReason('')
         } catch (error) {
+            // Error handling is done in the mutation hook
             console.error('Error rejecting payment:', error)
-            toast.error('Error rejecting payment')
-        } finally {
-            setActionLoading(false)
         }
     }
 
@@ -182,9 +131,7 @@ export default function PaymentApprovalsPage() {
         }
     }
 
-    useEffect(() => {
-        fetchPayments()
-    }, [])
+    // Data is automatically fetched by React Query
 
     const filteredPayments = payments.filter(payment => {
         const matchedStatus = approvalStatus === "All Status" || payment.approvalStatus === approvalStatus;
@@ -201,6 +148,18 @@ export default function PaymentApprovalsPage() {
         return matchedStatus && matchedType && matchedSearch;
     });
 
+    // Show loading state while data is being fetched
+    if (loading) {
+        return (
+            <PageLoadingSkeleton 
+                title={true}
+                statsCards={0}
+                filterTabs={3}
+                searchBar={true}
+                contentCards={5}
+            />
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -213,7 +172,10 @@ export default function PaymentApprovalsPage() {
                 <div className="flex gap-2">
                     <Button 
                         variant="outline" 
-                        onClick={fetchPayments}
+                        onClick={() => {
+                            refetch();
+                            toast.success("Payments refreshed!");
+                        }}
                         disabled={loading}
                     >
                         <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
@@ -550,10 +512,10 @@ export default function PaymentApprovalsPage() {
                                 </Button>
                                 <Button 
                                     onClick={() => handleApprove(selectedPayment)}
-                                    disabled={actionLoading}
+                                    disabled={approvePaymentMutation.isPending}
                                     className="bg-green-600 hover:bg-green-700"
                                 >
-                                    {actionLoading ? 'Approving...' : `Approve ${selectedPayment.type === 'salary' ? 'Salary' : 'Payment'}`}
+                                    {approvePaymentMutation.isPending ? 'Approving...' : `Approve ${selectedPayment.type === 'salary' ? 'Salary' : 'Payment'}`}
                                 </Button>
                             </div>
                         </div>
@@ -605,9 +567,9 @@ export default function PaymentApprovalsPage() {
                                 <Button 
                                     variant="destructive"
                                     onClick={handleReject}
-                                    disabled={actionLoading || !rejectionReason.trim()}
+                                    disabled={rejectPaymentMutation.isPending || !rejectionReason.trim()}
                                 >
-                                    {actionLoading ? 'Rejecting...' : `Reject ${selectedPayment.type === 'salary' ? 'Salary' : 'Payment'}`}
+                                    {rejectPaymentMutation.isPending ? 'Rejecting...' : `Reject ${selectedPayment.type === 'salary' ? 'Salary' : 'Payment'}`}
                                 </Button>
                             </div>
                         </div>

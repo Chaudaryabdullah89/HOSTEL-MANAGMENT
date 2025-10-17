@@ -1,10 +1,11 @@
 "use client"
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Bed, CreditCard, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { PageLoadingSkeleton, LoadingSpinner, ItemLoadingOverlay } from "@/components/ui/loading-skeleton";
 
 // Example guest payments data
 const guestPayments = [
@@ -66,8 +67,17 @@ const statusColor = (status) => {
 };
 
 const page = () => {
+  const [loading, setLoading] = useState(true);
   const [activeStatus, setActiveStatus] = useState("All Payments");
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Simulate loading for demonstration
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const filteredPayments = guestPayments.filter((payment) => {
     const matchesStatus =
@@ -78,6 +88,19 @@ const page = () => {
       payment.status.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
+
+  // Show loading state while data is being fetched
+  if (loading) {
+    return (
+      <PageLoadingSkeleton 
+        title={true}
+        statsCards={0}
+        filterTabs={4}
+        searchBar={true}
+        contentCards={4}
+      />
+    );
+  }
 
   return (
     <div className="w-full p-4">

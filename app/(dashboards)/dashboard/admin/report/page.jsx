@@ -23,6 +23,7 @@ import { Avatar } from '@radix-ui/react-avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'react-hot-toast'
+import { PageLoadingSkeleton, LoadingSpinner, ItemLoadingOverlay } from '@/components/ui/loading-skeleton'
 
 const page = () => {
     const [loading, setLoading] = useState(true);
@@ -336,12 +337,13 @@ const page = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                    <RefreshCcw className="h-8 w-8 animate-spin mx-auto mb-4" />
-                    <p className="text-muted-foreground">Loading reports...</p>
-                </div>
-            </div>
+            <PageLoadingSkeleton 
+                title={true}
+                statsCards={4}
+                filterTabs={3}
+                searchBar={true}
+                contentCards={6}
+            />
         );
     }
 

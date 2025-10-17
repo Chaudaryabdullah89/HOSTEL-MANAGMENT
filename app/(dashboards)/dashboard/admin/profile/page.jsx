@@ -37,6 +37,7 @@ import {
   Settings
 } from "lucide-react"
 import { format } from "date-fns"
+import { PageLoadingSkeleton, LoadingSpinner, ItemLoadingOverlay } from "@/components/ui/loading-skeleton"
 
 const AdminProfilePage = () => {
   // Profile state
@@ -62,6 +63,8 @@ const AdminProfilePage = () => {
   const [isEditAddressOpen, setIsEditAddressOpen] = useState(false)
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false)
 
+  const [isEmailVerificationDialogOpen, setIsEmailVerificationDialogOpen] = useState(false)
+  const [isPasswordChangeDialogOpen, setIsPasswordChangeDialogOpen] = useState(false)
   // Password state
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
@@ -71,7 +74,10 @@ const AdminProfilePage = () => {
   const [isProfileLoading, setIsProfileLoading] = useState(false)
   const [isAddressLoading, setIsAddressLoading] = useState(false)
   const [isPasswordLoading, setIsPasswordLoading] = useState(false)
-
+const [newEmail,setNewEmail] = useState("")
+const [isEmailLoading,setIsEmailLoading] = useState(false)
+const [isVerificationLoading,setIsVerificationLoading] = useState(false)
+const [verificationCode,setVerificationCode] = useState("")
   const { session, refreshSession } = useContext(SessionContext)
   const { data: userData, isLoading: userDataLoading, error: userDataError } = useUserById(session?.user?.id || "")
   const updateUserMutation = useUpdateUser()
@@ -190,6 +196,76 @@ const AdminProfilePage = () => {
       toast.error(error.message || "Failed to change password")
     } finally {
       setIsPasswordLoading(false)
+    }
+  }
+
+  const handleSendVerificationCode = async () => {
+    if (!session?.user?.id) {
+      toast.error("User ID not found. Please refresh the page and try again.")
+      return
+    }
+    if (!newEmail) {
+      toast.error("Please enter a new email address")
+      return
+    }
+    try {
+      setIsEmailLoading(true)
+      const response = await fetch("/api/mail/getverificationcode", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ to: newEmail, subject: "Email Verification" })
+      })
+      const data = await response.json()
+      if (response.ok) {
+        setVerificationCode(data.code)
+        toast.success("Email verification code sent successfully")
+        setIsEmailVerificationDialogOpen(true)
+      } else {
+        toast.error(data.error || "Failed to send email verification code")
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to send email verification code")
+    } finally {
+      setIsEmailLoading(false)
+    }
+  }
+  const handleChangeEmail = async () => {
+    if (!newEmail) {
+      toast.error("Please enter a new email address")
+      return
+    }
+  }
+  
+  const handleVerifyEmail = async () => {
+    try {
+      setIsVerificationLoading(true)
+      const response = await fetch("/api/mail/verifyemail", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: newEmail, code: verificationCode })
+      })
+      const data = await response.json()
+      if (response.ok) {
+        toast.success("Email verified and updated successfully")
+        setIsEmailVerificationDialogOpen(false)
+        setNewEmail("")
+        setVerificationCode("")
+        // Refresh user data
+        await refreshSession()
+        queryClient.invalidateQueries({ 
+          queryKey: [...queryKeys.usersList(), 'detail', session.user.id] 
+        })
+      } else {
+        toast.error(data.error || "Failed to verify email")
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to verify email")
+    } finally {
+      setIsVerificationLoading(false)
     }
   }
 
@@ -523,7 +599,51 @@ const AdminProfilePage = () => {
               </Button>
             </CardFooter>
           </Card>
-
+          <Card>
+          <CardHeader>
+            <CardTitle>Email Information</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Update your email address.
+            </p>
+          </CardHeader>
+          <CardContent>
+          <div className="">
+                <Label htmlFor="email"> Current Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  disabled
+              
+                  className="mt-1 w-full"
+                  placeholder="Enter your email address"
+                />
+              </div>
+              <div className="">
+                <Label htmlFor="new-email"> New Email Address</Label>
+                <Input
+                  id="new-email"
+                  type="email"
+                  value={newEmail}
+                  onChange={e => setNewEmail(e.target.value)}
+                  className="mt-1 w-full"
+                  placeholder="Enter your new email address"
+                />
+              </div>
+                
+          </CardContent>
+          <CardFooter className="flex justify-end">
+          <Button
+                  size="sm"
+                  className="mt-2"
+                  onClick={handleSendVerificationCode} 
+                  variant="outline"
+                  disabled={isEmailLoading}
+                >
+                  {isEmailLoading ? "Sending..." : "Verify Email"}
+                </Button>
+          </CardFooter>
+        </Card>
           {/* Address Information */}
           <Card>
             <CardHeader>
@@ -795,6 +915,52 @@ const AdminProfilePage = () => {
               >
                 {isPasswordLoading ? "Changing..." : "Change Password"}
               </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* Email Verification Dialog */}
+      <Dialog open={isEmailVerificationDialogOpen} onOpenChange={setIsEmailVerificationDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Verify Email Address</DialogTitle>
+            <DialogDescription>
+              We've sent a verification code to <strong>{newEmail}</strong>. Please enter the code below to verify your new email address.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="verification-code">Verification Code</Label>
+              <Input
+                id="verification-code"
+            
+                onChange={e => setVerificationCode(e.target.value)}
+                placeholder="Enter verification code"
+                className="mt-1"
+              />
+            </div>
+            <div className="flex justify-between">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setVerificationCode("")
+                  setIsEmailVerificationDialogOpen(false)
+                }}
+              >
+                Cancel
+              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleSendVerificationCode}
+                  disabled={isEmailLoading}
+                >
+                  {isEmailLoading ? "Sending..." : "Resend Code"}
+                </Button>
+                <Button onClick={handleVerifyEmail} disabled={isVerificationLoading}>
+                  {isVerificationLoading ? "Verifying..." : "Verify Email"}
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>

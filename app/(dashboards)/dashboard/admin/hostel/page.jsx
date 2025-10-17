@@ -52,7 +52,8 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
+import { PageLoadingSkeleton, LoadingSpinner, ItemLoadingOverlay } from "@/components/ui/loading-skeleton";
+import { useHostels, useCreateHostel, useUpdateHostel, useDeleteHostel } from '@/hooks/useHostels';
 import { Label } from "@/components/ui/label";
 import { toast } from "react-toastify"
 import { SessionContext } from "@/app/context/sessiondata";
@@ -62,7 +63,11 @@ const HostelPage = () => {
   //
   const { session } = useContext(SessionContext);
 
-  const [hostels, setHostels] = useState([]);
+  // Use React Query for hostels data
+  const { data: hostels = [], isLoading: hostelsLoading, error: hostelsError, refetch: refetchHostels } = useHostels();
+  const createHostelMutation = useCreateHostel();
+  const updateHostelMutation = useUpdateHostel();
+  const deleteHostelMutation = useDeleteHostel();
 
   //
 
@@ -165,30 +170,10 @@ const HostelPage = () => {
     };
   }
 
-  const fetchHostels = async () => {
-    setpageLoading(true);
-    try {
-      const response = await fetch("/api/hostel/gethostels", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      const data = await response.json();
-      console.log("DATA ", data);
-      setHostels(Array.isArray(data) ? data : []);
-      setSelectedHostel(data[0]);
-    } catch (error) {
-      setHostels([]);
-      console.error("Error fetching hostels:", error);
-    } finally {
-      setpageLoading(false);
-      fetchWardens();
-    }
-  };
+  // React Query handles hostels fetching automatically
   useEffect(() => {
     fetchRooms();
-    fetchHostels();
+    // Hostels are automatically fetched by React Query
   }, []);
   const fetchWardens = async () => {
     try {
@@ -268,7 +253,7 @@ const HostelPage = () => {
       } else {
         toast.success("Hostel created successfully!");
         console.log("Redirecting to hostel page after create...");
-        setHostels([data, ...hostels]);
+        // React Query automatically updates the cache
         setIsAddDialogOpen(false);
 
         setTimeout(() => {
@@ -311,7 +296,7 @@ const HostelPage = () => {
           },
         });
         const updatedData = await updatedResponse.json();
-        setHostels(prevhostels => prevhostels.filter(hostel => hostel.id !== hostelId));
+        // React Query automatically updates the cache
         toast.success("Hostel deleted successfully");
         setDeleteHostel(null);
       } else {
@@ -417,9 +402,7 @@ const HostelPage = () => {
         };
 
 
-        setHostels(prevhostels => prevhostels.map(hostel =>
-          hostel.id === selectedHostel?.id ? updatedSelectedHostel : hostel
-        ));
+        // React Query automatically updates the cache
 
 
         setSelectedHostel(updatedSelectedHostel);
@@ -457,13 +440,16 @@ const HostelPage = () => {
     return matchesType && matchesSearch;
   });
 
-  if (pageloading) {
+  if (hostelsLoading) {
     return (
-      <div className="flex  flex-col mr-3 justify-center items-center h-screen">
-        <Loader className="h-4 w-4 animate-spin" />
-        <p>Loading Hostels</p>
-      </div>
-    )
+      <PageLoadingSkeleton 
+        title={true}
+        statsCards={0}
+        filterTabs={3}
+        searchBar={true}
+        contentCards={6}
+      />
+    );
   }
   return (
 
@@ -481,16 +467,16 @@ const HostelPage = () => {
         <div className="flex items-center gap-2 mt-4 md:mt-0">
           <Button
             onClick={() => {
+              refetchHostels();
               fetchRooms();
-              fetchHostels();
             }}
             variant="outline"
             className="flex items-center gap-2 cursor-pointer px-5 py-2 rounded-md border border-gray-300 shadow-sm bg-white hover:bg-gray-100 transition"
-            disabled={pageloading || roomsLoading}
+            disabled={hostelsLoading || roomsLoading}
           >
-            <RefreshCw className={`h-4 w-4 ${(pageloading || roomsLoading) ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 ${(hostelsLoading || roomsLoading) ? 'animate-spin' : ''}`} />
             <span className="font-medium text-base">
-              {(pageloading || roomsLoading) ? 'Refreshing...' : 'Refresh'}
+              {(hostelsLoading || roomsLoading) ? 'Refreshing...' : 'Refresh'}
             </span>
           </Button>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} className="overflow-visible max-h-[90%]">

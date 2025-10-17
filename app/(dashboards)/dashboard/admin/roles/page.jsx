@@ -78,6 +78,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { PageLoadingSkeleton, LoadingSpinner, ItemLoadingOverlay } from "@/components/ui/loading-skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const page = () => {
@@ -232,12 +233,13 @@ const page = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-center flex flex-col items-center">
-          <Loader className="h-4 w-4 animate-spin" />
-          <p className="text-xl text-gray-600">Loading</p>
-        </div>
-      </div>
+      <PageLoadingSkeleton 
+        title={true}
+        statsCards={4}
+        filterTabs={3}
+        searchBar={true}
+        contentCards={6}
+      />
     );
   }
 

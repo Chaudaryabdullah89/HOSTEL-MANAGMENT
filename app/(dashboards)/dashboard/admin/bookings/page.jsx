@@ -37,7 +37,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Badge } from '@/components/ui/badge'
 import BookingTabs from '@/components/menu'
 import { getDaysBetween } from '@/lib/dateUtils'
-import { toast, Toaster } from 'react-hot-toast'
+import { toast, Toaster } from 'react-toastify'
 import { useRouter } from 'next/navigation'
 import { useBookings, useCreateBooking, useUpdateBooking, useDeleteBooking, useUpdateBookingStatus, useConfirmBooking } from '@/hooks/useBookings'
 import { useHostels } from '@/hooks/useHostels'
@@ -54,13 +54,12 @@ const page = () => {
       const [currentselectedbooking,setCurrentselectedbooking] = useState("");
       const [optimisticBookings,setOptimisticBookings] = useState([]);
       const [loading,setLoading] = useState(false);
-
-    // State to track the active booking status - MUST BE BEFORE useBookings hook
+            const [bookingloading,setBookingloading] = useState(false);
+   
     const [activeStatus, setActiveStatus] = useState("All Bookings")
     const [selectedHostelFilter, setSelectedHostelFilter] = useState("All Hostels")
     const [searchTerm, setSearchTerm] = useState('')
 
-    // Ensure this only runs on the client side
     useEffect(() => {
         setIsClient(true);
     }, []);
@@ -218,37 +217,37 @@ const page = () => {
 
     const handlecreatebooking = async (e) => {
         e.preventDefault();
-        setLoading(true);
+        setBookingloading(true);
     
         if (!currentselectedhostel) {
             toast.error("Please select a hostel");
-            setLoading(false);
+            setBookingloading(false);
             return;
         }
         if (!currentselectedroom) {
             toast.error("Please select a room");
-            setLoading(false);
+            setBookingloading(false);
             return;
         }
         if (!currentselectedbooking) {
             toast.error("Please select a user");
-            setLoading(false);
+            setBookingloading(false);
             return;
         }
         
-        // Calculate duration and dates based on booking type
+     
         let duration, checkin, checkout;
         
         if (bookingTypeInput === 'MONTHLY') {
-            // For monthly bookings, duration is 30 days
+           
             duration = 30;
             checkin = checkInDate || new Date().toISOString().split('T')[0];
             checkout = checkOutDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         } else {
-            // For daily bookings, calculate duration from dates
+    
             if (!checkInDate || !checkOutDate) {
                 toast.error("Check-in and check-out dates are required for daily bookings");
-                setLoading(false);
+                setBookingloading(false);
                 return;
             }
             const checkIn = new Date(checkInDate);
@@ -292,7 +291,7 @@ const page = () => {
                 console.error("Error creating booking:", errorMessage);
                 setError(errorMessage);
                 toast.error(errorMessage);
-                setLoading(false);
+                setBookingloading(false);
                 return;
               } else {
                 // Booking created successfully, refetch data
@@ -337,7 +336,7 @@ const page = () => {
                     console.error("Error creating payment:", errorMessage);
                     setError(errorMessage);
                     toast.error(errorMessage);
-                    setLoading(false);
+                            setBookingloading(false);
                     return;
                 }
                 const paymentintializationdata = await paymentintializationresponse.json();
@@ -377,7 +376,7 @@ const page = () => {
             toast.error(errorMessage);
         } finally {
             setBtnloading(false);
-            setLoading(false);
+            setBookingloading(false);
         }
     }
     const handlebookingstatuschange = async (bookingId, status) => {
@@ -418,18 +417,18 @@ const page = () => {
                 console.error("Error updating booking status:", errorMessage);
                 setError(errorMessage);
                 toast.error(errorMessage);
-                setLoading(false);
+                setBookingloading(false);
             }
         } catch (error) {
             const errorMessage = error.message || "Network error occurred while updating the booking status";
             console.error("Error updating booking status:", error);
             setError(errorMessage);
             toast.error(errorMessage);
-            setLoading(false);
+            setBookingloading(false);
         } finally {
             loadingRef.current = null;
             setLoadingBookingId(null);
-            setLoading(false);
+            setBookingloading(false);
         }
     }
 
@@ -498,7 +497,6 @@ const page = () => {
         );
     }
 
-    // Show loading state while data is being fetched
     if (bookingsLoading) {
         return (
             <div className='p-2'>
@@ -1107,10 +1105,10 @@ const page = () => {
                                         <Button 
                                             type="submit" 
                                             className={`${roomAvailable ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'} cursor-pointer`} 
-                                            disabled={btnloading || !roomAvailable || !currentselectedroom}
+                                            disabled={bookingloading || !roomAvailable || !currentselectedroom}
                                         >
                                             <Plus className="h-4 w-4 mr-2" />
-                                            {btnloading ? "Creating Booking..." : "Create Booking"}
+                                            {bookingloading ? "Creating Booking..." : "Create Booking"}
                                         </Button>
                                     </div>
                                 </form>
@@ -1466,10 +1464,9 @@ const page = () => {
                                     </div>
                                     <div className="md:ml-auto flex gap-3 ">
                                         <Button 
-                                            className={`cursor-pointer ${booking.status === "CANCELLED" ? "hidden" : ""}`} 
+                                            className={`cursor-pointer bg-black  hover:bg-black ${booking.status === "CANCELLED" ? "hidden" : ""}`} 
                                             onClick={() => {
-                                                console.log("Cancel clicked for booking:", booking.id);
-                                                console.log("Current loadingBookingId:", loadingBookingId);
+                                               
                                                 handlebookingstatuschange(booking.id, "CANCELLED");
                                             }}
                                             disabled={loadingBookingId === booking.id || loadingRef.current === booking.id}
@@ -1477,7 +1474,7 @@ const page = () => {
                                         >
                                             {(() => {
                                                 const isLoading = loadingBookingId === booking.id || loadingRef.current === booking.id;
-                                                console.log(`Booking ${booking.id}: isLoading=${isLoading}, loadingBookingId=${loadingBookingId}, loadingRef=${loadingRef.current}`);
+                                                // console.log(`Booking ${booking.id}: isLoading=${isLoading}, loadingBookingId=${loadingBookingId}, loadingRef=${loadingRef.current}`);
                                                 return (
                                                     <>
                                                         {isLoading && <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>}
@@ -1573,9 +1570,9 @@ const page = () => {
                                             </span>
                                         )}
                                         
-                                        {/* Delete Button - Show for all bookings except CHECKED_OUT */}
+                                   
                                         {console.log("Booking status:", booking.status, "Should show delete:", booking.status !== "CHECKED_OUT")}
-                                        {/* Temporarily show for all bookings for testing */}
+                                  
                                         {true && (
                                             <Button
                                                 onClick={() => {
@@ -1673,30 +1670,7 @@ const page = () => {
             </div>
 
             {/* Toast notifications */}
-            <Toaster 
-                position="top-right"
-                toastOptions={{
-                    duration: 4000,
-                    style: {
-                        background: '#363636',
-                        color: '#fff',
-                    },
-                    success: {
-                        duration: 3000,
-                        iconTheme: {
-                            primary: '#4ade80',
-                            secondary: '#fff',
-                        },
-                    },
-                    error: {
-                        duration: 4000,
-                        iconTheme: {
-                            primary: '#ef4444',
-                            secondary: '#fff',
-                        },
-                    },
-                }}
-            />
+           
 
         </div>
     )

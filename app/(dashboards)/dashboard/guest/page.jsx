@@ -1,9 +1,10 @@
 "use client"
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Users, User, Calendar, TrendingUp, BookIcon, Bed, RefreshCcw, Download, CreditCard, Wrench } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { PageLoadingSkeleton, LoadingSpinner, ItemLoadingOverlay } from "@/components/ui/loading-skeleton";
 
 // Stats
 const guestStats = [
@@ -112,6 +113,29 @@ const recentMaintenance = [
 ];
 
 const page = () => {
+  const [loading, setLoading] = useState(true);
+
+  // Simulate loading for demonstration
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Show loading state while data is being fetched
+  if (loading) {
+    return (
+      <PageLoadingSkeleton 
+        title={true}
+        statsCards={4}
+        filterTabs={0}
+        searchBar={false}
+        contentCards={4}
+      />
+    );
+  }
+
   return (
     <div className="p-4 space-y-6">
       {/* Header */}

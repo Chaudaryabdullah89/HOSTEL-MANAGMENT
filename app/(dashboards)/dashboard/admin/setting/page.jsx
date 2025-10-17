@@ -20,12 +20,23 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { queryClient, queryKeys } from "@/lib/queryClient"
+import { PageLoadingSkeleton, LoadingSpinner, ItemLoadingOverlay } from "@/components/ui/loading-skeleton"
 // import { sendEmail } from "@/lib/sendmail"
 const WardenSettingsPage = () => {
+  const [loading, setLoading] = useState(true);
+  
   // Profile state
   const [name, setName] = useState("")
   const [verificationCode, setVerificationCode] = useState("")
   const {session, refreshSession} = useContext(SessionContext)
+
+  // Simulate loading for demonstration
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
   const [email, setEmail] = useState("")
   const [address, setAddress] = useState({
     Adressline1 : "",
@@ -102,75 +113,6 @@ const WardenSettingsPage = () => {
     }
   }
 
-  const handleSendVerificationCode = async () => {
-    if (!session?.user?.id) {
-      toast.error("User ID not found. Please refresh the page and try again.")
-      return
-    }
-    if (!newEmail) {
-      toast.error("Please enter a new email address")
-      return
-    }
-    try {
-      setIsEmailLoading(true)
-      const response = await fetch("/api/mail/getverificationcode", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ to: newEmail, subject: "Email Verification" })
-      })
-      const data = await response.json()
-      if (response.ok) {
-        setVerificationCode(data.code)
-        toast.success("Email verification code sent successfully")
-        setIsEmailVerificationDialogOpen(true)
-      } else {
-        toast.error(data.error || "Failed to send email verification code")
-      }
-    } catch (error) {
-      toast.error(error.message || "Failed to send email verification code")
-    } finally {
-      setIsEmailLoading(false)
-    }
-  }
-  const handleChangeEmail = async () => {
-    if (!newEmail) {
-      toast.error("Please enter a new email address")
-      return
-    }
-  }
-  
-  const handleVerifyEmail = async () => {
-    try {
-      setIsVerificationLoading(true)
-      const response = await fetch("/api/mail/verifyemail", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email: newEmail, code: verificationCode })
-      })
-      const data = await response.json()
-      if (response.ok) {
-        toast.success("Email verified and updated successfully")
-        setIsEmailVerificationDialogOpen(false)
-        setNewEmail("")
-        setVerificationCode("")
-        // Refresh user data
-        await refreshSession()
-        queryClient.invalidateQueries({ 
-          queryKey: [...queryKeys.usersList(), 'detail', session.user.id] 
-        })
-      } else {
-        toast.error(data.error || "Failed to verify email")
-      }
-    } catch (error) {
-      toast.error(error.message || "Failed to verify email")
-    } finally {
-      setIsVerificationLoading(false)
-    }
-  }
   
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -233,6 +175,19 @@ const WardenSettingsPage = () => {
     }
   }
 
+  // Show loading state while data is being fetched
+  if (loading) {
+    return (
+      <PageLoadingSkeleton 
+        title={true}
+        statsCards={0}
+        filterTabs={0}
+        searchBar={false}
+        contentCards={4}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col w-full h-full bg-background">
       {/* Page Header */}
@@ -286,51 +241,7 @@ const WardenSettingsPage = () => {
             </Button>
           </CardFooter>
         </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Email Information</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Update your email address.
-            </p>
-          </CardHeader>
-          <CardContent>
-          <div className="">
-                <Label htmlFor="email"> Current Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  disabled
-              
-                  className="mt-1 w-full"
-                  placeholder="Enter your email address"
-                />
-              </div>
-              <div className="">
-                <Label htmlFor="new-email"> New Email Address</Label>
-                <Input
-                  id="new-email"
-                  type="email"
-                  value={newEmail}
-                  onChange={e => setNewEmail(e.target.value)}
-                  className="mt-1 w-full"
-                  placeholder="Enter your new email address"
-                />
-              </div>
-                
-          </CardContent>
-          <CardFooter className="flex justify-end">
-          <Button
-                  size="sm"
-                  className="mt-2"
-                  onClick={handleSendVerificationCode} 
-                  variant="outline"
-                  disabled={isEmailLoading}
-                >
-                  {isEmailLoading ? "Sending..." : "Verify Email"}
-                </Button>
-          </CardFooter>
-        </Card>
+       
         <Card className="shadow-sm border border-muted/30">
           <CardHeader>
             <CardTitle>Address Information</CardTitle>

@@ -215,3 +215,91 @@ export function useDeletePayment() {
     },
   });
 }
+
+// Unified payment approval mutation
+export function useUnifiedApprovePayment() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ paymentId, type }: { paymentId: string; type: string }) => {
+      const response = await fetch('/api/payments/unified/approve', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentId, type }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to approve payment');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data, variables) => {
+      // Invalidate all payment-related queries to refresh data
+      queryClient.invalidateQueries({ queryKey: queryKeys.payments });
+      queryClient.invalidateQueries({ queryKey: queryKeys.paymentsUnified() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.paymentsList() });
+      
+      // Update specific payment in cache if it exists
+      queryClient.setQueryData(
+        [...queryKeys.paymentsList(), 'detail', variables.paymentId],
+        data
+      );
+      
+      const successMessage = variables.type === 'booking' 
+        ? 'Payment approved and booking confirmed successfully!'
+        : variables.type === 'salary' 
+        ? 'Salary payment approved successfully!'
+        : 'Payment approved successfully!';
+      toast.success(successMessage);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}
+
+// Unified payment rejection mutation
+export function useUnifiedRejectPayment() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ paymentId, type, reason }: { paymentId: string; type: string; reason: string }) => {
+      const response = await fetch('/api/payments/unified/reject', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentId, type, reason }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to reject payment');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data, variables) => {
+      // Invalidate all payment-related queries to refresh data
+      queryClient.invalidateQueries({ queryKey: queryKeys.payments });
+      queryClient.invalidateQueries({ queryKey: queryKeys.paymentsUnified() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.paymentsList() });
+      
+      // Update specific payment in cache if it exists
+      queryClient.setQueryData(
+        [...queryKeys.paymentsList(), 'detail', variables.paymentId],
+        data
+      );
+      
+      const successMessage = variables.type === 'booking' 
+        ? 'Payment rejected and booking cancelled successfully!'
+        : variables.type === 'salary' 
+        ? 'Salary payment rejected successfully!'
+        : 'Payment rejected successfully!';
+      toast.success(successMessage);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}

@@ -38,6 +38,7 @@ import {
 import { toast } from 'react-hot-toast'
 import { useExpenses, useExpenseStats, useCreateExpense, useUpdateExpense, useDeleteExpense, useApproveExpense, useRejectExpense } from '@/hooks/useExpenses'
 import { useHostels } from '@/hooks/useHostels'
+import { PageLoadingSkeleton, LoadingSpinner, ItemLoadingOverlay } from '@/components/ui/loading-skeleton'
 
 const page = () => {
     const [refreshing, setRefreshing] = useState(false);
@@ -378,12 +379,13 @@ const page = () => {
 
     if (expensesLoading || statsLoading || hostelsLoading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                    <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-                    <p className="text-muted-foreground">Loading expense data...</p>
-                </div>
-            </div>
+            <PageLoadingSkeleton 
+                title={true}
+                statsCards={4}
+                filterTabs={4}
+                searchBar={true}
+                contentCards={5}
+            />
         );
     }
 
