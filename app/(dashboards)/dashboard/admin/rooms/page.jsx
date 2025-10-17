@@ -14,6 +14,7 @@ import {
   Trash,
   Loader,
   Loader2,
+  RefreshCw,
   Users,
   Eye,
   Calendar,
@@ -23,7 +24,7 @@ import {
   Star,
   TrendingUp,
   Activity,
-  User,
+  User, 
   Bed,
   Home,
   FileText,
@@ -67,7 +68,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { PageLoadingSkeleton, LoadingSpinner, ItemLoadingOverlay } from "@/components/ui/loading-skeleton";
-import { useRooms, useCreateRoom, useUpdateRoom, useDeleteRoom } from '@/hooks/useRooms';
+import { useRooms, useRoomsByHostel, useCreateRoom, useUpdateRoom, useDeleteRoom } from '@/hooks/useRooms';
+import { useHostels } from '@/hooks/useHostels';
 
 const page = () => {
   // filter logic is here
@@ -76,20 +78,19 @@ const page = () => {
   const [searchTerm, setSearchTerm] = useState("");
   
   // Data management with React Query
-  const { data: rooms = [], isLoading: loading, error: roomsError, refetch: refetchRooms } = useRooms();
+  const { data: hostels = [], isLoading: hostelsLoading, error: hostelsError, refetch: refetchHostels } = useHostels();
   const createRoomMutation = useCreateRoom();
   const updateRoomMutation = useUpdateRoom();
   const deleteRoomMutation = useDeleteRoom();
-  
-  const [hostels, setHostels] = useState([]);
   const [selectedHostelId, setSelectedHostelId] = useState("");
   const [formselectedHostelId, setFormselectedHostelId] = useState("");
   // const [notes, setNotes] = useState("");
-
+  
   // for editing of room
   const [selectedroom, setselectedRoom] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const { data: rooms = [], isLoading: loading, error: roomsError, refetch: refetchRooms } = useRoomsByHostel(selectedHostelId);
   
   const handleSelectRoom = (room) => {
     // Initialize selectedroom with proper structure
@@ -138,8 +139,6 @@ const page = () => {
   const [pageloading, setPageloading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedAmenities, setSelectedAmenities] = useState([]);
-
-  // Function to handle amenities input and convert to array
   const handleAmenitiesInput = (amenitiesString) => {
     if (typeof amenitiesString === 'string') {
       const separatedAmenities = amenitiesString
@@ -151,48 +150,12 @@ const page = () => {
     return [];
   };
 
-  // Fetch hostels
-  const fetchHostels = async () => {
-    setPageloading(true);
-    try {
-      const response = await fetch("/api/hostel/gethostels");
-      const data = await response.json();
-      setHostels(Array.isArray(data) ? data : []);
-      if (data.length > 0 && !selectedHostelId) {
-        setSelectedHostelId(data[0].id);
-      }
-    } catch (error) {
-      console.error("Error fetching hostels:", error);
-    } finally {
-      // setLoading(false);
-      setTimeout(() => {
-        
-        setPageloading(false);
-      }, 2000);
-    }
-  };
-  // const fetchRooms = async (hostelId) => {
-  //   if (!hostelId) return;
-  //   setPageloading(true);
-  //   setLoading(true);
-  //   try {
-  //     const response = await fetch(`/api/room/gethostelrooms?hostelId=${hostelId}`);
-  //     const data = await response.json();
-  //     setRooms(Array.isArray(data) ? data : []);
-  //   } catch (error) {
-  //     console.error("Error fetching rooms:", error);
-  //     setRooms([]);
-  //   } finally {
-  //     setLoading(false);
-  //     setPageloading(false);
-  //   }
-  // };
-
-  // React Query handles data fetching and caching automatically
+  // Set first hostel as selected when hostels are loaded
   useEffect(() => {
-    fetchHostels();
-    // Rooms are automatically fetched by React Query
-  }, []);
+    if (hostels.length > 0 && !selectedHostelId) {
+      setSelectedHostelId(hostels[0].id);
+    }
+  }, [hostels, selectedHostelId]);
 
   useEffect(() => {
     const amenitiesList = handleAmenitiesInput(amenitiesInput);
@@ -426,7 +389,8 @@ const page = () => {
   
   
 
-  if (pageloading) {
+  // Show loading state while hostels are being fetched
+  if (hostelsLoading || pageloading) {
     return (
       <PageLoadingSkeleton 
         title={true}
@@ -435,6 +399,27 @@ const page = () => {
         searchBar={true}
         contentCards={6}
       />
+    );
+  }
+
+  // Show error state if there's an error with hostels
+  if (hostelsError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <AlertTriangle className="mx-auto h-12 w-12 text-red-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">Error loading hostels</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            {hostelsError.message || "Unable to load hostels data"}
+          </p>
+          <Button 
+            className="mt-4"
+            onClick={() => refetchHostels()}
+          >
+            Try Again
+          </Button>
+        </div>
+      </div>
     );
   }
   if (error) {
@@ -486,6 +471,19 @@ const page = () => {
             Manage your rooms here.
           </p>
         </div>
+          {/* <div className="flex items-center gap-2 mt-4 md:mt-0">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                refetchHostels();
+                refetchRooms();
+              }}
+              disabled={hostelsLoading || loading}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${(hostelsLoading || loading) ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div> */}
 
         {/* Hostel Selector */}
         {/* <div className="mt-4 md:mt-0">

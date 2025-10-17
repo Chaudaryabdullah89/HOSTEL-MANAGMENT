@@ -236,7 +236,7 @@ export async function GET(request: NextRequest) {
             orderBy: {
                 createdAt: 'desc'
             },
-            take: 5
+            take: 10
         });
 
         const recentPayments = await prisma.payment.findMany({
@@ -254,7 +254,7 @@ export async function GET(request: NextRequest) {
             orderBy: {
                 createdAt: 'desc'
             },
-            take: 5
+            take: 10
         });
 
         const recentMaintenance = await prisma.maintenance.findMany({
@@ -277,7 +277,7 @@ export async function GET(request: NextRequest) {
             orderBy: {
                 reportedAt: 'desc'
             },
-            take: 5
+            take: 10
         });
 
         // 8. OCCUPANCY RATE CALCULATION
@@ -351,7 +351,7 @@ export async function GET(request: NextRequest) {
                     }
                 }
             },
-            take: 5
+                take: 10
         });
 
         const roomsWithRevenue = topPerformingRooms.map((room: any) => ({

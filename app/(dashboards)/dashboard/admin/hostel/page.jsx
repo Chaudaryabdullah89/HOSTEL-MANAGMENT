@@ -119,6 +119,7 @@ const HostelPage = () => {
   const [wardenId, setWardenId] = useState("");
   const [wardensIds, setWardensIds] = useState([]);
   const [wardensData, setWardensData] = useState([]);
+  const [wardensLoading, setWardensLoading] = useState(false);
   // Example: Log all hostel address ids
   // if (Array.isArray(hostels) && hostels.length > 0) {
   //   const hostelAddressIds = hostels.map(hostel => hostel.address?.id);
@@ -173,16 +174,22 @@ const HostelPage = () => {
   // React Query handles hostels fetching automatically
   useEffect(() => {
     fetchRooms();
+    fetchWardens();
     // Hostels are automatically fetched by React Query
   }, []);
   const fetchWardens = async () => {
     try {
+      setWardensLoading(true);
+      console.log("Fetching wardens...");
       const response = await fetch("/api/hostel/getwardens");
       const data = await response.json();
+      console.log("Wardens response:", data);
       setWardensData(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching wardens:", error);
       setWardensData([]);
+    } finally {
+      setWardensLoading(false);
     }
   };
 
@@ -204,7 +211,8 @@ const HostelPage = () => {
       if (!response.ok) {
         toast.error("Failed to create warden");
       } else {
-        toast.success("Warden created successfully")
+        toast.success("Warden created successfully");
+        fetchWardens(); // Refresh wardens list
       }
     } catch (error) {
       toast.error("An error occurred while creating the warden");
@@ -515,7 +523,19 @@ const HostelPage = () => {
                         />
                       </div>
                       <div>
-                        <Label>Wardens</Label>
+                        <div className="flex items-center justify-between">
+                          <Label>Wardens</Label>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={fetchWardens}
+                            disabled={wardensLoading}
+                            className="h-6 w-6 p-0"
+                          >
+                            <RefreshCw className={`h-4 w-4 ${wardensLoading ? 'animate-spin' : ''}`} />
+                          </Button>
+                        </div>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="w-full justify-between mt-1">
@@ -524,7 +544,15 @@ const HostelPage = () => {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent>
                             <DropdownMenuItem disabled>Select Wardens (Multiple Selection)</DropdownMenuItem>
-                            {wardensData && Array.isArray(wardensData) && wardensData.map(wardenObj => (
+                            {wardensLoading ? (
+                              <DropdownMenuItem disabled>
+                                <div className="flex items-center gap-2">
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+                                  Loading wardens...
+                                </div>
+                              </DropdownMenuItem>
+                            ) : wardensData && Array.isArray(wardensData) && wardensData.length > 0 ? (
+                              wardensData.map(wardenObj => (
                               <DropdownMenuItem
                                 key={wardenObj.id}
                                 value={wardenObj.id}
@@ -549,7 +577,12 @@ const HostelPage = () => {
                                   {wardenObj.name}
                                 </div>
                               </DropdownMenuItem>
-                            ))}
+                              ))
+                            ) : (
+                              <DropdownMenuItem disabled>
+                                No wardens found
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                         {wardensIds.length > 0 && (
@@ -1152,7 +1185,19 @@ const HostelPage = () => {
                               />
                             </div>
                             <div>
-                              <Label>Wardens</Label>
+                              <div className="flex items-center justify-between">
+                                <Label>Wardens</Label>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={fetchWardens}
+                                  disabled={wardensLoading}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <RefreshCw className={`h-4 w-4 ${wardensLoading ? 'animate-spin' : ''}`} />
+                                </Button>
+                              </div>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="outline" className="w-full justify-between mt-1">
@@ -1161,7 +1206,15 @@ const HostelPage = () => {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
                                   <DropdownMenuItem disabled>Select Wardens (Multiple Selection)</DropdownMenuItem>
-                                  {wardensData && Array.isArray(wardensData) && wardensData.map(wardenObj => (
+                                  {wardensLoading ? (
+                                    <DropdownMenuItem disabled>
+                                      <div className="flex items-center gap-2">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+                                        Loading wardens...
+                                      </div>
+                                    </DropdownMenuItem>
+                                  ) : wardensData && Array.isArray(wardensData) && wardensData.length > 0 ? (
+                                    wardensData.map(wardenObj => (
                                     <DropdownMenuItem
                                       key={wardenObj.id}
                                       value={wardenObj.id}
@@ -1184,7 +1237,12 @@ const HostelPage = () => {
                                         {wardenObj.name}
                                       </div>
                                     </DropdownMenuItem>
-                                  ))}
+                                    ))
+                                  ) : (
+                                    <DropdownMenuItem disabled>
+                                      No wardens found
+                                    </DropdownMenuItem>
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                               {wardensIds.length > 0 && (

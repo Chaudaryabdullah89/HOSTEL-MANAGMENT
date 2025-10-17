@@ -171,11 +171,11 @@ icon : Wrench,
       url: "/dashboard/admin/expenses",
       icon: DollarSign,
     },
-    {
-      title: "Reports",
-      url: "/dashboard/admin/report",
-      icon: FileText,
-    },
+    // {
+    //   title: "Reports",
+    //   url: "/dashboard/admin/report",
+    //   icon: FileText,
+    // },
     {
       title: "Profile",
       url: "/dashboard/admin/profile",

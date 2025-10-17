@@ -237,29 +237,78 @@ export default function Home() {
         <div className="grid md:grid-cols-1 lg:grid-cols-7 gap-4 p-4">
           <Card className="col-span-4">
             <CardHeader>
-              <CardTitle>Revenue Overview</CardTitle>
+              <CardTitle>Recent Payment Approvals</CardTitle>
               <CardDescription>
-                Monthly revenue trends and performance
+                Latest payment requests requiring approval
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                <div className="h-64">
-                  <Chart />
-                </div>
-                {topPerformingRooms.length > 0 && (
-                  <div className="mt-4">
-                    <h4 className="text-sm font-medium mb-2">Top Performing Rooms</h4>
-                    <div className="space-y-2">
-                      {topPerformingRooms.slice(0, 3).map((room, index) => (
-                        <div key={room.roomNumber} className="flex justify-between items-center text-sm">
-                          <span>Room {room.roomNumber} (Floor {room.floor})</span>
-                          <span className="font-medium">PKR {room.totalRevenue.toLocaleString()}</span>
-                        </div>
-                      ))}
-                    </div>
+              <div className="space-y-4">
+                {/* Payment Status Summary */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-gray-50 rounded-lg border">
+                    <div className="text-2xl font-bold text-gray-900">{stats?.pendingPayments || 0}</div>
+                    <div className="text-sm text-gray-600">Pending</div>
                   </div>
-                )}
+                  <div className="text-center p-4 bg-gray-50 rounded-lg border">
+                    <div className="text-2xl font-bold text-gray-900">{stats?.completedPayments || 0}</div>
+                    <div className="text-sm text-gray-600">Approved</div>
+                  </div>
+                  <div className="text-center p-4 bg-gray-50 rounded-lg border">
+                    <div className="text-2xl font-bold text-gray-900">{stats?.totalPayments || 0}</div>
+                    <div className="text-sm text-gray-600">Total</div>
+                  </div>
+                </div>
+
+                {/* Recent Payment Requests */}
+                <div>
+                  <h4 className="text-sm font-medium mb-3 text-gray-900">
+                    Recent Payment Requests
+                  </h4>
+                  <div className="space-y-2">
+                    {recentActivities.payments.slice(0, 5).map((payment) => (
+                      <div key={payment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                            <DollarSign className="h-4 w-4 text-gray-600" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-900">{payment.user.name}</div>
+                            <div className="text-sm text-gray-500">{payment.message}</div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium text-gray-900">
+                            {format(new Date(payment.timestamp), 'MMM dd, HH:mm')}
+                          </div>
+                          <div className="text-xs text-gray-500 capitalize">{payment.status}</div>
+                        </div>
+                      </div>
+                    ))}
+                    {recentActivities.payments.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <DollarSign className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">No recent payment requests</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="grid grid-cols-2 gap-3 pt-4 border-t">
+                  <Button variant="outline" className="justify-start" asChild>
+                    <Link href="/dashboard/admin/payment-approvals">
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Review Payments
+                    </Link>
+                  </Button>
+                  <Button variant="outline" className="justify-start" asChild>
+                    <Link href="/dashboard/admin/payments">
+                      <DollarSign className="h-4 w-4 mr-2" />
+                      View All Payments
+                    </Link>
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -348,7 +397,7 @@ export default function Home() {
                 </Link>
               </Button>
               <Button className="w-full justify-start" variant="outline" asChild>
-                <Link href="/dashboard/admin/reports">
+                <Link href="/dashboard/admin/report">
                   <BarChart3 className="mr-2 h-4 w-4" />
                   Reports
                 </Link>
