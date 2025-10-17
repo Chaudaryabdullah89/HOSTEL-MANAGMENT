@@ -78,7 +78,7 @@ export default async function middleware(request) {
                 "GUEST": ["/dashboard/guest"],
                 "WARDEN": ["/dashboard/warden"],
                 "ADMIN": ["/dashboard/admin"],
-                "USER": ["/dashboard/user"]
+                "USER": ["/dashboard/guest"]
             };
             
           

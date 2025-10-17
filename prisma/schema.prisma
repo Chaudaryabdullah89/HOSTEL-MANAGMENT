@@ -33,6 +33,7 @@ model User {
   bookings     Booking[]
   guest        Guest?
   ownedHostels Hostel[]
+  emailChangeRequest EmailChangeRequest[]
   maintenances Maintenance[]
   payments     Payment[]
   address      UserAddress?  @relation(fields: [addressId], references: [id])
@@ -279,6 +280,15 @@ model SalaryAdjustment {
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
   staff         staff                @relation(fields: [staffId], references: [id], onDelete: Cascade)
+}
+model EmailChangeRequest {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  newEmail  String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }
 
 enum BookingType {

@@ -82,9 +82,10 @@ const page = () => {
     const updateBookingStatusMutation = useUpdateBookingStatus();
     const confirmBookingMutation = useConfirmBooking();
 
-      const [confirmbooking,setConfirmbooking] = useState(false);
+      const [confirmbooking,setConfirmbooking] = useState(false);   
       const [checkedinbooking,setCheckedinbooking] = useState(false);
       const [checkedoutbooking,setCheckedoutbooking] = useState(false);
+    
       const [completedbooking,setCompletedbooking] = useState(false);
       const [error,setError] = useState('');
         // Filtered data for cascading dropdowns
@@ -121,116 +122,6 @@ const page = () => {
     const calculateRemainingAmount = (payment) => {
         return (payment.status.toLowerCase() === "completed" && payment.paid === true) ? 0 : payment.amount;
     }
-
-
-    const tempbookings = [
-        {
-            id: Math.random().toString(36).substring(2, 15),
-            guest: {
-                id: Math.random().toString(36).substring(2, 15),
-                name: "John Doe",
-                email: "john.doe@example.com",
-                phone: "1234567890",
-            },
-            checkIn: "Oct 23, 2025",
-            checkOut: "Oct 30, 2025",
-            status: "Pending",
-            totalAmount: 1000,
-            notes: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos.",
-            createdAt: "2025-01-01",
-            room: {
-                id: Math.random().toString(36).substring(2, 15),
-                number: "101",
-                floor: 1,
-                type: "Single",
-                price: 1000,
-                status: "Available",
-                amenities: ["Wifi", "TV", "AC"],
-                description: "A comfortable single room with a private bathroom",
-            },
-            payments: [
-                {
-                    id: Math.random().toString(36).substring(2, 15),
-                    amount: 1000,
-                    paid: false,
-                    status: "Pending",
-                    get remaining() { return calculateRemainingAmount(this); }
-                }
-            ]
-        },
-        {
-            id: Math.random().toString(36).substring(2, 15),
-            guest: {
-                id: Math.random().toString(36).substring(2, 15),
-                name: "Jane Smith",
-                email: "jane.smith@example.com",
-                phone: "0987654321",
-            },
-            checkIn: "Oct 28, 2025",
-            checkOut: "Oct 30, 2025",
-            status: "Confirmed",
-            totalAmount: 1500,
-            notes: "Guest requested late checkout",
-            createdAt: "2025-01-02",
-            room: {
-                id: Math.random().toString(36).substring(2, 15),
-                number: "102",
-                floor: 1,
-                type: "Double",
-                price: 1500,
-                status: "Occupied",
-                amenities: ["Wifi", "TV", "AC"],
-                description: "A spacious double room with a private bathroom",
-            },
-            payments: [
-                {
-                    id: Math.random().toString(36).substring(2, 15),
-                    amount: 1500,
-                    paid: true,
-                    status: "Completed",
-                    get remaining() { return calculateRemainingAmount(this); }
-                }
-            ]
-        }
-    ]
-    const avaibleroom = [
-        {
-            id: 1,
-            number: "A-101",
-            floor: 1,
-            type: "Single Room",
-            status: "Available",
-            price: 1500,
-            features: ["WiFi", "TV", "AC"],
-        },
-        {
-            id: 2,
-            number: "B-202",
-            floor: 2,
-            type: "Double Room",
-            status: "Available",
-            price: 2000,
-            features: ["WiFi", "TV"],
-        },
-        {
-            id: 3,
-            number: "C-303",
-            floor: 3,
-            type: "Triple Room",
-            status: "Available",
-            price: 2500,
-            features: ["WiFi", "AC"],
-        },
-        {
-            id: 4,
-            number: "D-404",
-            floor: 4,
-            type: "Dormitory",
-            status: "Available",
-            price: 1000,
-            features: ["WiFi"],
-        }
-    ];
 
     const filteredBookings = bookingsLoading ? [] : (Array.isArray(bookings) ? bookings : []).filter(booking => {
         const matchesStatus = activeStatus === "All Bookings" || booking.status === activeStatus;
@@ -327,17 +218,21 @@ const page = () => {
 
     const handlecreatebooking = async (e) => {
         e.preventDefault();
+        setLoading(true);
     
         if (!currentselectedhostel) {
             toast.error("Please select a hostel");
+            setLoading(false);
             return;
         }
         if (!currentselectedroom) {
             toast.error("Please select a room");
+            setLoading(false);
             return;
         }
         if (!currentselectedbooking) {
             toast.error("Please select a user");
+            setLoading(false);
             return;
         }
         
@@ -353,6 +248,7 @@ const page = () => {
             // For daily bookings, calculate duration from dates
             if (!checkInDate || !checkOutDate) {
                 toast.error("Check-in and check-out dates are required for daily bookings");
+                setLoading(false);
                 return;
             }
             const checkIn = new Date(checkInDate);
@@ -396,10 +292,11 @@ const page = () => {
                 console.error("Error creating booking:", errorMessage);
                 setError(errorMessage);
                 toast.error(errorMessage);
+                setLoading(false);
                 return;
               } else {
-                // Add the new booking to state immediately
-                setBookings([data, ...bookings]);
+                // Booking created successfully, refetch data
+                await refetchBookings();
                 
                
                 const getPaymentStatus = (bookingStatus) => {
@@ -440,23 +337,19 @@ const page = () => {
                     console.error("Error creating payment:", errorMessage);
                     setError(errorMessage);
                     toast.error(errorMessage);
+                    setLoading(false);
                     return;
                 }
                 const paymentintializationdata = await paymentintializationresponse.json();
                 // Payment initialization completed
                 payload.paymentId = paymentintializationdata.id;
-                setBookings(prevBookings => 
-                    prevBookings.map(booking => 
-                        booking.id === data.id 
-                            ? { ...booking, payment: paymentintializationdata }
-                            : booking
-                    )
-                );
+                // Payment added successfully, refetch data
+                await refetchBookings();
                 
                 toast.success("Booking and payment created successfully!");
                 
                
-                await fetchrooms();
+                await refetchRooms();
                 
                 setError(''); 
                 
@@ -484,15 +377,16 @@ const page = () => {
             toast.error(errorMessage);
         } finally {
             setBtnloading(false);
+            setLoading(false);
         }
     }
     const handlebookingstatuschange = async (bookingId, status) => {
-        // Setting loading state
+        console.log("Setting loading for booking:", bookingId);
         loadingRef.current = bookingId;
         setLoadingBookingId(bookingId);
         
         try {
-            // Changing booking status
+            console.log("Changing booking status:", { bookingId, status });
             
             const response = await fetch(`/api/booking/changebookingstatus`, {
                 method: "PUT",
@@ -502,49 +396,47 @@ const page = () => {
                 body: JSON.stringify({ bookingId, status }),
             });
             
-            // Response received
+            console.log("Response status:", response.status);
             
             if (response.ok) {
                 const responseData = await response.json();
-                const updatedStatus = responseData.booking?.status || responseData.status || status;
+                console.log("Updated booking response:", responseData);
                 
-                // Update the bookings state
-                setBookings(prevBookings => {
-                    const updatedBookings = prevBookings.map(booking => 
-                        booking.id === bookingId 
-                            ? { ...booking, status: updatedStatus }
-                            : booking
-                    );
-                    // Bookings state updated
-                    return updatedBookings;
-                });
+                const updatedStatus = responseData.booking?.status || responseData.status || status;
+                console.log("Updated booking status:", updatedStatus);
+                
+                // Update successful, refetch data
+                await refetchBookings();
                 
                 toast.success(`Booking ${status.toLowerCase()} successfully!`);
                 
                 // Refresh rooms data to show updated room statuses
-                await fetchrooms();
+                await refetchRooms();
             } else {
                 const errorData = await response.json();
                 const errorMessage = errorData.error || errorData.message || `Failed to ${status.toLowerCase()} booking`;
                 console.error("Error updating booking status:", errorMessage);
                 setError(errorMessage);
                 toast.error(errorMessage);
+                setLoading(false);
             }
         } catch (error) {
             const errorMessage = error.message || "Network error occurred while updating the booking status";
             console.error("Error updating booking status:", error);
             setError(errorMessage);
             toast.error(errorMessage);
+            setLoading(false);
         } finally {
             loadingRef.current = null;
             setLoadingBookingId(null);
+            setLoading(false);
         }
     }
 
     const handleDeleteBooking = async (bookingId) => {
         setIsDeleting(bookingId); // Set to booking ID instead of true
         try {
-            // Deleting booking
+            console.log("Deleting booking:", bookingId);
             
             const response = await fetch(`/api/booking/${bookingId}`, {
                 method: "DELETE",
@@ -553,16 +445,14 @@ const page = () => {
                 },
             });
             
-            // Delete response received
+            console.log("Delete response status:", response.status);
             
             if (response.ok) {
                 const responseData = await response.json();
-                // Booking deleted successfully
+                console.log("Booking deleted successfully:", responseData);
                 
-                // Remove the booking from the state
-                setBookings(prevBookings => 
-                    prevBookings.filter(booking => booking.id !== bookingId)
-                );
+                // Booking deleted successfully, refetch data
+                await refetchBookings();
                 
                 toast.success("Booking deleted successfully!");
                 
@@ -571,7 +461,7 @@ const page = () => {
                 setBookingToDelete(null);
                 
                 // Refresh rooms data to show updated room statuses
-                await fetchrooms();
+                await refetchRooms();
             } else {
                 const errorData = await response.json();
                 const errorMessage = errorData.error || "Failed to delete booking";
@@ -588,37 +478,192 @@ const page = () => {
             setIsDeleting(null); // Reset to null instead of false
         }
     }
-    // Debug info removed for production
+    console.log("Active Status:", activeStatus)
+    console.log("Bookings state:", bookings)
+    console.log("Bookings type:", typeof bookings)
+    console.log("Is bookings array:", Array.isArray(bookings))
+    console.log("Total bookings:", bookings.length)
+    console.log("Filtered bookings:", filteredBookings.length)
+    console.log("Current loadingBookingId:", loadingBookingId)
 
     // Only render on client side
     if (!isClient) {
-        return <div>Loading...</div>;
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="flex flex-col items-center space-y-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <p className="text-muted-foreground">Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Show loading state while data is being fetched
+    if (bookingsLoading) {
+        return (
+            <div className='p-2'>
+                <div className="flex md:flex-row flex-col justify-between px-4">
+                    <div className="mt-4">
+                        <div className="h-8 bg-gray-200 rounded animate-pulse w-32 mb-2"></div>
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-64"></div>
+                    </div>
+                    <div className="flex items-center gap-2 mt-4 md:mt-0">
+                        <div className="h-10 bg-gray-200 rounded animate-pulse w-24"></div>
+                        <div className="h-10 bg-gray-200 rounded animate-pulse w-32"></div>
+                        <div className="h-10 bg-gray-200 rounded animate-pulse w-28"></div>
+                    </div>
+                </div>
+
+                {/* Stats Cards Skeleton */}
+                <div className="grid md:grid-cols-2 p-4 lg:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map((i) => (
+                        <Card key={i} className="p-4">
+                            <div className="flex items-center space-x-4">
+                                <div className="h-12 w-12 bg-gray-200 rounded-full animate-pulse"></div>
+                                <div className="space-y-2 flex-1">
+                                    <div className="h-4 bg-gray-200 rounded animate-pulse w-16"></div>
+                                    <div className="h-6 bg-gray-200 rounded animate-pulse w-12"></div>
+                                </div>
+                            </div>
+                        </Card>
+                    ))}
+                </div>
+
+                {/* Filter Tabs Skeleton */}
+                <div className="px-4 py-2">
+                    <div className="flex space-x-2">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                            <div key={i} className="h-8 bg-gray-200 rounded animate-pulse w-20"></div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Search and Filter Skeleton */}
+                <div className="px-4 py-2">
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <div className="h-10 bg-gray-200 rounded animate-pulse flex-1"></div>
+                        <div className="h-10 bg-gray-200 rounded animate-pulse w-32"></div>
+                        <div className="h-10 bg-gray-200 rounded animate-pulse w-32"></div>
+                    </div>
+                </div>
+
+                {/* Booking Cards Skeleton */}
+                <div className="px-4 py-2 space-y-4">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                        <Card key={i} className="p-4">
+                            <div className="flex justify-between items-start">
+                                <div className="space-y-3 flex-1">
+                                    <div className="flex items-center space-x-3">
+                                        <div className="h-12 w-12 bg-gray-200 rounded-full animate-pulse"></div>
+                                        <div className="space-y-2">
+                                            <div className="h-5 bg-gray-200 rounded animate-pulse w-32"></div>
+                                            <div className="h-4 bg-gray-200 rounded animate-pulse w-48"></div>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <div className="space-y-1">
+                                            <div className="h-3 bg-gray-200 rounded animate-pulse w-16"></div>
+                                            <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <div className="h-3 bg-gray-200 rounded animate-pulse w-16"></div>
+                                            <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <div className="h-3 bg-gray-200 rounded animate-pulse w-16"></div>
+                                            <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <div className="h-3 bg-gray-200 rounded animate-pulse w-16"></div>
+                                            <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2 ml-4">
+                                    <div className="h-8 bg-gray-200 rounded animate-pulse w-16"></div>
+                                    <div className="h-8 bg-gray-200 rounded animate-pulse w-20"></div>
+                                    <div className="h-8 bg-gray-200 rounded animate-pulse w-16"></div>
+                                </div>
+                            </div>
+                        </Card>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    // Show error state if there's an error
+    if (bookingsError) {
+        return (
+            <div className='p-2'>
+                <div className="flex md:flex-row flex-col justify-between px-4">
+                    <div className="mt-4">
+                        <h1 className="text-3xl font-bold">Bookings</h1>
+                        <p className="text-muted-foreground leading-loose">Manage your bookings and payments here.</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-center min-h-[400px]">
+                    <Card className="w-full max-w-md">
+                        <CardContent className="pt-6">
+                            <div className="text-center py-8">
+                                <XCircle className="mx-auto h-12 w-12 text-red-400" />
+                                <h3 className="mt-2 text-sm font-medium text-gray-900">Error loading bookings</h3>
+                                <p className="mt-1 text-sm text-gray-500">
+                                    {bookingsError.message || "Unable to load your bookings"}
+                                </p>
+                                <div className="mt-4 flex gap-2 justify-center">
+                                    <Button 
+                                        onClick={() => refetchBookings()}
+                                        variant="outline"
+                                    >
+                                        <RefreshCw className="h-4 w-4 mr-2" />
+                                        Try Again
+                                    </Button>
+                                    <Button 
+                                        onClick={() => window.location.reload()}
+                                    >
+                                        Reload Page
+                                    </Button>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+        );
     }
 
     return (
         <div className='p-2'>
-            <div className="flex flex-col lg:flex-row justify-between px-4">
-                <div className="mt-4">
-                    <h1 className="text-2xl sm:text-3xl font-bold">Bookings</h1>
-                    <p className="text-muted-foreground leading-loose text-sm sm:text-base">Manage your bookings and payments here.</p>
+            <div className="flex md:flex-row flex-col justify-between px-4">
+                <div className="mt-4 ">
+                    <h1 className="text-3xl font-bold">Bookings</h1>
+                    <p className="text-muted-foreground leading-loose" >Manage your bookings and payments here.</p>
+
                 </div>
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center overflow-visible gap-2 mt-4 lg:mt-0">
+                <div className="flex items-center overflow-visible gap-2 mt-4 md:mt-0">
                     <Button 
-                        className='cursor-pointer p-3 sm:p-4 text-sm sm:text-base' 
+                        className='cursor-pointer p-4' 
                         variant="outline"
                         onClick={async () => {
                             setLoading(true);
-                            await fetchbookings();
-                            setLoading(false);
-                            toast.success("Bookings refreshed!");
+                            try {
+                                await refetchBookings();
+                                toast.success("Bookings refreshed!");
+                            } catch (error) {
+                                toast.error("Failed to refresh bookings");
+                            } finally {
+                                setLoading(false);
+                            }
                         }}
                         disabled={loading}
                     >
-                        <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> 
-                        <span className="hidden sm:inline ml-2">{loading ? 'Refreshing...' : 'Refresh'}</span>
+                        <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} /> 
+                        {loading ? 'Refreshing...' : 'Refresh'}
                     </Button>
                     <Button 
-                        className='cursor-pointer hidden sm:block p-3 sm:p-4 text-sm sm:text-base' 
+                        className='cursor-pointer p-4' 
                         variant="outline"
                         onClick={async () => {
                             setLoading(true);
@@ -628,9 +673,8 @@ const page = () => {
                                 });
                                 if (response.ok) {
                                     toast.success("Room statuses updated successfully!");
-                                 
-                                    await fetchbookings();
-                                    await fetchrooms();
+                                    await refetchBookings();
+                                    await refetchRooms();
                                 } else {
                                     toast.error("Failed to update room statuses");
                                 }
@@ -643,44 +687,43 @@ const page = () => {
                         }}
                         disabled={loading}
                     >
-                        <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> 
-                        <span className="hidden sm:inline ml-2">{loading ? 'Updating...' : 'Update Room Statuses'}</span>
+                        <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} /> 
+                        {loading ? 'Updating...' : 'Update Room Statuses'}
                     </Button>
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                         <DialogTrigger asChild>
                             <Button 
-                                className='cursor-pointer hidden sm:block p-3 sm:p-4 text-sm sm:text-base' 
+                                className='cursor-pointer p-4' 
                                 variant="outline"
                                 onClick={() => {
                                     clearError();
                                     setIsDialogOpen(true);
                                 }}
                             >
-                                <Plus className="h-4 w-4" /> 
-                                <span className="ml-2">New Booking</span>
+                                <Plus className="h-4 w-4" /> New Booking
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="w-[95vw] sm:max-w-[600px] max-h-[90vh] p-0 flex flex-col">
-                            <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6">
-                                <DialogTitle className="text-lg sm:text-xl font-semibold">Create New Booking</DialogTitle>
-                                <DialogDescription className="text-gray-600 text-sm sm:text-base">
+                        <DialogContent className="sm:max-w-[600px] max-h-[90vh] p-0 flex flex-col">
+                            <DialogHeader className="px-6 pt-6">
+                                <DialogTitle className="text-xl font-semibold">Create New Booking</DialogTitle>
+                                <DialogDescription className="text-gray-600">
                                     Select hostel, room, and user to create a new booking
                                 </DialogDescription>
                             </DialogHeader>
-                            <div className="overflow-y-auto px-4 sm:px-6 pb-4 sm:pb-6 pt-2" style={{ maxHeight: '70vh' }}>
+                            <div className="overflow-y-auto px-6 pb-6 pt-2" style={{ maxHeight: '70vh' }}>
                                 <form className="space-y-6 overflow-visible" onSubmit={handlecreatebooking}>
                                     {currentselectedbooking && (
                                         <div className="space-y-4">
                                             <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Selected User Information</h3>
-                                            <div className="bg-gray-50 p-3 sm:p-4 rounded-lg">
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                            <div className="bg-gray-50 p-4 rounded-lg">
+                                                <div className="grid grid-cols-2 gap-4">
                                                     <div>
                                                         <Label className="text-sm font-medium text-gray-700">Name</Label>
-                                                        <p className="text-sm text-gray-900 break-words">{currentselectedbooking.name}</p>
+                                                        <p className="text-sm text-gray-900">{currentselectedbooking.name}</p>
                                                     </div>
                                                     <div>
                                                         <Label className="text-sm font-medium text-gray-700">Email</Label>
-                                                        <p className="text-sm text-gray-900 break-words">{currentselectedbooking.email}</p>
+                                                        <p className="text-sm text-gray-900">{currentselectedbooking.email}</p>
                                                     </div>
                                                     <div>
                                                         <Label className="text-sm font-medium text-gray-700">Role</Label>
@@ -933,14 +976,14 @@ const page = () => {
                                             </div>
                                         )}
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-2">
                                                 <Label className="text-sm font-medium text-gray-700">
                                                     Check-In Date {bookingTypeInput === 'DAILY' ? '*' : '(Optional)'}
                                                 </Label>
                                                 <Input
                                                     type="date"
-                                                    className="w-full text-sm sm:text-base"
+                                                    className="w-full"
                                                     value={checkInDate}
                                                     onChange={e => setCheckInDate(e.target.value)}
                                                     placeholder={bookingTypeInput === 'MONTHLY' ? 'Leave empty for current date' : ''}
@@ -957,7 +1000,7 @@ const page = () => {
                                                 </Label>
                                                 <Input
                                                     type="date"
-                                                    className="w-full text-sm sm:text-base"
+                                                    className="w-full"
                                                     value={checkOutDate}
                                                     onChange={e => setCheckOutDate(e.target.value)}
                                                     placeholder={bookingTypeInput === 'MONTHLY' ? 'Leave empty for 30 days from check-in' : ''}
@@ -974,14 +1017,14 @@ const page = () => {
                                     {/* Payment Information */}
                                     <div className="space-y-4">
                                         <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Payment Information</h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-2">
                                                 <Label className="text-sm font-medium text-gray-700">Total Amount (PKR) *</Label>
                                                 <Input
                                                     placeholder="e.g. 4500"
                                                     type="number"
                                                     min="0"
-                                                    className="w-full text-sm sm:text-base"
+                                                    className="w-full"
                                                     required
                                                     value={totalAmount}
                                                     onChange={e => setTotalAmount(e.target.value)}
@@ -993,7 +1036,7 @@ const page = () => {
                                                     <DropdownMenuTrigger asChild>
                                                         <Button
                                                             variant="outline"
-                                                            className="w-full justify-between text-left font-normal text-sm sm:text-base"
+                                                            className="w-full justify-between text-left font-normal"
                                                         >
                                                             {paymentStatus ? paymentStatus : "Select Status"}
                                                             <ChevronDown className="h-4 w-4 opacity-50" />
@@ -1052,9 +1095,9 @@ const page = () => {
                                     )}
 
                                     {/* Form Actions */}
-                                    <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t">
+                                    <div className="flex justify-end space-x-3 pt-4 border-t">
                                         <Button 
-                                            className='cursor-pointer w-full sm:w-auto' 
+                                            className='cursor-pointer' 
                                             type="button" 
                                             variant="outline"
                                             onClick={() => setIsDialogOpen(false)}
@@ -1063,14 +1106,11 @@ const page = () => {
                                         </Button>
                                         <Button 
                                             type="submit" 
-                                            className={`w-full sm:w-auto ${roomAvailable ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'} cursor-pointer`} 
+                                            className={`${roomAvailable ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'} cursor-pointer`} 
                                             disabled={btnloading || !roomAvailable || !currentselectedroom}
                                         >
                                             <Plus className="h-4 w-4 mr-2" />
-                                            {btnloading ? "Creating..." : 
-                                             !roomAvailable ? "Room Not Available" : 
-                                             !currentselectedroom ? "Select Room First" : 
-                                             "Create Booking"}
+                                            {btnloading ? "Creating Booking..." : "Create Booking"}
                                         </Button>
                                     </div>
                                 </form>
@@ -1148,14 +1188,14 @@ const page = () => {
                     </CardContent>
                 </Card>
             </div>
-            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4 bg-white p-4 sm:p-6 my-4 sm:my-6 shadow-sm rounded-md'>
-                <div className='sm:col-span-2 lg:col-span-3 items-center gap-2 relative'>
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <div className='grid grid-cols-1 md:grid-cols-6 gap-4  bg-white p-6 my-6  shadow-sm rounded-md' >
+                <div className='col-span-3  items-center gap-2 relative'>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                         <Search className="h-4 w-4" />
                     </span>
                     <Input
                         type="text"
-                        className="p-3 sm:p-4 rounded-sm pl-10 sm:pl-12 text-sm sm:text-base"
+                        className="p-4 rounded-sm pl-12"
                         placeholder="Search bookings"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -1163,17 +1203,15 @@ const page = () => {
                 </div>
                 
                 {/* Hostel Filter Dropdown */}
-                <div className='sm:col-span-1 lg:col-span-1 flex items-center gap-2'>
+                <div className='col-span-1 flex items-center gap-2'>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button className='p-3 sm:p-4 w-full text-sm sm:text-base' variant="outline">
-                                <span className="truncate">
-                                    {hostels.find(h => h.id === selectedHostelFilter)?.hostelName || "All Hostels"}
-                                </span>
-                                <ChevronDown className="h-4 w-4 ml-2 flex-shrink-0" />
+                            <Button className='p-4 w-full' variant="outline">
+                                {hostels.find(h => h.id === selectedHostelFilter)?.hostelName || "All Hostels"}
+                                <ChevronDown className="h-4 w-4 ml-2" />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-56">
+                        <DropdownMenuContent>
                             <DropdownMenuItem onClick={() => setSelectedHostelFilter("All Hostels")}>
                                 All Hostels
                             </DropdownMenuItem>
@@ -1182,23 +1220,23 @@ const page = () => {
                                     key={hostelItem.id}
                                     onClick={() => setSelectedHostelFilter(hostelItem.id)}
                                 >
-                                    <span className="truncate">{hostelItem.hostelName}</span>
+                                    {hostelItem.hostelName}
                                 </DropdownMenuItem>
                             ))}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
                 
-                <div className='sm:col-span-1 lg:col-span-2 flex items-center gap-2'>
-                    <div className='cursor-pointer items-center gap-2 w-full'>
+                <div className='col-span-2 flex items-center gap-2'>
+                    <div className='cursor-pointer items-center gap-2'>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button className='p-3 sm:p-4 w-full text-sm sm:text-base' variant="outline">
-                                    <span className="truncate">{activeStatus}</span>
-                                    <ChevronDown className="h-4 w-4 ml-2 flex-shrink-0" />
+                                <Button className='p-4 px-10' variant="outline"  >
+                                    {activeStatus}
+                                    <ChevronDown className="h-4 w-4" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-48">
+                            <DropdownMenuContent>
                                 <DropdownMenuItem onClick={() => handleStatusChange("All Bookings")}>
                                     All Bookings
                                 </DropdownMenuItem>
@@ -1222,30 +1260,12 @@ const page = () => {
                     </div>
                 </div>
             </div>
-            <div className="w-full">
-                <div className="block sm:hidden mb-3">
-                    {/* Mobile: turn tabs into a dropdown for space */}
-                    <select
-                        className="w-full block border-gray-300 rounded p-2 text-sm"
-                        value={activeStatus}
-                        onChange={e => handleStatusChange(e.target.value)}
-                    >
-                        <option value="All Bookings">All Bookings</option>
-                        <option value="PENDING">Pending</option>
-                        <option value="CONFIRMED">Confirmed</option>
-                        <option value="CHECKED_IN">Checked In</option>
-                        <option value="CHECKED_OUT">Checked Out</option>
-                        <option value="CANCELLED">Cancelled</option>
-                    </select>
-                </div>
-                <div className="hidden sm:block">
-                    <BookingTabs
-                        tabs={["All Bookings", "PENDING", "CONFIRMED", "CHECKED_IN", "CHECKED_OUT", "CANCELLED"]}
-                        onStatusChange={handleStatusChange}
-                        activeStatus={activeStatus}
-                    />
-                </div>
-            </div>
+
+            <BookingTabs
+                tabs={["All Bookings", "PENDING", "CONFIRMED", "CHECKED_IN", "CHECKED_OUT", "CANCELLED"]}
+                onStatusChange={handleStatusChange}
+                activeStatus={activeStatus}
+            />
 
             {/* Display current active status
             <div className="px-4 py-2">
@@ -1258,7 +1278,7 @@ const page = () => {
             </div> */}
 
             {/* Display filtered bookings */}
-            <div className='grid grid-cols-1 bg-white p-4 sm:p-6 my-4 sm:my-6 shadow-sm rounded-md'>
+            <div className='grid grid-cols-1  bg-white p-6 my-6  shadow-sm rounded-md' >
                 {loading ? (
                     <div className="text-center py-8">
                         <p className="text-gray-500">Loading bookings...</p>
@@ -1272,18 +1292,28 @@ const page = () => {
                                 {JSON.stringify(filteredBookings[0], null, 2)}
                             </pre>
                         </div> */}
-                        {filteredBookings.map((booking) => (
-                        <Card key={booking.id} className="mb-4">
-                            <CardHeader className="pb-4">
+                        {filteredBookings.map((booking) => {
+                            const isBookingLoading = loadingBookingId === booking.id || loadingRef.current === booking.id;
+                            return (
+                            <Card key={booking.id} className={`mb-4 relative ${isBookingLoading ? 'opacity-75 pointer-events-none' : ''}`}>
+                                {isBookingLoading && (
+                                    <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
+                                        <div className="flex flex-col items-center space-y-2">
+                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                            <p className="text-sm text-gray-600">Processing...</p>
+                                        </div>
+                                    </div>
+                                )}
+                            <CardHeader>
                                 <div>
-                                    <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-2'>
+                                    <div className='flex items-center justify-between'>
                                         <div className='flex items-center gap-2'>
-                                            <Clock className='h-5 w-5 sm:h-6 sm:w-6' />
+                                            <Clock className='h-6 w-6' />
                                             <div>
-                                                <p className='text-sm sm:text-md font-medium'>
+                                                <p className='text-md font-medium'>
                                                     Booking #{booking.id.slice(-8)}
                                                 </p>
-                                                <p className='text-xs sm:text-sm text-muted-foreground'>
+                                                <p className='text-sm text-muted-foreground'>
                                                     {new Date(booking.createdAt).toLocaleDateString()}
                                                 </p>
                                             </div>
@@ -1293,47 +1323,47 @@ const page = () => {
                                                 booking.status === "CONFIRMED" ? "default" :
                                                     booking.status === "CHECKED_IN" ? "outline" : 
                                                     booking.status === "CHECKED_OUT" ? "default" : "destructive"
-                                        } className="text-xs sm:text-sm">
+                                        }>
                                             {booking.status}
                                         </Badge>
                                     </div>
-                                    <div className="mt-4 sm:mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
+                                    <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
   {/* User Section */}
-  <div className="flex flex-col gap-2 bg-gray-50 rounded-lg p-3 sm:p-4 h-full">
+  <div className="flex flex-col gap-2 bg-white rounded-xl p-4 h-full">
     <div>
-      <p className="text-sm font-medium flex items-center gap-2">
+      <p className="text-md font-medium flex items-center gap-2">
         <User className="w-4 h-4" />
-        <span className="text-xs sm:text-sm font-semibold text-gray-800">User</span>
+        <span className="text-sm font-semibold text-gray-800">User</span>
       </p>
     </div>
     <div className="space-y-1">
-      <p className="text-xs sm:text-sm font-medium text-gray-900 break-words">{booking.user?.name || 'N/A'}</p>
-      <p className="text-xs text-gray-600 break-words">{booking.user?.email || 'N/A'}</p>
+      <p className="text-sm font-medium text-gray-900 truncate">{booking.user?.name || 'N/A'}</p>
+      <p className="text-xs text-gray-600 truncate">{booking.user?.email || 'N/A'}</p>
       <p className="text-xs text-gray-500">Role: {booking.user?.role || 'N/A'}</p>
     </div>
   </div>
 
   {/* Room Section */}
-  <div className="flex flex-col gap-2 bg-gray-50 rounded-lg p-3 sm:p-4 h-full">
+  <div className="flex flex-col gap-2 bg-white rounded-xl p-4 h-full">
     <div>
-      <p className="text-sm font-medium flex items-center gap-2">
+      <p className="text-md font-medium flex items-center gap-2">
         <Bed className="w-4 h-4" />
-        <span className="text-xs sm:text-sm font-semibold text-gray-800">Room</span>
+        <span className="text-sm font-semibold text-gray-800">Room</span>
       </p>
     </div>
     <div className="space-y-1">
-      <p className="text-xs sm:text-sm font-medium text-gray-900">Room {booking.room?.roomNumber || 'N/A'}</p>
+      <p className="text-sm font-medium text-gray-900">Room {booking.room?.roomNumber || 'N/A'}</p>
       <p className="text-xs text-gray-600">Type: {booking.room?.type || 'N/A'}</p>
       <p className="text-xs text-gray-500">Floor: {booking.room?.floor || 'N/A'}</p>
     </div>
   </div>
 
   {/* Date Section */}
-  <div className="flex flex-col gap-2 bg-gray-50 rounded-lg p-3 sm:p-4 h-full">
+  <div className="flex flex-col gap-2 bg-white rounded-xl p-4 h-full">
     <div>
-      <p className="text-sm font-medium flex items-center gap-2">
+      <p className="text-md font-medium flex items-center gap-2">
         <Calendar className="w-4 h-4" />
-        <span className="text-xs sm:text-sm font-semibold text-gray-800">Dates</span>
+        <span className="text-sm font-semibold text-gray-800">Dates</span>
       </p>
     </div>
     <div className="space-y-1">
@@ -1353,11 +1383,11 @@ const page = () => {
   </div>
 
   {/* Booking Details Section */}
-  <div className="flex flex-col gap-2 bg-gray-50 rounded-lg p-3 sm:p-4 h-full">
+  <div className="flex flex-col gap-2 bg-white rounded-xl p-4 h-full">
     <div>
-      <p className="text-sm font-medium flex items-center gap-2">
+      <p className="text-md font-medium flex items-center gap-2">
         <CreditCard className="w-4 h-4" />
-        <span className="text-xs sm:text-sm font-semibold text-gray-800">Details</span>
+        <span className="text-sm font-semibold text-gray-800">Details</span>
       </p>
     </div>
     <div className="space-y-1">
@@ -1377,19 +1407,18 @@ const page = () => {
   </div>
 
   {/* Payment Details Section */}
-  <div className="flex flex-col gap-2 bg-gray-50 rounded-lg p-3 sm:p-4 h-full">
+  <div className="flex flex-col gap-2 bg-white rounded-xl p-4 h-full">
     <div>
-      <p className="text-sm font-medium flex items-center gap-2">
+      <p className="text-md font-medium flex items-center gap-2">
         <CreditCard className="w-4 h-4" />
-        <span className="text-xs sm:text-sm font-semibold text-gray-800">Payment</span>
+        <span className="text-sm font-semibold text-gray-800">Payment</span>
       </p>
     </div>
     {booking.payment ? (
       <div className="space-y-2">
-        {/* Status - Full width on mobile for better visibility */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+        <div className="flex items-center justify-between">
           <span className="text-xs text-gray-500">Status</span>
-          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium w-fit ${
+          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
             booking.payment.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
             booking.payment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
             booking.payment.status === 'FAILED' ? 'bg-red-100 text-red-800' :
@@ -1398,49 +1427,30 @@ const page = () => {
             {booking.payment.status || 'N/A'}
           </span>
         </div>
-        
-        {/* Amount - Prominent display on mobile */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+        <div className="flex items-center justify-between">
           <span className="text-xs text-gray-500">Amount</span>
-          <span className="text-sm sm:text-base font-semibold text-gray-900">PKR{booking.payment.amount?.toLocaleString() || '0'}</span>
+          <span className="text-sm font-medium text-gray-900">PKR{booking.payment.amount?.toLocaleString() || '0'}</span>
         </div>
-        
-        {/* Method */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+        <div className="flex items-center justify-between">
           <span className="text-xs text-gray-500">Method</span>
-          <span className="text-xs sm:text-sm text-gray-900 break-words">{booking.payment.method || 'N/A'}</span>
+          <span className="text-sm text-gray-900">{booking.payment.method || 'N/A'}</span>
         </div>
-        
-        {/* Transaction ID - Better mobile handling */}
         {booking.payment.transactionId && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+          <div className="flex items-center justify-between">
             <span className="text-xs text-gray-500">Txn ID</span>
-            <span className="text-xs text-gray-600 font-mono break-all sm:truncate sm:max-w-24">{booking.payment.transactionId}</span>
+            <span className="text-xs text-gray-600 font-mono truncate max-w-20">{booking.payment.transactionId}</span>
           </div>
         )}
-        
-        {/* Payment Date - Add if available */}
-        {booking.payment.createdAt && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
-            <span className="text-xs text-gray-500">Date</span>
-            <span className="text-xs text-gray-600">{new Date(booking.payment.createdAt).toLocaleDateString()}</span>
-          </div>
-        )}
-        
-        {/* Notes - Better mobile display */}
         {booking.payment.notes && (
-          <div className="pt-2 border-t border-gray-200">
-            <span className="text-xs text-gray-500 block mb-1">Notes</span>
-            <p className="text-xs text-gray-600 break-words leading-relaxed">{booking.payment.notes}</p>
+          <div className="pt-1 border-t">
+            <span className="text-xs text-gray-500">Notes</span>
+            <p className="text-xs text-gray-600 mt-1 line-clamp-2">{booking.payment.notes}</p>
           </div>
         )}
       </div>
     ) : (
-      <div className="text-center py-3">
-        <div className="flex flex-col items-center gap-2">
-          <CreditCard className="w-6 h-6 text-gray-400" />
-          <p className="text-xs text-gray-500">No payment data</p>
-        </div>
+      <div className="text-center py-2">
+        <p className="text-xs text-gray-500">No payment data</p>
       </div>
     )}
   </div>
@@ -1449,65 +1459,90 @@ const page = () => {
                                 </div>
                             </CardHeader>
                             <hr />
-                            <CardFooter className="pt-4">
-                                <div className="flex flex-col gap-3 w-full">
+                            <CardFooter>
+                                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 w-full">
                                     <div>
-                                        <p className="text-muted-foreground text-sm">Notes: {booking.notes || 'No notes'}</p>
+                                        <p className="text-muted-foreground text-md">Notes: {booking.notes || 'No notes'}</p>
                                     </div>
-                                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                                    <div className="md:ml-auto flex gap-3 ">
                                         <Button 
-                                            className={`cursor-pointer text-xs sm:text-sm ${booking.status === "CANCELLED" ? "hidden" : ""}`} 
-                                            size="sm"
+                                            className={`cursor-pointer ${booking.status === "CANCELLED" ? "hidden" : ""}`} 
                                             onClick={() => {
-                                                // Cancel action
+                                                console.log("Cancel clicked for booking:", booking.id);
+                                                console.log("Current loadingBookingId:", loadingBookingId);
                                                 handlebookingstatuschange(booking.id, "CANCELLED");
                                             }}
                                             disabled={loadingBookingId === booking.id || loadingRef.current === booking.id}
+                                            variant="destructive"
                                         >
                                             {(() => {
                                                 const isLoading = loadingBookingId === booking.id || loadingRef.current === booking.id;
-                                                // Loading state check
-                                                return isLoading ? "Cancelling..." : "Cancel";
+                                                console.log(`Booking ${booking.id}: isLoading=${isLoading}, loadingBookingId=${loadingBookingId}, loadingRef=${loadingRef.current}`);
+                                                return (
+                                                    <>
+                                                        {isLoading && <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>}
+                                                        {isLoading ? "Cancelling..." : "Cancel"}
+                                                    </>
+                                                );
                                             })()}
                                         </Button>
                                         {booking.status === "PENDING" && (
                                             <Button 
                                                 variant="outline" 
-                                                className='cursor-pointer text-xs sm:text-sm' 
-                                                size="sm"
+                                                className='cursor-pointer' 
                                                 onClick={() => {
-                                                    // Confirm action
+                                                    console.log("Confirm clicked for booking:", booking.id);
+                                                    console.log("Current loadingBookingId:", loadingBookingId);
                                                     handlebookingstatuschange(booking.id, "CONFIRMED");
                                                 }}
                                                 disabled={loadingBookingId === booking.id || loadingRef.current === booking.id}
                                             >
                                                 {(() => {
                                                     const isLoading = loadingBookingId === booking.id || loadingRef.current === booking.id;
-                                                    // Loading state check
-                                                    return isLoading ? "Confirming..." : "Confirm";
+                                                    console.log(`Confirm Booking ${booking.id}: isLoading=${isLoading}, loadingBookingId=${loadingBookingId}, loadingRef=${loadingRef.current}`);
+                                                    return (
+                                                        <>
+                                                            {isLoading && <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-2"></div>}
+                                                            {isLoading ? "Confirming..." : "Confirm"}
+                                                        </>
+                                                    );
                                                 })()}
                                             </Button>
                                         )}
                                         {booking.status === "CONFIRMED" && (
                                             <Button 
                                                 variant="outline" 
-                                                className='cursor-pointer text-xs sm:text-sm' 
-                                                size="sm"
+                                                className='cursor-pointer' 
                                                 onClick={() => handlebookingstatuschange(booking.id, "CHECKED_IN")}
                                                 disabled={loadingBookingId === booking.id || loadingRef.current === booking.id}
                                             >
-                                                {(loadingBookingId === booking.id || loadingRef.current === booking.id) ? "Checking In..." : "Check In"}
+                                                {(() => {
+                                                    const isLoading = loadingBookingId === booking.id || loadingRef.current === booking.id;
+                                                    return (
+                                                        <>
+                                                            {isLoading && <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-green-600 mr-2"></div>}
+                                                            {isLoading ? "Checking In..." : "Check In"}
+                                                        </>
+                                                    );
+                                                })()}
                                             </Button>
                                         )}
                                         {booking.status === "CHECKED_IN" && (
                                             <Button 
                                                 variant="outline" 
-                                                className='cursor-pointer text-xs sm:text-sm' 
-                                                size="sm"
+                                                className='cursor-pointer' 
                                                 onClick={() => handlebookingstatuschange(booking.id, "CHECKED_OUT")}
                                                 disabled={loadingBookingId === booking.id || loadingRef.current === booking.id}
                                             >
-                                                {(loadingBookingId === booking.id || loadingRef.current === booking.id) ? "Checking Out..." : "Check Out"}
+                                                {(() => {
+                                                    const isLoading = loadingBookingId === booking.id || loadingRef.current === booking.id;
+                                                    return (
+                                                        <>
+                                                            {isLoading && <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-orange-600 mr-2"></div>}
+                                                            {isLoading ? "Checking Out..." : "Check Out"}
+                                                        </>
+                                                    );
+                                                })()}
                                             </Button>
                                         )}
                                         {booking.status === "CHECKED_OUT" && (
@@ -1539,7 +1574,7 @@ const page = () => {
                                         )}
                                         
                                         {/* Delete Button - Show for all bookings except CHECKED_OUT */}
-                                        {/* Delete button visibility check */}
+                                        {console.log("Booking status:", booking.status, "Should show delete:", booking.status !== "CHECKED_OUT")}
                                         {/* Temporarily show for all bookings for testing */}
                                         {true && (
                                             <Button
@@ -1551,9 +1586,14 @@ const page = () => {
                                                 size="sm"
                                                 className="px-3 py-2 cursor-pointer text-xs h-8 min-h-0 rounded-md flex items-center gap-1"
                                                 title="Delete Booking"
+                                                disabled={isDeleting === booking.id}
                                             >
-                                                <Trash className="h-3 w-3" />
-                                                    {isDeleting  === booking.id ? "Deleting..." : "Delete"}
+                                                {isDeleting === booking.id ? (
+                                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                                                ) : (
+                                                    <Trash className="h-3 w-3" />
+                                                )}
+                                                {isDeleting === booking.id ? "Deleting..." : "Delete"}
                                             </Button>
                                         )}
                                         
@@ -1622,7 +1662,8 @@ const page = () => {
                                 </div>
                             </CardFooter>
                         </Card>
-                        ))}
+                        );
+                        })}
                     </>
                 ) : (
                     <div className="text-center py-8">

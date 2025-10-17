@@ -4,7 +4,6 @@ import React, { useState, useContext, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
-import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -35,13 +34,11 @@ import {
   Activity,
   BookOpen,
   CreditCard,
-  Settings,
-  Bed,
-  Clock
+  Settings
 } from "lucide-react"
 import { format } from "date-fns"
 
-const GuestProfilePage = () => {
+const AdminProfilePage = () => {
   // Profile state
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
@@ -70,13 +67,6 @@ const GuestProfilePage = () => {
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
 
-  // Notification preferences
-  const [emailNotif, setEmailNotif] = useState(true)
-  const [smsNotif, setSmsNotif] = useState(false)
-
-  // Theme
-  const [darkMode, setDarkMode] = useState(false)
-
   // Loading states
   const [isProfileLoading, setIsProfileLoading] = useState(false)
   const [isAddressLoading, setIsAddressLoading] = useState(false)
@@ -93,7 +83,7 @@ const GuestProfilePage = () => {
       setName(userData.user.name || "")
       setEmail(userData.user.email || "")
       setPhone(userData.user.phone || "")
-      setRole(userData.user.role || "GUEST")
+      setRole(userData.user.role || "ADMIN")
       setCreatedAt(userData.user.createdAt || "")
       setImage(userData.user.image || "")
       
@@ -342,37 +332,14 @@ const GuestProfilePage = () => {
                   </div>
                   <div className="h-8 bg-gray-200 rounded animate-pulse w-24"></div>
                 </div>
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
+                    <div className="h-3 bg-gray-200 rounded animate-pulse w-40"></div>
+                  </div>
+                  <div className="h-8 bg-gray-200 rounded animate-pulse w-20"></div>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Notification Preferences Skeleton */}
-          <Card className="shadow-sm border border-muted/30">
-            <CardHeader>
-              <div className="h-5 bg-gray-200 rounded animate-pulse w-40"></div>
-              <div className="h-3 bg-gray-200 rounded animate-pulse w-64"></div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
-                <div className="h-6 bg-gray-200 rounded animate-pulse w-12"></div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="h-4 bg-gray-200 rounded animate-pulse w-28"></div>
-                <div className="h-6 bg-gray-200 rounded animate-pulse w-12"></div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Theme Settings Skeleton */}
-          <Card className="shadow-sm border border-muted/30">
-            <CardHeader>
-              <div className="h-5 bg-gray-200 rounded animate-pulse w-20"></div>
-              <div className="h-3 bg-gray-200 rounded animate-pulse w-48"></div>
-            </CardHeader>
-            <CardContent className="flex items-center justify-between py-3">
-              <div className="h-4 bg-gray-200 rounded animate-pulse w-16"></div>
-              <div className="h-6 bg-gray-200 rounded animate-pulse w-12"></div>
             </CardContent>
           </Card>
         </div>
@@ -436,7 +403,7 @@ const GuestProfilePage = () => {
         <div className="grid gap-6 md:grid-cols-3">
           {/* Profile Card */}
           <Card className="md:col-span-2">
-          <CardHeader>
+            <CardHeader>
               <div className="flex items-center space-x-4">
                 <Avatar className="h-20 w-20">
                   <AvatarImage src={image} alt={name} />
@@ -448,11 +415,11 @@ const GuestProfilePage = () => {
                   <div className="flex items-center space-x-2">
                     <h2 className="text-2xl font-bold">{name || "Loading..."}</h2>
                     <Badge className={getRoleBadgeColor(role)}>
-                      {role || "GUEST"}
+                      {role || "ADMIN"}
                     </Badge>
                   </div>
                   <p className="text-muted-foreground">{email}</p>
-            <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     Member since {createdAt ? format(new Date(createdAt), "MMMM yyyy") : "Loading..."}
                   </p>
                 </div>
@@ -465,8 +432,8 @@ const GuestProfilePage = () => {
                   Edit Profile
                 </Button>
               </div>
-          </CardHeader>
-          <CardContent>
+            </CardHeader>
+            <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center space-x-2">
                   <Mail className="h-4 w-4 text-muted-foreground" />
@@ -542,8 +509,8 @@ const GuestProfilePage = () => {
                 <p className="text-sm mt-1">
                   {createdAt ? format(new Date(createdAt), "MMMM dd, yyyy") : "Loading..."}
                 </p>
-            </div>
-          </CardContent>
+              </div>
+            </CardContent>
             <CardFooter>
               <Button
                 variant="outline"
@@ -554,8 +521,8 @@ const GuestProfilePage = () => {
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Information
               </Button>
-          </CardFooter>
-        </Card>
+            </CardFooter>
+          </Card>
 
           {/* Address Information */}
           <Card>
@@ -614,54 +581,31 @@ const GuestProfilePage = () => {
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 border rounded-lg">
-            <div>
+                <div>
                   <h4 className="font-medium">Password</h4>
                   <p className="text-sm text-muted-foreground">
                     Last changed: Never (recommended to change regularly)
                   </p>
-            </div>
+                </div>
                 <Button
                   variant="outline"
                   onClick={() => setIsChangePasswordOpen(true)}
                 >
                   Change Password
                 </Button>
+              </div>
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <h4 className="font-medium">Two-Factor Authentication</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Add an extra layer of security to your account
+                  </p>
+                </div>
+                <Button variant="outline" disabled>
+                  Coming Soon
+                </Button>
+              </div>
             </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Notification Preferences */}
-        <Card className="shadow-sm border border-muted/30">
-          <CardHeader>
-            <CardTitle>Notification Preferences</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Choose how you want to receive updates and alerts.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label>Email Notifications</Label>
-              <Switch checked={emailNotif} onCheckedChange={setEmailNotif} />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label>SMS Notifications</Label>
-              <Switch checked={smsNotif} onCheckedChange={setSmsNotif} />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Theme Settings */}
-        <Card className="shadow-sm border border-muted/30">
-          <CardHeader>
-            <CardTitle>Appearance</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Customize how the dashboard looks.
-            </p>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between py-3">
-            <Label>Dark Mode</Label>
-            <Switch checked={darkMode} onCheckedChange={(checked) => setDarkMode(checked)} />
           </CardContent>
         </Card>
       </div>
@@ -859,4 +803,4 @@ const GuestProfilePage = () => {
   )
 }
 
-export default GuestProfilePage
+export default AdminProfilePage

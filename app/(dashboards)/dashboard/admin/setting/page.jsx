@@ -11,10 +11,20 @@ import {useUserById} from "../../../../../hooks/useUsers"
 import { SessionContext } from "../../../../context/sessiondata"
 import { useUpdateUser } from "../../../../../hooks/useUsers"
 import { toast } from "react-toastify"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { queryClient, queryKeys } from "@/lib/queryClient"
+// import { sendEmail } from "@/lib/sendmail"
 const WardenSettingsPage = () => {
   // Profile state
   const [name, setName] = useState("")
+  const [verificationCode, setVerificationCode] = useState("")
   const {session, refreshSession} = useContext(SessionContext)
   const [email, setEmail] = useState("")
   const [address, setAddress] = useState({
@@ -26,13 +36,18 @@ const WardenSettingsPage = () => {
     zipcode : ""
   })
   const [phone, setPhone] = useState("")
-
+  const [newEmail, setNewEmail] = useState("")
   // Password state
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
-  const [loadingBtn, setLoadingBtn] = useState(false)
   const [confirmPassword, setConfirmPassword] = useState("")
 
+  // Separate loading states for each button
+  const [isProfileLoading, setIsProfileLoading] = useState(false)
+  const [isEmailLoading, setIsEmailLoading] = useState(false)
+  const [isVerificationLoading, setIsVerificationLoading] = useState(false)
+  const [isPasswordLoading, setIsPasswordLoading] = useState(false)
+  const [isAddressLoading, setIsAddressLoading] = useState(false)
   // Notification preferences
   const [emailNotif, setEmailNotif] = useState(true)
   const [smsNotif, setSmsNotif] = useState(false)
@@ -40,10 +55,14 @@ const WardenSettingsPage = () => {
   // Theme
   const [darkMode, setDarkMode] = useState(false)
 
+  const [isEmailVerificationDialogOpen, setIsEmailVerificationDialogOpen] = useState(false)
+  const [isPasswordChangeDialogOpen, setIsPasswordChangeDialogOpen] = useState(false)
+  const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false)
+
     const {data : userData} = useUserById(session?.user?.id || "")
     const updateUserMutation = useUpdateUser()
 
-    // Populate form fields when user data loads
+        // Populate form fields when user data loads
     useEffect(() => {
       if (userData?.user) {
         console.log("User data updated:", userData.user)
@@ -61,7 +80,7 @@ const WardenSettingsPage = () => {
     }
     
     try {
-      setLoadingBtn(true)
+      setIsProfileLoading(true)
       const result = await updateUserMutation.mutateAsync({
         id: session.user.id, 
         data: {name: name, phone: phone}
@@ -79,47 +98,139 @@ const WardenSettingsPage = () => {
     } catch (error) {
       toast.error(error.message || "Failed to update profile")
     } finally {
-      setLoadingBtn(false)
+      setIsProfileLoading(false)
     }
   }
-  const handleAddressSave = () => {
-    // TODO: Implement address save functionality
-    toast.info("Address save functionality not implemented yet")
-  }
 
-  const handleChangeEmail = async () => {
+  const handleSendVerificationCode = async () => {
     if (!session?.user?.id) {
       toast.error("User ID not found. Please refresh the page and try again.")
       return
     }
-    
-    try {
-      setLoadingBtn(true)
-      await updateUserMutation.mutateAsync({
-        id: session.user.id, 
-        data: {email: email}
-      })
-      
-
-      await refreshSession()
-      
-      toast.success("Email updated successfully")
-    } catch (error) {
-      toast.error(error.message || "Failed to update email")
-    } finally {
-      setLoadingBtn(false)
-    }
-  }
-  const handleChangePassword = () => {
-    if (newPassword !== confirmPassword) {
-      alert("New password and confirmation do not match.")
+    if (!newEmail) {
+      toast.error("Please enter a new email address")
       return
     }
-    alert("Password changed successfully!")
+    try {
+      setIsEmailLoading(true)
+      const response = await fetch("/api/mail/getverificationcode", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ to: newEmail, subject: "Email Verification" })
+      })
+      const data = await response.json()
+      if (response.ok) {
+        setVerificationCode(data.code)
+        toast.success("Email verification code sent successfully")
+        setIsEmailVerificationDialogOpen(true)
+      } else {
+        toast.error(data.error || "Failed to send email verification code")
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to send email verification code")
+    } finally {
+      setIsEmailLoading(false)
+    }
   }
-  const handleThemeToggle = (checked) => {
-    setDarkMode(checked)
-    alert(`Theme changed to ${checked ? "Dark" : "Light"} Mode`)
+  const handleChangeEmail = async () => {
+    if (!newEmail) {
+      toast.error("Please enter a new email address")
+      return
+    }
+  }
+  
+  const handleVerifyEmail = async () => {
+    try {
+      setIsVerificationLoading(true)
+      const response = await fetch("/api/mail/verifyemail", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: newEmail, code: verificationCode })
+      })
+      const data = await response.json()
+      if (response.ok) {
+        toast.success("Email verified and updated successfully")
+        setIsEmailVerificationDialogOpen(false)
+        setNewEmail("")
+        setVerificationCode("")
+        // Refresh user data
+        await refreshSession()
+        queryClient.invalidateQueries({ 
+          queryKey: [...queryKeys.usersList(), 'detail', session.user.id] 
+        })
+      } else {
+        toast.error(data.error || "Failed to verify email")
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to verify email")
+    } finally {
+      setIsVerificationLoading(false)
+    }
+  }
+  
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error("Please fill in all password fields")
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords do not match")
+      return
+    }
+    try {
+      setIsPasswordLoading(true)
+      const response = await fetch("/api/users/updatepassword", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ currentPassword: currentPassword, newPassword: newPassword, confirmPassword: confirmPassword })
+      })
+      const data = await response.json()
+      if (response.ok) {
+        toast.success("Password changed successfully!")
+        setCurrentPassword("")
+        setNewPassword("")
+        setConfirmPassword("")
+        setIsPasswordChangeDialogOpen(false)
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to change password")
+    } finally {
+      setIsPasswordLoading(false)
+    }
+  }
+
+  const handleAddressSave = () => {
+    setIsAddressDialogOpen(true)
+  }
+
+  const handleConfirmAddressSave = async () => {
+    try {
+      setIsAddressLoading(true)
+      const response = await fetch("/api/users/updateaddress", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ Adressline1: address.Adressline1, Adressline2: address.Adressline2, city: address.city, state: address.state, country: address.country, zipcode: address.zipcode })
+      })
+      const data = await response.json()
+      if (response.ok) {
+        toast.success("Address saved successfully!")
+        setIsAddressDialogOpen(false)
+      } else {
+        toast.error(data.error || "Failed to save address")
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to save address")
+    } finally {
+      setIsAddressLoading(false)
+    }
   }
 
   return (
@@ -170,7 +281,9 @@ const WardenSettingsPage = () => {
             </div>
           </CardContent>
           <CardFooter className="flex justify-end">
-            <Button onClick={handleProfileSave} disabled={loadingBtn}>{loadingBtn ? "Saving..." : "Save Changes"}</Button>
+            <Button onClick={handleProfileSave} disabled={isProfileLoading}>
+              {isProfileLoading ? "Saving..." : "Save Changes"}
+            </Button>
           </CardFooter>
         </Card>
         <Card>
@@ -182,26 +295,39 @@ const WardenSettingsPage = () => {
           </CardHeader>
           <CardContent>
           <div className="">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email"> Current Email Address</Label>
                 <Input
                   id="email"
                   type="email"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  disabled
+              
                   className="mt-1 w-full"
                   placeholder="Enter your email address"
                 />
-             
               </div>
+              <div className="">
+                <Label htmlFor="new-email"> New Email Address</Label>
+                <Input
+                  id="new-email"
+                  type="email"
+                  value={newEmail}
+                  onChange={e => setNewEmail(e.target.value)}
+                  className="mt-1 w-full"
+                  placeholder="Enter your new email address"
+                />
+              </div>
+                
           </CardContent>
           <CardFooter className="flex justify-end">
           <Button
                   size="sm"
                   className="mt-2"
-                  onClick={() => handleChangeEmail()} // You should define this function
+                  onClick={handleSendVerificationCode} 
                   variant="outline"
+                  disabled={isEmailLoading}
                 >
-                  Verify & Change Email
+                  {isEmailLoading ? "Sending..." : "Verify Email"}
                 </Button>
           </CardFooter>
         </Card>
@@ -283,7 +409,9 @@ const WardenSettingsPage = () => {
             </div>
           </CardContent>
           <CardFooter className="flex justify-end">
-            <Button onClick={handleAddressSave}>Save Address</Button>
+            <Button onClick={handleAddressSave} disabled={isAddressLoading}>
+              {isAddressLoading ? "Saving..." : "Save Address"}
+            </Button>
           </CardFooter>
         </Card>
        
@@ -329,46 +457,134 @@ const WardenSettingsPage = () => {
             </div>
           </CardContent>
           <CardFooter className="flex justify-end">
-            <Button variant="secondary" onClick={handleChangePassword}>
-              Change Password
+            <Button variant="secondary" onClick={handleChangePassword} disabled={isPasswordLoading}>
+              {isPasswordLoading ? "Processing..." : "Change Password"}
             </Button>
           </CardFooter>
         </Card>
 
-        {/* Notification Preferences */}
-        <Card className="shadow-sm border border-muted/30">
-          <CardHeader>
-            <CardTitle>Notification Preferences</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Choose how you want to receive updates and alerts.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label>Email Notifications</Label>
-              <Switch checked={emailNotif} onCheckedChange={setEmailNotif} />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label>SMS Notifications</Label>
-              <Switch checked={smsNotif} onCheckedChange={setSmsNotif} />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Theme Settings */}
-        <Card className="shadow-sm border border-muted/30">
-          <CardHeader>
-            <CardTitle>Appearance</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Customize how the dashboard looks.
-            </p>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between py-3">
-            <Label>Dark Mode</Label>
-            <Switch checked={darkMode} onCheckedChange={handleThemeToggle} />
-          </CardContent>
-        </Card>
+       
+       
       </div>
+
+      {/* Email Verification Dialog */}
+      <Dialog open={isEmailVerificationDialogOpen} onOpenChange={setIsEmailVerificationDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Verify Email Address</DialogTitle>
+            <DialogDescription>
+              We've sent a verification code to <strong>{newEmail}</strong>. Please enter the code below to verify your new email address.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="verification-code">Verification Code</Label>
+              <Input
+                id="verification-code"
+            
+                onChange={e => setVerificationCode(e.target.value)}
+                placeholder="Enter verification code"
+                className="mt-1"
+              />
+            </div>
+            <div className="flex justify-between">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setVerificationCode("")
+                  setIsEmailVerificationDialogOpen(false)
+                }}
+              >
+                Cancel
+              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleSendVerificationCode}
+                  disabled={isEmailLoading}
+                >
+                  {isEmailLoading ? "Sending..." : "Resend Code"}
+                </Button>
+                <Button onClick={handleVerifyEmail} disabled={isVerificationLoading}>
+                  {isVerificationLoading ? "Verifying..." : "Verify Email"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Password Change Confirmation Dialog */}
+      <Dialog open={isPasswordChangeDialogOpen} onOpenChange={setIsPasswordChangeDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Password Change</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to change your password? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-4 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                <strong>Current Password:</strong> {currentPassword ? "••••••••" : "Not provided"}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                <strong>New Password:</strong> {newPassword ? "••••••••" : "Not provided"}
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsPasswordChangeDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleChangePassword}
+                disabled={isPasswordLoading}
+              >
+                {isPasswordLoading ? "Processing..." : "Confirm Change"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Address Save Confirmation Dialog */}
+      <Dialog open={isAddressDialogOpen} onOpenChange={setIsAddressDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Address Save</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to save your address information? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-4 bg-muted rounded-lg space-y-2">
+              <p className="text-sm"><strong>Address Line 1:</strong> {address.Adressline1 || "Not provided"}</p>
+              <p className="text-sm"><strong>Address Line 2:</strong> {address.Adressline2 || "Not provided"}</p>
+              <p className="text-sm"><strong>City:</strong> {address.city || "Not provided"}</p>
+              <p className="text-sm"><strong>State:</strong> {address.state || "Not provided"}</p>
+              <p className="text-sm"><strong>Country:</strong> {address.country || "Not provided"}</p>
+              <p className="text-sm"><strong>Zipcode:</strong> {address.zipcode || "Not provided"}</p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsAddressDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmAddressSave}
+                disabled={isAddressLoading}
+              >
+                {isAddressLoading ? "Saving..." : "Save Address"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
