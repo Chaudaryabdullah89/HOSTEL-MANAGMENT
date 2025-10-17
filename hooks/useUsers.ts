@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/queryClient';
+import { queryClient, queryKeys } from '@/lib/queryClient';
 import { toast } from 'react-hot-toast';
+import { error } from 'console';
 
 export function useUsers(filters?: {
   role?: string;
@@ -17,7 +18,7 @@ export function useUsers(filters?: {
       if (filters?.status) params.append('status', filters.status);
       if (filters?.hostelId) params.append('hostelId', filters.hostelId);
 
-      const response = await fetch(`/api/users/getallusers?${params.toString()}`);
+      const response = await fetch(`/api/users?${params.toString()}`);
       if (!response.ok) {
         throw new Error('Failed to fetch users');
       }
@@ -116,11 +117,11 @@ export function useUpdateUser() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, ...updateData }: { id: string; [key: string]: any }) => {
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
       const response = await fetch(`/api/users/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updateData),
+        body: JSON.stringify(data),
       });
       
       if (!response.ok) {
@@ -133,16 +134,45 @@ export function useUpdateUser() {
     onSuccess: (data, variables) => {
       // Invalidate users list
       queryClient.invalidateQueries({ queryKey: queryKeys.users });
-      // Update specific user in cache
+      // Update specific user in cache with the user data from the response
       queryClient.setQueryData(
         [...queryKeys.usersList(), 'detail', variables.id],
-        data
+        { user: data.user }
       );
-      toast.success('User updated successfully!');
+      // Don't show toast here - let the component handle it
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update user');
     },
+  });
+}
+
+export function useUpdateTheUser(userId: string) {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ updateddata }: { updateddata: any }) => {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'PUT', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateddata)
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update user');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.users });
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.usersList(), 'detail', userId] });
+      toast.success('User updated successfully!');
+    },    
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to update user');
+    }
   });
 }
 

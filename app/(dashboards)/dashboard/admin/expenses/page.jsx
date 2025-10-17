@@ -390,14 +390,15 @@ const page = () => {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex md:flex-row flex-col justify-between px-4">
+            <div className="flex flex-col lg:flex-row justify-between px-4">
                 <div className="mt-4">
-                    <h1 className="text-3xl font-bold">Expense Management</h1>
-                    <p className="text-muted-foreground leading-loose">Track and manage hostel expenses</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold">Expense Management</h1>
+                    <p className="text-muted-foreground leading-loose text-sm sm:text-base">Track and manage hostel expenses</p>
                 </div>
-                <div className="flex items-center gap-2 mt-4 md:mt-0">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-4 lg:mt-0">
                     <Button 
                         variant="outline" 
+                        className="text-sm sm:text-base"
                         onClick={() => {
                             refetchExpenses();
                             toast.success("Data refreshed!");
@@ -405,17 +406,20 @@ const page = () => {
                         disabled={expensesLoading}
                     >
                         <RefreshCw className={`h-4 w-4 mr-2 ${expensesLoading ? 'animate-spin' : ''}`} />
-                        Refresh
+                        <span className="hidden sm:inline">Refresh</span>
                     </Button>
-                    <Button onClick={() => setIsCreateDialogOpen(true)}>
+                    <Button 
+                        onClick={() => setIsCreateDialogOpen(true)}
+                        className="text-sm sm:text-base"
+                    >
                         <Plus className="h-4 w-4 mr-2" />
-                        New Expense
+                        <span className="hidden sm:inline">New Expense</span>
                     </Button>
                 </div>
             </div>
 
             {/* Statistics Cards */}
-            <div className="grid md:grid-cols-2 p-4 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 p-4 gap-3 sm:gap-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0">
                         <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
@@ -511,24 +515,24 @@ const page = () => {
             )} */}
 
             {/* Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-4 bg-white p-6 shadow-sm rounded-md mx-4">
-                <div className="col-span-2">
-                    <Label htmlFor="search">Search</Label>
-                    <div className="relative">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4 bg-white p-4 sm:p-6 shadow-sm rounded-md mx-4">
+                <div className="sm:col-span-2 lg:col-span-2">
+                    <Label htmlFor="search" className="text-sm font-medium">Search</Label>
+                    <div className="relative mt-1">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             id="search"
                             placeholder="Search expenses..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-8"
+                            className="pl-10 text-sm sm:text-base"
                         />
                     </div>
                 </div>
-                <div className="col-span-1">
-                    <Label htmlFor="status-filter">Status</Label>
+                <div className="sm:col-span-1 lg:col-span-1">
+                    <Label htmlFor="status-filter" className="text-sm font-medium">Status</Label>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger>
+                        <SelectTrigger className="mt-1 text-sm sm:text-base">
                             <SelectValue placeholder="All Status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -540,10 +544,10 @@ const page = () => {
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="col-span-1">
-                    <Label htmlFor="category-filter">Category</Label>
+                <div className="sm:col-span-1 lg:col-span-1">
+                    <Label htmlFor="category-filter" className="text-sm font-medium">Category</Label>
                     <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                        <SelectTrigger>
+                        <SelectTrigger className="mt-1 text-sm sm:text-base">
                             <SelectValue placeholder="All Category" />
                         </SelectTrigger>
                         <SelectContent>
@@ -558,23 +562,23 @@ const page = () => {
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="col-span-1">
-                    <Label htmlFor="hostel-filter">Hostel</Label>
+                <div className="sm:col-span-1 lg:col-span-1">
+                    <Label htmlFor="hostel-filter" className="text-sm font-medium">Hostel</Label>
                     <Select value={hostelFilter} onValueChange={setHostelFilter}>
-                        <SelectTrigger>
+                        <SelectTrigger className="mt-1 text-sm sm:text-base">
                             <SelectValue placeholder="All Hostels" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="All Hostels">All Hostels</SelectItem>
                             {hostels.map((hostel) => (
                                 <SelectItem key={hostel.id} value={hostel.id}>
-                                    {hostel.hostelName}
+                                    <span className="truncate">{hostel.hostelName}</span>
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="col-span-1 flex items-end">
+                <div className="sm:col-span-2 lg:col-span-1 flex items-end">
                     <Button 
                         variant="outline" 
                         onClick={() => {
@@ -583,7 +587,7 @@ const page = () => {
                             setCategoryFilter('All Category');
                             setHostelFilter('All Hostels');
                         }}
-                        className="w-full"
+                        className="w-full text-sm sm:text-base"
                     >
                         Clear Filters
                     </Button>
@@ -596,51 +600,51 @@ const page = () => {
                     {filteredExpenses.length > 0 ? (
                         filteredExpenses.map((expense) => (
                             <Card key={expense.id} className="hover:shadow-md transition-shadow">
-                                <CardContent className="p-6">
-                                    <div className="flex items-start justify-between">
+                                <CardContent className="p-4 sm:p-6">
+                                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                                         <div className="flex-1">
-                                            <div className="flex items-center gap-3 mb-4">
-                                                <DollarSign className="h-5 w-5 text-green-600" />
-                                                <div>
-                                                    <h3 className="text-lg font-semibold">{expense.title}</h3>
-                                                    <p className="text-sm text-muted-foreground">
+                                            <div className="flex items-start gap-3 mb-4">
+                                                <DollarSign className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                                <div className="min-w-0 flex-1">
+                                                    <h3 className="text-base sm:text-lg font-semibold break-words">{expense.title}</h3>
+                                                    <p className="text-xs sm:text-sm text-muted-foreground">
                                                         Expense #{expense.id.slice(-8)} • {new Date(expense.submittedAt).toLocaleDateString()}
                                                     </p>
                                                 </div>
                                             </div>
                                             
-                                            <p className="text-gray-700 mb-4">{expense.description}</p>
+                                            <p className="text-gray-700 mb-4 text-sm sm:text-base break-words">{expense.description}</p>
                                             
-                                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                                                <div className="flex items-center gap-2">
-                                                    <Building className="h-4 w-4 text-gray-500" />
-                                                    <div>
-                                                        <p className="text-sm font-medium">{expense.hostel?.hostelName}</p>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
+                                                <div className="flex items-start gap-2 bg-gray-50 rounded-lg p-3">
+                                                    <Building className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-xs sm:text-sm font-medium break-words">{expense.hostel?.hostelName}</p>
                                                         <p className="text-xs text-gray-500">Hostel</p>
                                                     </div>
                                                 </div>
                                                 
-                                                <div className="flex items-center gap-2">
-                                                    <User className="h-4 w-4 text-gray-500" />
-                                                    <div>
-                                                        <p className="text-sm font-medium">{expense.user?.name || 'Unknown'}</p>
+                                                <div className="flex items-start gap-2 bg-gray-50 rounded-lg p-3">
+                                                    <User className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-xs sm:text-sm font-medium break-words">{expense.user?.name || 'Unknown'}</p>
                                                         <p className="text-xs text-gray-500">Submitted by</p>
-                                                        <p className="text-xs text-blue-600">{expense.user?.phone}</p>
+                                                        <p className="text-xs text-blue-600 break-words">{expense.user?.phone}</p>
                                                     </div>
                                                 </div>
                                                 
-                                                <div className="flex items-center gap-2">
-                                                    <DollarSign className="h-4 w-4 text-gray-500" />
-                                                    <div>
-                                                        <p className="text-sm font-medium">PKR {expense.amount.toLocaleString()}</p>
+                                                <div className="flex items-start gap-2 bg-gray-50 rounded-lg p-3">
+                                                    <DollarSign className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-xs sm:text-sm font-medium">PKR {expense.amount.toLocaleString()}</p>
                                                         <p className="text-xs text-gray-500">{expense.category}</p>
                                                     </div>
                                                 </div>
                                                 
-                                                <div className="flex items-center gap-2">
-                                                    <FileText className="h-4 w-4 text-gray-500" />
-                                                    <div>
-                                                        <p className="text-sm font-medium">
+                                                <div className="flex items-start gap-2 bg-gray-50 rounded-lg p-3">
+                                                    <FileText className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-xs sm:text-sm font-medium break-words">
                                                             {expense.approver ? expense.approver.name : 'Not Approved'}
                                                         </p>
                                                         <p className="text-xs text-gray-500">
@@ -652,14 +656,14 @@ const page = () => {
                                             
                                             {/* Receipt Section */}
                                             <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <FileText className={`h-4 w-4 ${expense.receiptUrl ? 'text-blue-600' : 'text-gray-400'}`} />
-                                                        <div>
-                                                            <p className="text-sm font-medium text-gray-900">
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                    <div className="flex items-start gap-2">
+                                                        <FileText className={`h-4 w-4 flex-shrink-0 mt-0.5 ${expense.receiptUrl ? 'text-blue-600' : 'text-gray-400'}`} />
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-xs sm:text-sm font-medium text-gray-900">
                                                                 {expense.receiptUrl ? 'Receipt Available' : 'No Receipt Uploaded'}
                                                             </p>
-                                                            <p className="text-xs text-gray-500">
+                                                            <p className="text-xs text-gray-500 break-words">
                                                                 {expense.receiptUrl 
                                                                     ? expense.receiptUrl.split('/').pop()
                                                                     : 'Receipt upload is optional'
@@ -671,6 +675,7 @@ const page = () => {
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
+                                                            className="text-xs sm:text-sm w-full sm:w-auto"
                                                             onClick={() => window.open(expense.receiptUrl, '_blank')}
                                                         >
                                                             <Eye className="h-4 w-4 mr-2" />
@@ -685,8 +690,8 @@ const page = () => {
                                             </div>
                                         </div>
                                         
-                                        <div className="flex flex-col items-end gap-2">
-                                            <div className="flex items-center gap-2">
+                                        <div className="flex flex-col gap-3 w-full lg:w-auto">
+                                            <div className="flex flex-wrap items-center gap-2 justify-start lg:justify-end">
                                                 <Badge 
                                                     variant={
                                                         expense.category === 'MAINTENANCE' ? 'default' :
@@ -694,6 +699,7 @@ const page = () => {
                                                         expense.category === 'SUPPLIES' ? 'outline' :
                                                         expense.category === 'EQUIPMENT' ? 'destructive' : 'default'
                                                     }
+                                                    className="text-xs"
                                                 >
                                                     {expense.category}
                                                 </Badge>
@@ -703,26 +709,31 @@ const page = () => {
                                                         expense.status === 'REJECTED' ? 'destructive' :
                                                         expense.status === 'PENDING' ? 'outline' : 'secondary'
                                                     }
+                                                    className="text-xs"
                                                 >
                                                     {expense.status}
                                                 </Badge>
                                             </div>
                                             
-                                            <div className="flex items-center gap-1">
+                                            <div className="flex flex-wrap items-center gap-2 justify-start lg:justify-end">
                                                 <Button
                                                     variant="outline"
-                                                disabled={expense.status !== 'APPROVED'}
+                                                    disabled={expense.status !== 'APPROVED'}
                                                     size="sm"
+                                                    className="text-xs sm:text-sm"
                                                     onClick={() => {
                                                         setSelectedExpense(expense);
                                                         setIsViewDialogOpen(true);
                                                     }}
                                                 >
-                                                    <Eye className="h-4 w-4" />
+                                                    <Eye className="h-4 w-4 mr-1 sm:mr-2" />
+                                                    <span className="hidden sm:inline">View</span>
                                                 </Button>
-                                                <Button disabled={expense.status !== 'APPROVED'}
+                                                <Button 
+                                                    disabled={expense.status !== 'APPROVED'}
                                                     variant="outline"
                                                     size="sm"
+                                                    className="text-xs sm:text-sm"
                                                     onClick={() => {
                                                         setSelectedExpense(expense);
                                                         setFormData({
@@ -737,17 +748,20 @@ const page = () => {
                                                         setIsEditDialogOpen(true);
                                                     }}
                                                 >
-                                                    <Edit className="h-4 w-4" />
+                                                    <Edit className="h-4 w-4 mr-1 sm:mr-2" />
+                                                    <span className="hidden sm:inline">Edit</span>
                                                 </Button>
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
+                                                    className="text-xs sm:text-sm"
                                                     onClick={() => {
                                                         setSelectedExpense(expense);
                                                         setIsDeleteDialogOpen(true);
                                                     }}
                                                 >
-                                                    <Trash2 className="h-4 w-4" />
+                                                    <Trash2 className="h-4 w-4 mr-1 sm:mr-2" />
+                                                    <span className="hidden sm:inline">Delete</span>
                                                 </Button>
                                             </div>
                                         </div>
@@ -756,15 +770,18 @@ const page = () => {
                             </Card>
                         ))
                     ) : (
-                        <div className="text-center py-12">
-                            <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">No expenses found</h3>
-                            <p className="text-gray-500 mb-4">
+                        <div className="text-center py-8 sm:py-12 px-4">
+                            <DollarSign className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-4" />
+                            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No expenses found</h3>
+                            <p className="text-sm sm:text-base text-gray-500 mb-4 max-w-md mx-auto">
                                 {searchTerm || statusFilter !== 'All Status' || categoryFilter !== 'All Category' || hostelFilter !== 'All Hostels'
                                     ? 'Try adjusting your filters to see more results.'
                                     : 'Get started by creating a new expense.'}
                             </p>
-                            <Button onClick={() => setIsCreateDialogOpen(true)}>
+                            <Button 
+                                onClick={() => setIsCreateDialogOpen(true)}
+                                className="text-sm sm:text-base"
+                            >
                                 <Plus className="h-4 w-4 mr-2" />
                                 Create Expense
                             </Button>
@@ -775,19 +792,19 @@ const page = () => {
 
             {/* Create Expense Dialog */}
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogContent className="sm:max-w-[600px] max-h-[90vh] p-0 flex flex-col">
-                    <DialogHeader className="px-6 pt-6">
-                        <DialogTitle className="text-xl font-semibold">
+                <DialogContent className="w-[95vw] sm:max-w-[600px] max-h-[90vh] p-0 flex flex-col">
+                    <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6">
+                        <DialogTitle className="text-lg sm:text-xl font-semibold">
                             Create New Expense
                         </DialogTitle>
-                        <DialogDescription className="text-gray-600">
+                        <DialogDescription className="text-gray-600 text-sm sm:text-base">
                             Submit a new expense request for approval.
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="overflow-y-auto px-6 pb-6 pt-2" style={{ maxHeight: '70vh' }}>
+                    <div className="overflow-y-auto px-4 sm:px-6 pb-4 sm:pb-6 pt-2" style={{ maxHeight: '70vh' }}>
                         <form className="space-y-4" onSubmit={handleCreate}>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="title" className="text-sm font-medium text-gray-700">
                                         Title *

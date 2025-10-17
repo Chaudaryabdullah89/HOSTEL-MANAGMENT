@@ -11,31 +11,35 @@ export const SessionProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
 
+  const fetchSession = async () => {
+    try {
+      const res = await fetch("/api/auth/sessions", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      const data = await res.json();
+      setSession(data);
+    } catch (err) {
+      console.error("Error fetching session:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     // Set client-side flag
     setIsClient(true);
-    
-    const fetchSession = async () => {
-      try {
-        const res = await fetch("/api/auth/sessions", {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-        });
-        const data = await res.json();
-        setSession(data);
-      } catch (err) {
-        console.error("Error fetching session:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchSession();
   }, []);
 
+  const refreshSession = async () => {
+    setLoading(true);
+    await fetchSession();
+  };
+
   return (
-    <SessionContext.Provider value={{ session, setSession, loading, isClient }}>
+    <SessionContext.Provider value={{ session, setSession, loading, isClient, refreshSession }}>
       {children}
     </SessionContext.Provider>
   );

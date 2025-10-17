@@ -933,14 +933,14 @@ const page = () => {
                                             </div>
                                         )}
 
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="space-y-2">
                                                 <Label className="text-sm font-medium text-gray-700">
                                                     Check-In Date {bookingTypeInput === 'DAILY' ? '*' : '(Optional)'}
                                                 </Label>
                                                 <Input
                                                     type="date"
-                                                    className="w-full"
+                                                    className="w-full text-sm sm:text-base"
                                                     value={checkInDate}
                                                     onChange={e => setCheckInDate(e.target.value)}
                                                     placeholder={bookingTypeInput === 'MONTHLY' ? 'Leave empty for current date' : ''}
@@ -957,7 +957,7 @@ const page = () => {
                                                 </Label>
                                                 <Input
                                                     type="date"
-                                                    className="w-full"
+                                                    className="w-full text-sm sm:text-base"
                                                     value={checkOutDate}
                                                     onChange={e => setCheckOutDate(e.target.value)}
                                                     placeholder={bookingTypeInput === 'MONTHLY' ? 'Leave empty for 30 days from check-in' : ''}
@@ -974,14 +974,14 @@ const page = () => {
                                     {/* Payment Information */}
                                     <div className="space-y-4">
                                         <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Payment Information</h3>
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="space-y-2">
                                                 <Label className="text-sm font-medium text-gray-700">Total Amount (PKR) *</Label>
                                                 <Input
                                                     placeholder="e.g. 4500"
                                                     type="number"
                                                     min="0"
-                                                    className="w-full"
+                                                    className="w-full text-sm sm:text-base"
                                                     required
                                                     value={totalAmount}
                                                     onChange={e => setTotalAmount(e.target.value)}
@@ -993,7 +993,7 @@ const page = () => {
                                                     <DropdownMenuTrigger asChild>
                                                         <Button
                                                             variant="outline"
-                                                            className="w-full justify-between text-left font-normal"
+                                                            className="w-full justify-between text-left font-normal text-sm sm:text-base"
                                                         >
                                                             {paymentStatus ? paymentStatus : "Select Status"}
                                                             <ChevronDown className="h-4 w-4 opacity-50" />
@@ -1052,9 +1052,9 @@ const page = () => {
                                     )}
 
                                     {/* Form Actions */}
-                                    <div className="flex justify-end space-x-3 pt-4 border-t">
+                                    <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t">
                                         <Button 
-                                            className='cursor-pointer' 
+                                            className='cursor-pointer w-full sm:w-auto' 
                                             type="button" 
                                             variant="outline"
                                             onClick={() => setIsDialogOpen(false)}
@@ -1063,7 +1063,7 @@ const page = () => {
                                         </Button>
                                         <Button 
                                             type="submit" 
-                                            className={`${roomAvailable ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'} cursor-pointer`} 
+                                            className={`w-full sm:w-auto ${roomAvailable ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'} cursor-pointer`} 
                                             disabled={btnloading || !roomAvailable || !currentselectedroom}
                                         >
                                             <Plus className="h-4 w-4 mr-2" />
@@ -1386,9 +1386,10 @@ const page = () => {
     </div>
     {booking.payment ? (
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
+        {/* Status - Full width on mobile for better visibility */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
           <span className="text-xs text-gray-500">Status</span>
-          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium w-fit ${
             booking.payment.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
             booking.payment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
             booking.payment.status === 'FAILED' ? 'bg-red-100 text-red-800' :
@@ -1397,30 +1398,49 @@ const page = () => {
             {booking.payment.status || 'N/A'}
           </span>
         </div>
-        <div className="flex items-center justify-between">
+        
+        {/* Amount - Prominent display on mobile */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
           <span className="text-xs text-gray-500">Amount</span>
-          <span className="text-sm font-medium text-gray-900">PKR{booking.payment.amount?.toLocaleString() || '0'}</span>
+          <span className="text-sm sm:text-base font-semibold text-gray-900">PKR{booking.payment.amount?.toLocaleString() || '0'}</span>
         </div>
-        <div className="flex items-center justify-between">
+        
+        {/* Method */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
           <span className="text-xs text-gray-500">Method</span>
-          <span className="text-sm text-gray-900">{booking.payment.method || 'N/A'}</span>
+          <span className="text-xs sm:text-sm text-gray-900 break-words">{booking.payment.method || 'N/A'}</span>
         </div>
+        
+        {/* Transaction ID - Better mobile handling */}
         {booking.payment.transactionId && (
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
             <span className="text-xs text-gray-500">Txn ID</span>
-            <span className="text-xs text-gray-600 font-mono truncate max-w-20">{booking.payment.transactionId}</span>
+            <span className="text-xs text-gray-600 font-mono break-all sm:truncate sm:max-w-24">{booking.payment.transactionId}</span>
           </div>
         )}
+        
+        {/* Payment Date - Add if available */}
+        {booking.payment.createdAt && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+            <span className="text-xs text-gray-500">Date</span>
+            <span className="text-xs text-gray-600">{new Date(booking.payment.createdAt).toLocaleDateString()}</span>
+          </div>
+        )}
+        
+        {/* Notes - Better mobile display */}
         {booking.payment.notes && (
-          <div className="pt-1 border-t">
-            <span className="text-xs text-gray-500">Notes</span>
-            <p className="text-xs text-gray-600 mt-1 line-clamp-2">{booking.payment.notes}</p>
+          <div className="pt-2 border-t border-gray-200">
+            <span className="text-xs text-gray-500 block mb-1">Notes</span>
+            <p className="text-xs text-gray-600 break-words leading-relaxed">{booking.payment.notes}</p>
           </div>
         )}
       </div>
     ) : (
-      <div className="text-center py-2">
-        <p className="text-xs text-gray-500">No payment data</p>
+      <div className="text-center py-3">
+        <div className="flex flex-col items-center gap-2">
+          <CreditCard className="w-6 h-6 text-gray-400" />
+          <p className="text-xs text-gray-500">No payment data</p>
+        </div>
       </div>
     )}
   </div>
