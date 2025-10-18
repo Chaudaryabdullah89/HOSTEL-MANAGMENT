@@ -39,9 +39,8 @@ export async function PUT(request: NextRequest) {
                 }, { status: 400 });
             }
 
-            // Update payment approval status and booking status in a transaction
             const result = await prisma.$transaction(async (tx: any) => {
-                // Update payment approval status and payment status
+           
                 const updatedPayment = await tx.payment.update({
                     where: { id: paymentId },
                     data: {
@@ -85,7 +84,8 @@ export async function PUT(request: NextRequest) {
                     }
                 });
 
-                // Update booking status to CONFIRMED if it's currently PENDING
+             
+            
                 if (updatedPayment.booking && updatedPayment.booking.status === 'PENDING') {
                     await tx.booking.update({
                         where: { id: updatedPayment.booking.id },
@@ -94,7 +94,8 @@ export async function PUT(request: NextRequest) {
                         }
                     });
                     
-                    // Update the booking status in the returned data
+                 
+                    
                     updatedPayment.booking.status = 'CONFIRMED';
                 }
 

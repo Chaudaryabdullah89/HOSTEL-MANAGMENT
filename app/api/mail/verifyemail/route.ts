@@ -12,8 +12,6 @@ export async function POST(request: Request) {
         }
 
         const userId = session.user.id;
-
-        // Find the email change request
         const emailChangeRequest = await prisma.emailChangeRequest.findUnique({
             where: { userId: userId }
         });
@@ -22,28 +20,23 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "No email change request found" }, { status: 400 });
         }
 
-        // Check if the code matches
         if (emailChangeRequest.code !== code) {
             return NextResponse.json({ error: "Invalid verification code" }, { status: 400 });
         }
 
-        // Check if the code has expired
         if (emailChangeRequest.expiresAt < new Date()) {
             return NextResponse.json({ error: "Verification code has expired" }, { status: 400 });
         }
 
-        // Check if the email matches
         if (emailChangeRequest.newEmail !== email) {
             return NextResponse.json({ error: "Email does not match the request" }, { status: 400 });
         }
 
-        // Update the user's email
         await prisma.user.update({
             where: { id: userId },
             data: { email: email }
         });
 
-        // Delete the email change request
         await prisma.emailChangeRequest.delete({
             where: { userId: userId }
         });

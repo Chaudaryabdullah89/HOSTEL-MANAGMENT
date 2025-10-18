@@ -16,7 +16,7 @@ export function useExpenses(filters?: {
     queryFn: async () => {
       const params = new URLSearchParams();
       if (filters?.status) params.append('status', filters.status);
-      if (filters?.category) params.append('category', filters.category);
+      if (filters?.category) params.append('category', filters.category); 
       if (filters?.hostelId) params.append('hostelId', filters.hostelId);
       if (filters?.search) params.append('search', filters.search);
       if (filters?.dateFrom) params.append('dateFrom', filters.dateFrom);

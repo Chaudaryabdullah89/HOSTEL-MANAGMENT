@@ -38,7 +38,7 @@ export async function POST(request: Request) {
              update: {
                newEmail: to,
                code: verificationCode,
-               expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min expiry
+               expiresAt: new Date(Date.now() + 10 * 60 * 1000), 
              },
              create: {
                userId: userId,   

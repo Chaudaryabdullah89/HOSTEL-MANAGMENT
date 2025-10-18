@@ -28,7 +28,6 @@ export const SessionProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    // Set client-side flag
     setIsClient(true);
     fetchSession();
   }, []);

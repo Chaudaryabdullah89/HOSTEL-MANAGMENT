@@ -465,7 +465,7 @@ const HostelPage = () => {
       {/* HEADER */}
       <div className="flex md:flex-row flex-col justify-between px-2 md:px-4">
         <div className="mt-4">
-          <h1 className="text-3xl font-bold">Hostels 🏠</h1>
+          <h1 className="text-3xl font-bold">Hostels !</h1>
           <p className="text-muted-foreground leading-loose">
             Manage your hostels here.
           </p>

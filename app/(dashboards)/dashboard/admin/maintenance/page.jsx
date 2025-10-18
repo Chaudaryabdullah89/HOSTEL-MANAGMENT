@@ -218,7 +218,7 @@ const page = () => {
             </div>
 
             {/* Additional Stats */}
-            {stats && (
+            {/* {stats && (
                 <div className="grid md:grid-cols-2 p-4 lg:grid-cols-4 gap-4">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0">
@@ -261,82 +261,89 @@ const page = () => {
                         </CardContent>
                     </Card>
                 </div>
-            )}
+            )} */}
 
             {/* Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-4 bg-white p-6 shadow-sm rounded-md mx-4">
-                <div className="col-span-2">
-                    <Label htmlFor="search">Search</Label>
-                    <div className="relative">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                            id="search"
-                            placeholder="Search requests..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-8"
-                        />
+            <div className="bg-white p-6 shadow-sm rounded-md mx-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+                    {/* Search */}
+                    <div className="md:col-span-3 flex flex-col justify-end">
+                        <Label htmlFor="search" className="mb-1">Search</Label>
+                        <div className="relative">
+                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                id="search"
+                                placeholder="Search requests..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-8"
+                            />
+                        </div>
                     </div>
-                </div>
-                <div className="col-span-1">
-                    <Label htmlFor="status-filter">Status</Label>
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="All Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="All Status">All Status</SelectItem>
-                            <SelectItem value="PENDING">Pending</SelectItem>
-                            <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                            <SelectItem value="COMPLETED">Completed</SelectItem>
-                            <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="col-span-1">
-                    <Label htmlFor="priority-filter">Priority</Label>
-                    <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="All Priority" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="All Priority">All Priority</SelectItem>
-                            <SelectItem value="LOW">Low</SelectItem>
-                            <SelectItem value="MEDIUM">Medium</SelectItem>
-                            <SelectItem value="HIGH">High</SelectItem>
-                            <SelectItem value="URGENT">Urgent</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="col-span-1">
-                    <Label htmlFor="hostel-filter">Hostel</Label>
-                    <Select value={hostelFilter} onValueChange={setHostelFilter}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="All Hostels" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="All Hostels">All Hostels</SelectItem>
-                            {hostels.map((hostel) => (
-                                <SelectItem key={hostel.id} value={hostel.id}>
-                                    {hostel.hostelName}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="col-span-1 flex items-end">
-                    <Button 
-                        variant="outline" 
-                        onClick={() => {
-                            setSearchTerm('');
-                            setStatusFilter('All Status');
-                            setPriorityFilter('All Priority');
-                            setHostelFilter('All Hostels');
-                        }}
-                        className="w-full"
-                    >
-                        Clear Filters
-                    </Button>
+                    {/* Status */}
+                    <div className="flex flex-col justify-end">
+                        <Label htmlFor="status-filter" className="mb-1">Status</Label>
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="All Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="All Status">All Status</SelectItem>
+                                <SelectItem value="PENDING">Pending</SelectItem>
+                                <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                                <SelectItem value="COMPLETED">Completed</SelectItem>
+                                <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    {/* Priority */}
+                    <div className="flex flex-col justify-end">
+                        <Label htmlFor="priority-filter" className="mb-1">Priority</Label>
+                        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="All Priority" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="All Priority">All Priority</SelectItem>
+                                <SelectItem value="LOW">Low</SelectItem>
+                                <SelectItem value="MEDIUM">Medium</SelectItem>
+                                <SelectItem value="HIGH">High</SelectItem>
+                                <SelectItem value="URGENT">Urgent</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    {/* Hostel */}
+                    <div className="flex flex-col justify-end">
+                        <Label htmlFor="hostel-filter" className="mb-1">Hostel</Label>
+                        <Select value={hostelFilter} onValueChange={setHostelFilter}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="All Hostels" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="All Hostels">All Hostels</SelectItem>
+                                {hostels.map((hostel) => (
+                                    <SelectItem key={hostel.id} value={hostel.id}>
+                                        {hostel.hostelName}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    {/* Clear Filters */}
+                    <div className="flex items-end">
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setSearchTerm('');
+                                setStatusFilter('All Status');
+                                setPriorityFilter('All Priority');
+                                setHostelFilter('All Hostels');
+                            }}
+                            className="w-full"
+                        >
+                            Clear Filters
+                        </Button>
+                    </div>
                 </div>
             </div>
 

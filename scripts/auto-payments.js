@@ -34,28 +34,15 @@ function makeRequest(url, options = {}) {
     });
 }
 
-// Main function
 async function createAutoPayments() {
     const currentDate = new Date();
-    console.log(`\n🚀 Starting automated payment creation for ${currentDate.toLocaleDateString()}`);
-    console.log(`📅 Current time: ${currentDate.toLocaleString()}`);
-    
     try {
         const url = `${API_BASE_URL}${API_ENDPOINT}`;
-        console.log(`🌐 Making request to: ${url}`);
-        
         const response = await makeRequest(url);
         
         if (response.status === 200) {
             const result = response.data;
-            console.log('\n✅ Automated payment creation completed successfully!');
-            console.log(`📊 Summary:`);
-            console.log(`   • Total active bookings: ${result.summary.totalActiveBookings}`);
-            console.log(`   • Payments created: ${result.summary.paymentsCreated}`);
-            console.log(`   • Bookings skipped: ${result.summary.bookingsSkipped}`);
-            
             if (result.createdPayments.length > 0) {
-                console.log('\n💰 Created payments:');
                 result.createdPayments.forEach((payment, index) => {
                     console.log(`   ${index + 1}. ${payment.guestName} - Room ${payment.roomNumber} - PKR${payment.amount} (${payment.bookingType})`);
                 });

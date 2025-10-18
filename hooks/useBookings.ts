@@ -34,7 +34,7 @@ export function useBookings(filters?: {
   });
 }
 
-// Fetch single booking by ID
+
 export function useBookingById(id: string) {
   return useQuery({
     queryKey: [...queryKeys.bookingsList(), 'detail', id],

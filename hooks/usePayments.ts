@@ -153,7 +153,7 @@ export function useApprovePayment() {
   });
 }
 
-// Reject payment mutation
+
 export function useRejectPayment() {
   const queryClient = useQueryClient();
   
