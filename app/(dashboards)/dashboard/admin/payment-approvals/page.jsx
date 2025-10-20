@@ -321,10 +321,10 @@ export default function PaymentApprovalsPage() {
                     filteredPayments.map(payment => (
                         <Card key={payment.id} className="hover:shadow-md transition-shadow">
                             <CardContent className="p-6">
-                                <div className="flex items-start justify-between">
+                                <div className="flex-col md:flex-row items-start justify-between">
                                     <div className="flex-1">
-                                        <div className="flex items-center gap-4 mb-4">
-                                            <div className="flex items-center gap-2">
+                                        <div className="flex-col md:flex-row items-center gap-8 mb-4">
+                                            <div className="flex items-center mb-6 md:mb-0 gap-2">
                                                 {getMethodIcon(payment.method)}
                                                 <span className="font-medium text-lg">PKR{payment.amount}</span>
                                                 <Badge variant="outline" className={
@@ -335,8 +335,11 @@ export default function PaymentApprovalsPage() {
                                                     {payment.type === 'salary' ? 'Salary' : payment.type === 'booking' ? 'Booking' : 'Expense'}
                                                 </Badge>
                                             </div>
-                                            {getApprovalStatusBadge(payment.approvalStatus)}
-                                            {getApprovalStatusBadge(payment.approvalStatus)}
+                                            <div className="flex items-center gap-2">
+                                                {getApprovalStatusBadge(payment.approvalStatus)}
+                                                {getApprovalStatusBadge(payment.approvalStatus)}
+
+                                            </div>
                                             {/* {getPaymentStatusBadge(payment.status)} */}
                                         </div>
 
@@ -434,7 +437,7 @@ export default function PaymentApprovalsPage() {
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="flex items-center gap-2 ml-4">
+                                    <div className="flex flex-col md:flex-row item-center  gap-2 ml-0 md:ml-4 mt-4 md:mt-0">
 
                                         <Button
                                             size="sm"
@@ -443,9 +446,9 @@ export default function PaymentApprovalsPage() {
                                                 setSelectedPayment(payment)
                                                 setIsDetailsDialogOpen(true)
                                             }}
-                                            className="text-black border-blue-200 cursor-pointer hover:bg-blue-100"
+                                            className="text-black border-blue-200 p-4 cursor-pointer text-md hover:bg-blue-100"
                                         >
-                                            <Eye className="h-4 w-4 mr-1" />
+                                            <Eye className="h-6 w-6 mr-1" />
                                             {payment.type === 'salary' ? 'Salary Details' :
                                                 payment.type === 'expense' ? 'Expense Details' : 'Booking Details'}
                                         </Button>
@@ -478,15 +481,17 @@ export default function PaymentApprovalsPage() {
                                             </>
                                         )}
                                         {payment.approvalStatus === 'APPROVED' && (
-                                            <div className="text-sm bg-green-100 p-2 rounded-md text-green-800 font-medium flex items-center gap-1">
+                                            <div className="text-sm bg-green-100 p- rounded-md text-green-800 font-medium flex items-center gap-1 justify-center">
                                                 {/* <CheckCircle2 className="h-4 w-4" /> */}
-                                                Approved
+                                                <Button variant="" size="" className="bg-green-100 text-md hover:bg-green-200 text-green-800 cursor-pointer">Approved</Button>
                                             </div>
                                         )}
                                         {payment.approvalStatus === 'REJECTED' && (
-                                            <div className="text-sm bg-red-100 p-2 rounded-md   text-red-800 font-medium flex items-center gap-1">
+                                            <div className="text-sm bg-red-100 p-2   rounded-md  items-center text-center  text-red-800 font-medium flex items-center gap-1 justify-center">
                                                 {/* <XCircle2 className="h-4 w-4" /> */}
-                                                Rejected
+                                                <XCircle className="h-4 w-4" />
+
+                                                <Button variant="outline" size="md" className="bg-red-100 hover:bg-red-200 text-red-800 cursor-pointer">Rejected</Button>
                                             </div>
                                         )}
                                     </div>

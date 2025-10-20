@@ -20,7 +20,8 @@ export default function SigninPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { setSession } = useContext(SessionContext);
+  const sessionCtx = useContext(SessionContext);
+  const setSession = sessionCtx && "setSession" in sessionCtx ? sessionCtx.setSession : undefined;
 
   const handleSignin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,17 +47,19 @@ export default function SigninPage() {
         // console.log("Login response data:", data);
         // console.log("User role:", data?.user?.role);
 
-        // Update session context immediately
-        setSession({
-          loggedIn: true,
-          user: data.user,
-          error: null
-        });
+        // Defensive: update session context only if setSession is available
+        if (setSession) {
+          setSession({
+            loggedIn: true,
+            user: data.user,
+            error: null
+          });
+        }
 
         // Redirect to dashboard - middleware will handle role-based routing
         setTimeout(() => {
           router.push("/dashboard");
-        }, 200); 
+        }, 200);
       } else {
         toast.error(data.message || "Login failed");
       }

@@ -20,20 +20,20 @@ export async function GET(request: Request) {
                 rejectedBy: true,
                 rejectedAt: true,
                 rejectionReason: true,
-                expense : {
-                    select : {
-                        id : true,
-                        title : true,
-                        amount : true,
-                        status : true,
+                expense: {
+                    select: {
+                        id: true,
+                        title: true,
+                        amount: true,
+                        status: true,
                     }
                 },
-                approver : {
-                    select : {
-                        id : true,
-                        name : true,
-                        email : true,
-                        phone : true,
+                approver: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        phone: true,
                     }
                 },
                 booking: {
@@ -89,7 +89,8 @@ export async function GET(request: Request) {
 
         // Debug logging
         console.log('Total payments fetched:', payments.length);
-        const bookingPayments = payments.filter(p => p.type === 'booking');
+        type PaymentWithType = typeof payments[number] & { type?: string };
+        const bookingPayments = payments.filter((p: PaymentWithType) => p.type === 'booking');
         console.log('Booking payments:', bookingPayments.length);
         if (bookingPayments.length > 0) {
             console.log('First booking payment:', JSON.stringify(bookingPayments[0], null, 2));

@@ -4,9 +4,10 @@ import { getServerSession } from "@/lib/server-auth";
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params;
         const session = await getServerSession(request);
         if (!session || !session.user || !session.user.role) {
             return NextResponse.json(
@@ -16,9 +17,9 @@ export async function GET(
         }
 
         await ensureConnection();
-        
+
         const complaint = await prisma.complaint.findUnique({
-            where: { id: params.id },
+            where: { id },
             include: {
                 user: {
                     select: {
@@ -87,9 +88,10 @@ export async function GET(
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params;
         const session = await getServerSession(request);
         if (!session || !session.user || !session.user.role) {
             return NextResponse.json(
@@ -99,13 +101,13 @@ export async function PUT(
         }
 
         await ensureConnection();
-        
+
         const body = await request.json();
         const { status, priority, assignedTo, adminReply } = body;
 
         // Check if complaint exists
         const existingComplaint = await prisma.complaint.findUnique({
-            where: { id: params.id }
+            where: { id }
         });
 
         if (!existingComplaint) {
@@ -148,7 +150,7 @@ export async function PUT(
         }
 
         const updatedComplaint = await prisma.complaint.update({
-            where: { id: params.id },
+            where: { id },
             data: updateData,
             include: {
                 user: {
@@ -203,9 +205,10 @@ export async function PUT(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params;
         const session = await getServerSession(request);
         if (!session || !session.user || !session.user.role) {
             return NextResponse.json(
@@ -223,9 +226,9 @@ export async function DELETE(
         }
 
         await ensureConnection();
-        
+
         const complaint = await prisma.complaint.findUnique({
-            where: { id: params.id }
+            where: { id }
         });
 
         if (!complaint) {
@@ -236,7 +239,7 @@ export async function DELETE(
         }
 
         await prisma.complaint.delete({
-            where: { id: params.id }
+            where: { id }
         });
 
         return NextResponse.json({ message: "Complaint deleted successfully" });
