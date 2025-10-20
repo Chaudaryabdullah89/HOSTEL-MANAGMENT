@@ -14,10 +14,23 @@ export async function GET(request: NextRequest) {
         const type = searchParams.get('type') || 'all';
         const status = searchParams.get('status') || 'all';
 
+        // Build filters per entity type
         let whereClause: any = {};
-        
         if (status !== 'all') {
+            // For booking payments we filter by approvalStatus directly
             whereClause.approvalStatus = status;
+        }
+        const salaryWhere: any = {};
+        if (status !== 'all') {
+            // Map unified approval status -> salary.status
+            if (status === 'PENDING') salaryWhere.status = 'PENDING';
+            else if (status === 'APPROVED') salaryWhere.status = 'PAID';
+            else if (status === 'REJECTED') salaryWhere.status = 'CANCELLED';
+        }
+        const expenseWhere: any = {};
+        if (status !== 'all') {
+            // Expense uses status directly with same values
+            expenseWhere.status = status;
         }
 
         // Get booking payments
@@ -43,6 +56,9 @@ export async function GET(request: NextRequest) {
                         checkout: true,
                         bookingType: true,
                         status: true,
+                        price: true,
+                        notes: true,
+                        createdAt: true,
                         room: {
                             select: {
                                 id: true,
@@ -57,6 +73,15 @@ export async function GET(request: NextRequest) {
                                 id: true,
                                 hostelName: true
                             }
+                        },
+                        user: {
+                            select: {
+                                id: true,
+                                name: true,
+                                email: true,
+                                phone: true,
+                                role: true
+                            }
                         }
                     }
                 }
@@ -68,7 +93,7 @@ export async function GET(request: NextRequest) {
 
         // Get salary payments (all statuses)
         const salaryPayments = await prisma.salary.findMany({
-            where: {},
+            where: salaryWhere,
             include: {
                 staff: {
                     select: {
@@ -92,41 +117,85 @@ export async function GET(request: NextRequest) {
             }
         });
 
-        const expenses  = await prisma.expense.findMany(
+        const expenses = await prisma.expense.findMany(
             {
-                where : {},
-            include : {
-                
-                user :{
-                    select : {
-                        id : true,
-                        name : true,
-                        email : true,
-                        phone : true,
-                        role : true
-                    }
-                },
-                hostel :{
-                    select : {
-                        id : true,
-                        hostelName : true
-                    }
-                },
-                approver :{
-                    select : {
-                        id : true,
-                        name : true,
-                        email : true,
-                        phone : true
-                    }
-                }
-            },
-            orderBy : {
-                createdAt : 'desc'
-            }
-        });
+                where: expenseWhere,
+                include: {
 
-        // Format data consistently
+                    user: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                            phone: true,
+                            role: true
+                        }
+                    },
+                    hostel: {
+                        select: {
+                            id: true,
+                            hostelName: true
+                        }
+                    },
+                    approver: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                            phone: true
+                        }
+                    }
+                },
+                orderBy: {
+                    createdAt: 'desc'
+                }
+            });
+
+        const formatedExpenses = expenses.map((expense: any) => ({
+            id: expense.id,
+            type: 'expense',
+            amount: expense.amount,
+            currency: 'PKR',
+            method: 'CASH',
+            status: expense.status ?? 'PENDING',
+            approvalStatus: expense.status ?? 'PENDING',
+            transactionId: null,
+            notes: expense.notes,
+            createdAt: expense.createdAt,
+            updatedAt: expense.updatedAt,
+
+
+            approvedBy: expense.approvedBy ?? null,
+            approvedAt: (expense as any).approvedAt ?? null,
+            rejectedBy: (expense as any).rejectedBy ?? null,
+            rejectedAt: (expense as any).rejectedAt ?? null,
+            rejectionReason: (expense as any).rejectionReason ?? null,
+            approver: expense.approver ?? null,
+            user: {
+                id: expense.user.id,
+                name: expense.user.name,
+                email: expense.user.email,
+                phone: expense.user.phone,
+                role: expense.user.role
+            },
+
+            booking: null,
+            salary: null,
+            expense: {
+                id: expense.id,
+                title: expense.title,
+                description: expense.description,
+                category: expense.category,
+                amount: expense.amount,
+                receiptUrl: expense.receiptUrl,
+                hostel: {
+                    id: expense.hostel.id,
+                    hostelName: expense.hostel.hostelName
+                }
+            }
+        }));
+
+
         const formattedBookingPayments = bookingPayments.map((payment: any) => ({
             id: payment.id,
             type: 'booking',
@@ -144,7 +213,8 @@ export async function GET(request: NextRequest) {
             rejectedBy: payment.rejectedBy,
             rejectedAt: payment.rejectedAt,
             rejectionReason: payment.rejectionReason,
-            user: payment.user,
+
+            user: payment.booking?.user || null,
             booking: payment.booking,
             salary: null
         }));
@@ -156,9 +226,9 @@ export async function GET(request: NextRequest) {
             currency: salary.currency,
             method: 'BANK_TRANSFER', // Default for salary payments
             status: salary.status,
-            approvalStatus: salary.status === 'PENDING' ? 'PENDING' : 
-                           salary.status === 'PAID' ? 'APPROVED' : 
-                           salary.status === 'CANCELLED' ? 'REJECTED' : 'PENDING',
+            approvalStatus: salary.status === 'PENDING' ? 'PENDING' :
+                salary.status === 'PAID' ? 'APPROVED' :
+                    salary.status === 'CANCELLED' ? 'REJECTED' : 'PENDING',
             transactionId: null,
             notes: salary.notes,
             createdAt: salary.createdAt,
@@ -189,24 +259,21 @@ export async function GET(request: NextRequest) {
             }
         }));
 
-        // Combine and filter based on type
-        let allPayments = [...formattedBookingPayments, ...formattedSalaryPayments];
+        let allPayments = [...formattedBookingPayments, ...formattedSalaryPayments, ...formatedExpenses];
 
         if (type === 'booking') {
             allPayments = formattedBookingPayments;
         } else if (type === 'salary') {
             allPayments = formattedSalaryPayments;
+        } else if (type === 'expense') {
+            allPayments = formatedExpenses
         }
 
-        // Sort by creation date
+
         allPayments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         return NextResponse.json(allPayments);
     } catch (error) {
-        console.error("Error fetching unified payments:", error);
-        return NextResponse.json(
-            { error: "Failed to fetch payments" },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: "Failed to fetch payments" }, { status: 500 });
     }
 }

@@ -135,6 +135,11 @@ const page = () => {
   const [filteredRooms, setFilteredRooms] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
 
+  // Search states for dropdowns
+  const [hostelSearchTerm, setHostelSearchTerm] = useState("");
+  const [roomSearchTerm, setRoomSearchTerm] = useState("");
+  const [userSearchTerm, setUserSearchTerm] = useState("");
+
   // --- State variables for Add Room form ---
 
   // Guest creation form state variables
@@ -157,6 +162,17 @@ const page = () => {
   const [bookingToDelete, setBookingToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const loadingRef = useRef(null);
+
+  // New guest creation state
+  const [guestType, setGuestType] = useState("existing"); // "existing" or "new"
+  const [newGuestName, setNewGuestName] = useState("");
+  const [newGuestEmail, setNewGuestEmail] = useState("");
+  const [newGuestPhone, setNewGuestPhone] = useState("");
+  const [newGuestStreet, setNewGuestStreet] = useState("");
+  const [newGuestCity, setNewGuestCity] = useState("");
+  const [newGuestCountry, setNewGuestCountry] = useState("");
+  const [newGuestPostalCode, setNewGuestPostalCode] = useState("");
+  const [isCreatingGuest, setIsCreatingGuest] = useState(false);
   const handleStatusChange = (status) => {
     setActiveStatus(status);
   };
@@ -164,27 +180,27 @@ const page = () => {
   const filteredBookings = bookingsLoading
     ? []
     : (Array.isArray(bookings) ? bookings : []).filter((booking) => {
-        const matchesStatus =
-          activeStatus === "All Bookings" || booking.status === activeStatus;
-        const matchesHostel =
-          selectedHostelFilter === "All Hostels" ||
-          booking.hostel?.id === selectedHostelFilter;
-        const matchesSearch =
-          searchTerm === "" ||
-          booking.user?.name
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          booking.room?.roomNumber
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          booking.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          booking.user?.email
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          booking.room?.type?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus =
+        activeStatus === "All Bookings" || booking.status === activeStatus;
+      const matchesHostel =
+        selectedHostelFilter === "All Hostels" ||
+        booking.hostel?.id === selectedHostelFilter;
+      const matchesSearch =
+        searchTerm === "" ||
+        booking.user?.name
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        booking.room?.roomNumber
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        booking.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        booking.user?.email
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        booking.room?.type?.toLowerCase().includes(searchTerm.toLowerCase());
 
-        return matchesStatus && matchesHostel && matchesSearch;
-      });
+      return matchesStatus && matchesHostel && matchesSearch;
+    });
 
   useEffect(() => {
     const initializeData = async () => {
@@ -199,6 +215,33 @@ const page = () => {
     initializeData();
   }, [refetchRooms]);
 
+  // Search filtering functions
+  const getFilteredHostels = () => {
+    if (!hostelSearchTerm) return hostels;
+    return hostels.filter(hostel =>
+      hostel.hostelName.toLowerCase().includes(hostelSearchTerm.toLowerCase()) ||
+      hostel.address?.city?.toLowerCase().includes(hostelSearchTerm.toLowerCase())
+    );
+  };
+
+  const getFilteredRooms = () => {
+    if (!roomSearchTerm) return filteredRooms;
+    return filteredRooms.filter(room =>
+      room.roomNumber.toLowerCase().includes(roomSearchTerm.toLowerCase()) ||
+      room.type.toLowerCase().includes(roomSearchTerm.toLowerCase()) ||
+      room.status.toLowerCase().includes(roomSearchTerm.toLowerCase())
+    );
+  };
+
+  const getFilteredUsers = () => {
+    if (!userSearchTerm) return filteredUsers;
+    return filteredUsers.filter(user =>
+      user.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+      user.role.toLowerCase().includes(userSearchTerm.toLowerCase())
+    );
+  };
+
   const handleHostelSelection = (selectedHostel) => {
     setCurrentselectedhostel(selectedHostel);
     setCurrentselectedroom("");
@@ -206,6 +249,9 @@ const page = () => {
     setRoomAvailable(true);
     setShowPersistentError(false);
     clearError();
+    setHostelSearchTerm("");
+    setRoomSearchTerm("");
+    setUserSearchTerm("");
 
     const hostelRooms = rooms.filter(
       (room) => room.hostelId === selectedHostel.id,
@@ -217,6 +263,7 @@ const page = () => {
   const handleRoomSelection = async (selectedRoom) => {
     setCurrentselectedroom(selectedRoom);
     setCurrentselectedbooking("");
+    setUserSearchTerm("");
 
     try {
       const response = await fetch(
@@ -265,6 +312,38 @@ const page = () => {
     setError("");
   };
 
+  // Create new guest function
+  const createNewGuest = async (guestData) => {
+    try {
+      const response = await fetch("/api/users/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: guestData.name,
+          email: guestData.email,
+          phone: guestData.phone,
+          role: guestData.role,
+          // Generate password as a mixture of name, email, and phone
+          password: `${guestData.name?.split(" ")[0] || ""}_${guestData.email?.split("@")[0] || ""}_${guestData.phone?.slice(-4) || ""}`,
+          address: guestData.address,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create guest");
+      }
+
+      const newGuest = await response.json();
+      return newGuest;
+    } catch (error) {
+      console.error("Error creating guest:", error);
+      throw error;
+    }
+  };
+
   const handlecreatebooking = async (e) => {
     e.preventDefault();
     setBookingloading(true);
@@ -279,13 +358,81 @@ const page = () => {
       setBookingloading(false);
       return;
     }
-    if (!currentselectedbooking) {
+    if (guestType === "existing" && !currentselectedbooking) {
       toast.error("Please select a user");
       setBookingloading(false);
       return;
     }
+    if (guestType === "new") {
+      if (!newGuestName || !newGuestEmail || !newGuestPhone || !newGuestStreet || !newGuestCity || !newGuestCountry) {
+        toast.error("Please fill in all guest information including address");
+        setBookingloading(false);
+        return;
+      }
+    }
 
     let duration, checkin, checkout;
+    let selectedUserId = currentselectedbooking?.id;
+
+    console.log("Initial selectedUserId:", selectedUserId);
+    console.log("Current selected booking:", currentselectedbooking);
+    console.log("Guest type:", guestType);
+
+    // Create new guest if needed
+    if (guestType === "new") {
+      try {
+        setIsCreatingGuest(true);
+        console.log("Creating new guest with data:", {
+          name: newGuestName,
+          email: newGuestEmail,
+          phone: newGuestPhone,
+          role: "GUEST",
+          address: {
+            street: newGuestStreet,
+            city: newGuestCity,
+            country: newGuestCountry,
+            postalCode: newGuestPostalCode,
+          },
+        });
+
+        const newGuest = await createNewGuest({
+          name: newGuestName,
+          email: newGuestEmail,
+          phone: newGuestPhone,
+          role: "GUEST",
+          address: {
+            street: newGuestStreet,
+            city: newGuestCity,
+            country: newGuestCountry,
+            postalCode: newGuestPostalCode,
+          },
+        });
+
+        console.log("New guest created successfully:", newGuest);
+        console.log("New guest ID:", newGuest.id);
+        console.log("New guest user object:", newGuest.user);
+
+        // Handle the API response structure - the user data is in newGuest.user
+        if (newGuest.user && newGuest.user.id) {
+          selectedUserId = newGuest.user.id;
+        } else if (newGuest.id) {
+          selectedUserId = newGuest.id;
+        } else {
+          throw new Error("No user ID found in guest creation response");
+        }
+
+        console.log("Selected user ID for booking:", selectedUserId);
+        toast.success("New guest created successfully!");
+      } catch (error) {
+        console.error("Error creating guest:", error);
+        toast.error(`Failed to create guest: ${error.message}`);
+        setBookingloading(false);
+        setIsCreatingGuest(false);
+        return;
+      } finally {
+        setIsCreatingGuest(false);
+      }
+    }
 
     if (bookingTypeInput === "MONTHLY") {
       duration = 30;
@@ -313,7 +460,7 @@ const page = () => {
     const payload = {
       hostelId: currentselectedhostel.id,
       roomId: currentselectedroom.id,
-      userId: currentselectedbooking.id,
+      userId: selectedUserId,
       checkin: checkin,
       checkout: checkout,
       price:
@@ -329,6 +476,17 @@ const page = () => {
       totalAmount: totalAmount || undefined,
       paymentId: "",
     };
+
+    console.log("Booking payload:", payload);
+    console.log("Selected user ID:", selectedUserId);
+
+    // Final validation before creating booking
+    if (!selectedUserId) {
+      toast.error("No user selected or user creation failed");
+      setBookingloading(false);
+      return;
+    }
+
     // Note: paymentintializationpayload will be created after booking is created
     // to use the new booking's ID
     // Booking payload prepared
@@ -417,6 +575,51 @@ const page = () => {
 
         toast.success("Booking and payment created successfully!");
 
+        // Send consolidated booking confirmation email with payment data
+        try {
+          const emailPayload = {
+            userEmail: guestType === "new" ? newGuestEmail : currentselectedbooking?.email,
+            userName: guestType === "new" ? newGuestName : currentselectedbooking?.name,
+            bookingId: data.id,
+            roomNumber: currentselectedroom.roomNumber,
+            hostelName: currentselectedhostel.hostelName,
+            checkin: checkin,
+            checkout: checkout,
+            totalAmount: totalAmount || (bookingTypeInput === "MONTHLY" ? currentselectedroom.pricePerMonth : currentselectedroom.pricePerNight),
+            bookingType: bookingTypeInput,
+            isNewUser: guestType === "new",
+            userCredentials: guestType === "new" ? {
+              email: newGuestEmail,
+              password: `${newGuestName?.split(" ")[0] || ""}_${newGuestEmail?.split("@")[0] || ""}_${newGuestPhone?.slice(-4) || ""}`
+            } : null
+          };
+
+          console.log("Sending consolidated booking confirmation email:", emailPayload);
+
+          const emailResponse = await fetch("/api/mail/send-booking-confirmation", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(emailPayload),
+          });
+
+          if (emailResponse.ok) {
+            const emailData = await emailResponse.json();
+            console.log("Booking confirmation email sent successfully:", emailData);
+            toast.success("Booking confirmation email sent!");
+          } else {
+            const errorData = await emailResponse.json();
+            console.error("Failed to send booking confirmation email:", errorData);
+            toast.warning(`Booking created but email failed: ${errorData.error || 'Unknown error'}`);
+          }
+        } catch (emailError) {
+          console.error("Error sending booking confirmation email:", emailError);
+          toast.warning("Booking created but email notification failed");
+        }
+
+        // Registration email is now included in booking confirmation email
+
         await refetchRooms();
 
         setError("");
@@ -430,6 +633,15 @@ const page = () => {
         setBookingTypeInput("");
         setAdditionalNotes("");
         setPaymentStatus("");
+        // Reset guest creation fields
+        setGuestType("existing");
+        setNewGuestName("");
+        setNewGuestEmail("");
+        setNewGuestPhone("");
+        setNewGuestStreet("");
+        setNewGuestCity("");
+        setNewGuestCountry("");
+        setNewGuestPostalCode("");
 
         setTimeout(() => {
           setIsDialogOpen(false);
@@ -795,10 +1007,10 @@ const page = () => {
                   className="space-y-6 overflow-visible"
                   onSubmit={handlecreatebooking}
                 >
-                  {currentselectedbooking && (
+                  {(currentselectedbooking || guestType === "new") && (
                     <div className="space-y-4">
                       <h3 className="text-lg font-medium text-gray-900 border-b pb-2">
-                        Selected User Information
+                        {guestType === "new" ? "New Guest Information" : "Selected User Information"}
                       </h3>
                       <div className="bg-gray-50 p-4 rounded-lg">
                         <div className="grid grid-cols-2 gap-4">
@@ -807,7 +1019,7 @@ const page = () => {
                               Name
                             </Label>
                             <p className="text-sm text-gray-900">
-                              {currentselectedbooking.name}
+                              {guestType === "new" ? newGuestName : currentselectedbooking?.name}
                             </p>
                           </div>
                           <div>
@@ -815,30 +1027,27 @@ const page = () => {
                               Email
                             </Label>
                             <p className="text-sm text-gray-900">
-                              {currentselectedbooking.email}
+                              {guestType === "new" ? newGuestEmail : currentselectedbooking?.email}
                             </p>
                           </div>
                           <div>
                             <Label className="text-sm font-medium text-gray-700">
-                              Role
+                              Phone
                             </Label>
                             <p className="text-sm text-gray-900">
-                              {currentselectedbooking.role}
+                              {guestType === "new" ? newGuestPhone : currentselectedbooking?.phone || "N/A"}
                             </p>
                           </div>
-                          {/* <div>
-                                                        <Label className="text-sm font-medium text-gray-700">Room Number</Label>
-                                                        <p className="text-sm text-gray-900">
-
-                                                            {
-                                                                currentselectedbooking.room?.roomNumber
-                                                                || currentselectedbooking.room?.number
-                                                                || currentselectedbooking.roomNumber
-                                                                || currentselectedbooking.number
-                                                                || "N/A"
-                                                            }
-                                                        </p>
-                                                    </div> */}
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700">
+                              {guestType === "new" ? "Address" : "Role"}
+                            </Label>
+                            <p className="text-sm text-gray-900">
+                              {guestType === "new"
+                                ? `${newGuestStreet}, ${newGuestCity}, ${newGuestCountry}`
+                                : currentselectedbooking?.role}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -866,15 +1075,33 @@ const page = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-full">
-                          {hostels.map((hostelItem) => (
-                            <DropdownMenuItem
-                              key={hostelItem.id}
-                              onClick={() => handleHostelSelection(hostelItem)}
-                            >
-                              {hostelItem.hostelName} -{" "}
-                              {hostelItem.address?.city}
-                            </DropdownMenuItem>
-                          ))}
+                          <div className="p-2">
+                            <Input
+                              placeholder="Search hostels..."
+                              value={hostelSearchTerm}
+                              onChange={(e) => setHostelSearchTerm(e.target.value)}
+                              className="w-full"
+                            // onClick={(e) => e.stopPropagation()}
+                            />
+                          </div>
+                          <div className="max-h-60 overflow-y-auto">
+                            {getFilteredHostels().map((hostelItem) => (
+                              <DropdownMenuItem
+                                key={hostelItem.id}
+                                onClick={() => handleHostelSelection(hostelItem)}
+                              >
+                                {hostelItem.hostelName} -{" "}
+                                {hostelItem.address?.city}
+                              </DropdownMenuItem>
+                            ))}
+                            {getFilteredHostels().length === 0 && (
+                              <DropdownMenuItem disabled>
+                                <span className="text-gray-500">
+                                  No hostels found
+                                </span>
+                              </DropdownMenuItem>
+                            )}
+                          </div>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -927,18 +1154,17 @@ const page = () => {
                                       {currentselectedroom.type}
                                     </span>
                                     <span
-                                      className={`text-xs px-2 py-1 rounded-full ${
-                                        currentselectedroom.status ===
+                                      className={`text-xs px-2 py-1 rounded-full ${currentselectedroom.status ===
                                         "AVAILABLE"
-                                          ? "bg-green-100 text-green-800"
+                                        ? "bg-green-100 text-green-800"
+                                        : currentselectedroom.status ===
+                                          "OCCUPIED"
+                                          ? "bg-red-100 text-red-800"
                                           : currentselectedroom.status ===
-                                              "OCCUPIED"
-                                            ? "bg-red-100 text-red-800"
-                                            : currentselectedroom.status ===
-                                                "MAINTENANCE"
-                                              ? "bg-yellow-100 text-yellow-800"
-                                              : "bg-gray-100 text-gray-800"
-                                      }`}
+                                            "MAINTENANCE"
+                                            ? "bg-yellow-100 text-yellow-800"
+                                            : "bg-gray-100 text-gray-800"
+                                        }`}
                                     >
                                       {currentselectedroom.status}
                                     </span>
@@ -951,114 +1177,265 @@ const page = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent className="w-full">
-                            {filteredRooms.map((room) => {
-                              const getStatusColor = (status) => {
-                                switch (status) {
-                                  case "AVAILABLE":
-                                    return "text-green-600";
-                                  case "OCCUPIED":
-                                    return "text-red-600";
-                                  case "MAINTENANCE":
-                                    return "text-yellow-600";
-                                  case "OUT_OF_ORDER":
-                                    return "text-gray-600";
-                                  default:
-                                    return "text-gray-600";
-                                }
-                              };
-
-                              return (
-                                <DropdownMenuItem
-                                  key={room.id}
-                                  onClick={() => handleRoomSelection(room)}
-                                  className={`${getStatusColor(room.status)} ${room.status === "OCCUPIED" || room.status === "MAINTENANCE" || room.status === "OUT_OF_ORDER" ? "opacity-60" : ""}`}
-                                  disabled={
-                                    room.status === "OCCUPIED" ||
-                                    room.status === "MAINTENANCE" ||
-                                    room.status === "OUT_OF_ORDER"
+                            <div className="p-2">
+                              <Input
+                                placeholder="Search rooms..."
+                                value={roomSearchTerm}
+                                onChange={(e) => setRoomSearchTerm(e.target.value)}
+                                className="w-full"
+                              // onClick={(e) => e.stopPropagation()}
+                              />
+                            </div>
+                            <div className="max-h-60 overflow-y-auto">
+                              {getFilteredRooms().map((room) => {
+                                const getStatusColor = (status) => {
+                                  switch (status) {
+                                    case "AVAILABLE":
+                                      return "text-green-600";
+                                    case "OCCUPIED":
+                                      return "text-red-600";
+                                    case "MAINTENANCE":
+                                      return "text-yellow-600";
+                                    case "OUT_OF_ORDER":
+                                      return "text-gray-600";
+                                    default:
+                                      return "text-gray-600";
                                   }
-                                >
-                                  <div className="flex items-center justify-between w-full">
-                                    <div>
-                                      {room.roomNumber} | Floor {room.floor} |{" "}
-                                      {room.type} | PKR{room.pricePerNight}
-                                      /night
+                                };
+
+                                return (
+                                  <DropdownMenuItem
+                                    key={room.id}
+                                    onClick={() => handleRoomSelection(room)}
+                                    className={`${getStatusColor(room.status)} ${room.status === "OCCUPIED" || room.status === "MAINTENANCE" || room.status === "OUT_OF_ORDER" ? "opacity-60" : ""}`}
+                                    disabled={
+                                      room.status === "OCCUPIED" ||
+                                      room.status === "MAINTENANCE" ||
+                                      room.status === "OUT_OF_ORDER"
+                                    }
+                                  >
+                                    <div className="flex items-center justify-between w-full">
+                                      <div>
+                                        {room.roomNumber} | Floor {room.floor} |{" "}
+                                        {room.type} | PKR{room.pricePerNight}
+                                        /night
+                                      </div>
+                                      <div
+                                        className={`text-xs font-medium ${getStatusColor(room.status)}`}
+                                      >
+                                        {room.status}
+                                      </div>
                                     </div>
-                                    <div
-                                      className={`text-xs font-medium ${getStatusColor(room.status)}`}
-                                    >
-                                      {room.status}
-                                    </div>
-                                  </div>
+                                  </DropdownMenuItem>
+                                );
+                              })}
+                              {getFilteredRooms().length === 0 && (
+                                <DropdownMenuItem disabled>
+                                  <span className="text-gray-500">
+                                    No rooms found
+                                  </span>
                                 </DropdownMenuItem>
-                              );
-                            })}
+                              )}
+                            </div>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
                     )}
 
-                    {/* User Selection - Only show if room is selected */}
+                    {/* Guest Selection - Only show if room is selected */}
                     {currentselectedroom && (
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-700">
-                          Select User *
-                        </Label>
-                        {/* Debug info */}
-                        {/* <div className="text-xs text-gray-500">
-                                                    Debug: {users.length} total users, {filteredUsers.length} filtered users
-                                                </div> */}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className="w-full justify-between text-left font-normal"
-                            >
-                              {currentselectedbooking ? (
-                                <div className="flex flex-col items-start">
-                                  <span className="font-medium">
-                                    {currentselectedbooking.name}
-                                  </span>
-                                  {/* <span className="text-sm text-gray-500">{currentselectedbooking.email} ({currentselectedbooking.role})</span> */}
-                                </div>
-                              ) : (
-                                "Select User"
-                              )}
-                              <ChevronDown className="h-4 w-4 opacity-50" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent className="w-full">
-                            {filteredUsers.length > 0 ? (
-                              filteredUsers.map((user) => (
-                                <DropdownMenuItem
-                                  key={user.id}
-                                  onClick={() => {
-                                    setCurrentselectedbooking(user);
-                                    // Don't clear errors when selecting user - only clear when valid room is selected
-                                  }}
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">
+                            Guest Type *
+                          </Label>
+                          <div className="flex space-x-4">
+                            <label className="flex items-center space-x-2">
+                              <input
+                                type="radio"
+                                name="guestType"
+                                value="existing"
+                                checked={guestType === "existing"}
+                                onChange={(e) => setGuestType(e.target.value)}
+                                className="text-blue-600"
+                              />
+                              <span className="text-sm">Existing Guest</span>
+                            </label>
+                            <label className="flex items-center space-x-2">
+                              <input
+                                type="radio"
+                                name="guestType"
+                                value="new"
+                                checked={guestType === "new"}
+                                onChange={(e) => setGuestType(e.target.value)}
+                                className="text-blue-600"
+                              />
+                              <span className="text-sm">New Guest</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        {guestType === "existing" && (
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">
+                              Select Existing User *
+                            </Label>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className="w-full justify-between text-left font-normal"
                                 >
-                                  <div className="flex flex-col">
-                                    <span className="font-medium">
-                                      {user.name}
-                                    </span>
-                                    <span className="text-sm text-gray-500">
-                                      {user.email}
-                                    </span>
-                                    <span className="text-xs text-blue-600 font-medium">
-                                      {user.role}
-                                    </span>
-                                  </div>
-                                </DropdownMenuItem>
-                              ))
-                            ) : (
-                              <DropdownMenuItem disabled>
-                                <span className="text-gray-500">
-                                  No users available
-                                </span>
-                              </DropdownMenuItem>
+                                  {currentselectedbooking ? (
+                                    <div className="flex flex-col items-start">
+                                      <span className="font-medium">
+                                        {currentselectedbooking.name}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    "Select User"
+                                  )}
+                                  <ChevronDown className="h-4 w-4 opacity-50" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent className="w-full">
+                                <div className="p-2">
+                                  <Input
+                                    placeholder="Search users..."
+                                    value={userSearchTerm}
+                                    onChange={(e) => setUserSearchTerm(e.target.value)}
+                                    className="w-full"
+                                  // onClick={(e) => e.stopPropagation()}
+                                  />
+                                </div>
+                                <div className="max-h-60 overflow-y-auto">
+                                  {getFilteredUsers().length > 0 ? (
+                                    getFilteredUsers().map((user) => (
+                                      <DropdownMenuItem
+                                        key={user.id}
+                                        onClick={() => {
+                                          setCurrentselectedbooking(user);
+                                        }}
+                                      >
+                                        <div className="flex flex-col">
+                                          <span className="font-medium">
+                                            {user.name}
+                                          </span>
+                                          <span className="text-sm text-gray-500">
+                                            {user.email}
+                                          </span>
+                                          <span className="text-xs text-blue-600 font-medium">
+                                            {user.role}
+                                          </span>
+                                        </div>
+                                      </DropdownMenuItem>
+                                    ))
+                                  ) : (
+                                    <DropdownMenuItem disabled>
+                                      <span className="text-gray-500">
+                                        {userSearchTerm ? "No users found" : "No users available"}
+                                      </span>
+                                    </DropdownMenuItem>
+                                  )}
+                                </div>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        )}
+
+                        {guestType === "new" && (
+                          <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                            <h4 className="text-sm font-medium text-gray-700">
+                              New Guest Information
+                            </h4>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium text-gray-700">
+                                  Full Name *
+                                </Label>
+                                <Input
+                                  placeholder="Enter guest name"
+                                  value={newGuestName}
+                                  onChange={(e) => setNewGuestName(e.target.value)}
+                                  required
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium text-gray-700">
+                                  Email *
+                                </Label>
+                                <Input
+                                  type="email"
+                                  placeholder="Enter email address"
+                                  value={newGuestEmail}
+                                  onChange={(e) => setNewGuestEmail(e.target.value)}
+                                  required
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium text-gray-700">
+                                  Phone Number *
+                                </Label>
+                                <Input
+                                  type="tel"
+                                  placeholder="Enter phone number"
+                                  value={newGuestPhone}
+                                  onChange={(e) => setNewGuestPhone(e.target.value)}
+                                  required
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium text-gray-700">
+                                  Street Address *
+                                </Label>
+                                <Input
+                                  placeholder="Enter street address"
+                                  value={newGuestStreet}
+                                  onChange={(e) => setNewGuestStreet(e.target.value)}
+                                  required
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium text-gray-700">
+                                  City *
+                                </Label>
+                                <Input
+                                  placeholder="Enter city"
+                                  value={newGuestCity}
+                                  onChange={(e) => setNewGuestCity(e.target.value)}
+                                  required
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium text-gray-700">
+                                  Country *
+                                </Label>
+                                <Input
+                                  placeholder="Enter country"
+                                  value={newGuestCountry}
+                                  onChange={(e) => setNewGuestCountry(e.target.value)}
+                                  required
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium text-gray-700">
+                                  Postal Code
+                                </Label>
+                                <Input
+                                  placeholder="Enter postal code"
+                                  value={newGuestPostalCode}
+                                  onChange={(e) => setNewGuestPostalCode(e.target.value)}
+                                />
+                              </div>
+                            </div>
+                            {isCreatingGuest && (
+                              <div className="flex items-center gap-2 text-sm text-blue-600">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                Creating new guest...
+                              </div>
                             )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -1283,13 +1660,20 @@ const page = () => {
                       type="submit"
                       className={`${roomAvailable ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 cursor-not-allowed"} cursor-pointer`}
                       disabled={
-                        bookingloading || !roomAvailable || !currentselectedroom
+                        bookingloading ||
+                        !roomAvailable ||
+                        !currentselectedroom ||
+                        isCreatingGuest ||
+                        (guestType === "existing" && !currentselectedbooking) ||
+                        (guestType === "new" && (!newGuestName || !newGuestEmail || !newGuestPhone || !newGuestStreet || !newGuestCity || !newGuestCountry))
                       }
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      {bookingloading
-                        ? "Creating Booking..."
-                        : "Create Booking"}
+                      {isCreatingGuest
+                        ? "Creating Guest..."
+                        : bookingloading
+                          ? "Creating Booking..."
+                          : "Create Booking"}
                     </Button>
                   </div>
                 </form>
@@ -1693,15 +2077,14 @@ const page = () => {
                                   Status
                                 </span>
                                 <span
-                                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                    booking.payment.status === "COMPLETED"
-                                      ? "bg-green-100 text-green-800"
-                                      : booking.payment.status === "PENDING"
-                                        ? "bg-yellow-100 text-yellow-800"
-                                        : booking.payment.status === "FAILED"
-                                          ? "bg-red-100 text-red-800"
-                                          : "bg-gray-100 text-gray-800"
-                                  }`}
+                                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${booking.payment.status === "COMPLETED"
+                                    ? "bg-green-100 text-green-800"
+                                    : booking.payment.status === "PENDING"
+                                      ? "bg-yellow-100 text-yellow-800"
+                                      : booking.payment.status === "FAILED"
+                                        ? "bg-red-100 text-red-800"
+                                        : "bg-gray-100 text-gray-800"
+                                    }`}
                                 >
                                   {booking.payment.status || "N/A"}
                                 </span>

@@ -123,6 +123,31 @@ export async function POST(request: NextRequest) {
                     amount: paymentAmount,
                     bookingType: booking.bookingType
                 });
+
+                // Send monthly payment email notification
+                try {
+                    const emailPayload = {
+                        type: 'monthly_payment',
+                        userEmail: payment.user.email,
+                        userName: payment.user.name,
+                        bookingId: payment.booking.id,
+                        roomNumber: booking.room?.roomNumber,
+                        hostelName: booking.hostel?.hostelName,
+                        amount: paymentAmount,
+                        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
+                    };
+
+                    await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3001'}/api/mail/send-notification`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(emailPayload),
+                    });
+                } catch (emailError) {
+                    console.error("Error sending monthly payment email:", emailError);
+                    // Don't fail the payment creation if email fails
+                }
             } catch (error) {
                 skippedBookings.push({
                     bookingId: booking.id,
@@ -148,9 +173,9 @@ export async function POST(request: NextRequest) {
 
     } catch (error) {
         return NextResponse.json(
-            { 
+            {
                 error: "Failed to create automated payments",
-                details: error instanceof Error ? error.message : 'Unknown error' 
+                details: error instanceof Error ? error.message : 'Unknown error'
             },
             { status: 500 }
         );

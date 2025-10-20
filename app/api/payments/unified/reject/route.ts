@@ -20,7 +20,6 @@ export async function PUT(request: NextRequest) {
         }
 
         if (type === 'booking') {
-            // Handle booking payment rejection
             const payment = await prisma.payment.findUnique({
                 where: { id: paymentId }
             });
@@ -30,19 +29,18 @@ export async function PUT(request: NextRequest) {
             }
 
             if (payment.approvalStatus !== 'PENDING') {
-                return NextResponse.json({ 
-                    error: "Payment is not pending approval" 
+                return NextResponse.json({
+                    error: "Payment is not pending approval"
                 }, { status: 400 });
             }
 
-            // Update payment approval status and booking status in a transaction
             const result = await prisma.$transaction(async (tx: any) => {
-                // Update payment approval status
                 const updatedPayment = await tx.payment.update({
                     where: { id: paymentId },
                     data: {
                         approvalStatus: 'REJECTED',
                         rejectedBy: session.user.id,
+                        status: 'FAILED',
                         rejectedAt: new Date(),
                         rejectionReason: reason.trim()
                     },
@@ -81,30 +79,46 @@ export async function PUT(request: NextRequest) {
                     }
                 });
 
-                // Update booking status to CANCELLED if payment is rejected
-                if (updatedPayment.booking) {
-                    await tx.booking.update({
-                        where: { id: updatedPayment.booking.id },
-                        data: {
-                            status: 'CANCELLED'
-                        }
-                    });
-                    
-                    // Update the booking status in the returned data
-                    updatedPayment.booking.status = 'CANCELLED';
-                }
+                // Note: Booking status is not changed on payment rejection
+                // Only the payment is rejected, booking remains in its current status
 
                 return updatedPayment;
             });
 
+            // Send payment rejection email notification for booking payments
+            try {
+                const emailPayload = {
+                    type: 'payment_rejected',
+                    userEmail: result.user.email,
+                    userName: result.user.name,
+                    bookingId: result.booking.id,
+                    roomNumber: result.booking.room.roomNumber,
+                    hostelName: result.booking.hostel.hostelName,
+                    amount: result.amount,
+                    paymentId: result.id,
+                    reason: reason.trim(),
+                    paymentType: 'booking'
+                };
+
+                await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/mail/send-notification`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(emailPayload),
+                });
+            } catch (emailError) {
+                console.error("Error sending payment rejection email:", emailError);
+                // Don't fail the payment rejection if email fails
+            }
+
             return NextResponse.json({
                 success: true,
-                message: "Booking payment rejected successfully and booking cancelled",
+                message: "Booking payment rejected successfully",
                 payment: result
             });
 
         } else if (type === 'salary') {
-            // Handle salary payment rejection
             const salary = await prisma.salary.findUnique({
                 where: { id: paymentId }
             });
@@ -114,12 +128,11 @@ export async function PUT(request: NextRequest) {
             }
 
             if (salary.status !== 'PENDING') {
-                return NextResponse.json({ 
-                    error: "Salary is not pending approval" 
+                return NextResponse.json({
+                    error: "Salary is not pending approval"
                 }, { status: 400 });
             }
 
-            // Update salary status to CANCELLED
             const updatedSalary = await prisma.salary.update({
                 where: { id: paymentId },
                 data: {
@@ -147,6 +160,32 @@ export async function PUT(request: NextRequest) {
                     }
                 }
             });
+
+            // Send salary rejection email notification
+            try {
+                const emailPayload = {
+                    type: 'payment_rejected',
+                    userEmail: updatedSalary.staff.email,
+                    userName: updatedSalary.staff.name,
+                    amount: updatedSalary.amount,
+                    paymentId: updatedSalary.id,
+                    reason: reason.trim(),
+                    paymentType: 'salary',
+                    staffPosition: updatedSalary.staff.position,
+                    hostelName: updatedSalary.staff.hostel.hostelName
+                };
+
+                await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3001'}/api/mail/send-notification`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(emailPayload),
+                });
+            } catch (emailError) {
+                console.error("Error sending salary rejection email:", emailError);
+                // Don't fail the salary rejection if email fails
+            }
 
             return NextResponse.json({
                 success: true,

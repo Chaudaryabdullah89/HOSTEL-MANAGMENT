@@ -42,18 +42,32 @@ export async function GET(request: Request) {
                         checkin: true,
                         checkout: true,
                         bookingType: true,
+                        price: true,
+                        status: true,
+                        notes: true,
+                        createdAt: true,
                         room: {
                             select: {
                                 id: true,
                                 roomNumber: true,
                                 floor: true,
                                 status: true,
+                                type: true,
                             }
                         },
                         hostel: {
                             select: {
                                 id: true,
                                 hostelName: true,
+                            }
+                        },
+                        user: {
+                            select: {
+                                id: true,
+                                name: true,
+                                email: true,
+                                role: true,
+                                phone: true,
                             }
                         }
                     }
@@ -72,6 +86,14 @@ export async function GET(request: Request) {
                 createdAt: 'desc'
             }
         });
+
+        // Debug logging
+        console.log('Total payments fetched:', payments.length);
+        const bookingPayments = payments.filter(p => p.type === 'booking');
+        console.log('Booking payments:', bookingPayments.length);
+        if (bookingPayments.length > 0) {
+            console.log('First booking payment:', JSON.stringify(bookingPayments[0], null, 2));
+        }
 
         return NextResponse.json(payments);
     } catch (error) {

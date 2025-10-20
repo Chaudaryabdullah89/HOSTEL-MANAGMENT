@@ -25,7 +25,7 @@ export async function POST(request) {
         { status: 400 },
       );
     }
-    const existinguser = await prisma.User.findUnique({
+    const existinguser = await prisma.user.findUnique({
       where: {
         email,
       },
@@ -40,9 +40,9 @@ export async function POST(request) {
     const hashedpassword = await bcrypt
       .genSalt(10)
       .then((salt) => bcrypt.hash(password, salt).then((hash) => hash));
-    
+
     if (address) {
-      var newaddress = await prisma.UserAddress.create({
+      var newaddress = await prisma.userAddress.create({
         data: {
           street: address.street || "",
           city: address.city || "",
@@ -52,7 +52,7 @@ export async function POST(request) {
         },
       });
     }
-    const newuser = await prisma.User.create({
+    const newuser = await prisma.user.create({
       data: {
         email: email || "",
         name: name || "",
@@ -77,9 +77,9 @@ export async function POST(request) {
 
     // Create role-specific model based on user role
     const userRole = role ? role.toUpperCase() : "GUEST";
-    
+
     if (userRole === "ADMIN") {
-      await prisma.Admin.create({
+      await prisma.admin.create({
         data: {
           userId: newuser.id,
         },
@@ -88,7 +88,7 @@ export async function POST(request) {
       // For warden, we need a hostelId - skip creation for now
       // The warden will be created when they are assigned to a hostel
     } else if (userRole === "GUEST") {
-      await prisma.Guest.create({
+      await prisma.guest.create({
         data: {
           userId: newuser.id,
         },
@@ -106,6 +106,27 @@ export async function POST(request) {
       path: "/",
       sameSite: "strict",
     });
+
+    // Send welcome email for self-registered users
+    try {
+      const emailPayload = {
+        type: 'user_welcome',
+        userEmail: newuser.email,
+        userName: newuser.name
+      };
+
+      await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/mail/send-notification`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(emailPayload),
+      });
+    } catch (emailError) {
+      console.error("Error sending welcome email:", emailError);
+      // Don't fail the signup if email fails
+    }
+
     return NextResponse.json({
       message: "User created successfully",
       user: newuser,

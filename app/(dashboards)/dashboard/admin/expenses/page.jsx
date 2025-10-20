@@ -56,28 +56,26 @@ const page = () => {
     const [isUpdating, setIsUpdating] = useState(false);
     const [uploadError, setUploadError] = useState('');
 
-    // React Query hooks
+
     const { data: expenses = [], isLoading: expensesLoading, error: expensesError, refetch: refetchExpenses } = useExpenses({
         status: statusFilter !== 'All Status' ? statusFilter : undefined,
         category: categoryFilter !== 'All Category' ? categoryFilter : undefined,
         hostelId: hostelFilter !== 'All Hostels' ? hostelFilter : undefined,
         search: searchTerm || undefined
     });
-    
+
     const { data: stats, isLoading: statsLoading } = useExpenseStats({
         hostelId: hostelFilter !== 'All Hostels' ? hostelFilter : undefined
     });
-    
+
     const { data: hostels = [], isLoading: hostelsLoading } = useHostels();
 
-    // Mutation hooks
     const createExpenseMutation = useCreateExpense();
     const updateExpenseMutation = useUpdateExpense();
     const deleteExpenseMutation = useDeleteExpense();
     const approveExpenseMutation = useApproveExpense();
     const rejectExpenseMutation = useRejectExpense();
 
-    // Form states
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -88,179 +86,10 @@ const page = () => {
         notes: ''
     });
 
-    // Generate sample expense data for demonstration
-    const generateSampleData = () => {
-        const sampleExpenses = [
-            {
-                id: '1',
-                title: 'AC Repair - Room A-101',
-                description: 'Repair and maintenance of air conditioning unit in room A-101. Replaced compressor and refilled refrigerant.',
-                amount: 15000,
-                currency: 'PKR',
-                category: 'MAINTENANCE',
-                status: 'PENDING',
-                submittedBy: 'staff-1',
-                approvedBy: null,
-                hostelId: '7a4efcf5-0abf-40d1-a0b0-26bf3da45422',
-                receiptUrl: 'https://example.com/receipt1.pdf',
-                notes: 'Urgent repair needed for guest comfort',
-                submittedAt: new Date('2024-01-15T10:30:00Z'),
-                approvedAt: null,
-                createdAt: new Date('2024-01-15T10:30:00Z'),
-                updatedAt: new Date('2024-01-15T10:30:00Z'),
-                user: {
-                    id: 'staff-1',
-                    name: 'Muhammad Hassan',
-                    email: 'hassan@hostel.com',
-                    phone: '+92-302-3456789',
-                    role: 'STAFF'
-                },
-                approver: null,
-                hostel: {
-                    id: 'hostel-1',
-                    hostelName: 'Downtown Hostel'
-                }
-            },
-            {
-                id: '2',
-                title: 'Electricity Bill - January',
-                description: 'Monthly electricity bill for Downtown Hostel. Includes common areas and guest rooms.',
-                amount: 45000,
-                currency: 'PKR',
-                category: 'UTILITIES',
-                status: 'APPROVED',
-                submittedBy: 'staff-2',
-                approvedBy: 'admin-1',
-                hostelId: '7a4efcf5-0abf-40d1-a0b0-26bf3da45422',
-                receiptUrl: 'https://example.com/electricity-bill.pdf',
-                notes: 'Regular monthly utility expense',
-                submittedAt: new Date('2024-01-10T09:15:00Z'),
-                approvedAt: new Date('2024-01-12T14:20:00Z'),
-                createdAt: new Date('2024-01-10T09:15:00Z'),
-                updatedAt: new Date('2024-01-12T14:20:00Z'),
-                user: {
-                    id: 'staff-2',
-                    name: 'Ahmed Warden',
-                    email: 'ahmed@hostel.com',
-                    phone: '+92-304-5678901',
-                    role: 'WARDEN'
-                },
-                approver: {
-                    id: 'admin-1',
-                    name: 'Admin User',
-                    email: 'admin@hostel.com',
-                    phone: '+92-300-1234567'
-                },
-                hostel: {
-                    id: '7a4efcf5-0abf-40d1-a0b0-26bf3da45422',
-                    hostelName: 'GreenView Hostel 3'
-                }
-            },
-            {
-                id: '3',
-                title: 'Cleaning Supplies',
-                description: 'Purchase of cleaning supplies including detergents, disinfectants, and cleaning equipment.',
-                amount: 8500,
-                currency: 'PKR',
-                category: 'SUPPLIES',
-                status: 'REJECTED',
-                submittedBy: 'staff-3',
-                approvedBy: 'admin-1',
-                hostelId: 'a5256f4f-d477-4038-9c14-e04f3ff03c82',
-                receiptUrl: 'https://example.com/cleaning-supplies.pdf',
-                notes: 'Budget exceeded for this category',
-                submittedAt: new Date('2024-01-14T11:45:00Z'),
-                approvedAt: new Date('2024-01-16T16:30:00Z'),
-                createdAt: new Date('2024-01-14T11:45:00Z'),
-                updatedAt: new Date('2024-01-16T16:30:00Z'),
-                user: {
-                    id: 'staff-3',
-                    name: 'Sara Manager',
-                    email: 'sara@hostel.com',
-                    phone: '+92-305-6789012',
-                    role: 'STAFF'
-                },
-                approver: {
-                    id: 'admin-1',
-                    name: 'Admin User',
-                    email: 'admin@hostel.com',
-                    phone: '+92-300-1234567'
-                },
-                hostel: {
-                    id: 'a5256f4f-d477-4038-9c14-e04f3ff03c82',
-                    hostelName: 'sama g'
-                }
-            },
-            {
-                id: '4',
-                title: 'New Furniture - Common Area',
-                description: 'Purchase of new sofas and tables for the common area to improve guest experience.',
-                amount: 75000,
-                currency: 'PKR',
-                category: 'EQUIPMENT',
-                status: 'PENDING',
-                submittedBy: 'staff-4',
-                approvedBy: null,
-                hostelId: 'a5256f4f-d477-4038-9c14-e04f3ff03c82',
-                receiptUrl: 'https://example.com/furniture-quote.pdf',
-                notes: 'Quote from local furniture store',
-                submittedAt: new Date('2024-01-16T08:20:00Z'),
-                approvedAt: null,
-                createdAt: new Date('2024-01-16T08:20:00Z'),
-                updatedAt: new Date('2024-01-16T08:20:00Z'),
-                user: {
-                    id: 'staff-4',
-                    name: 'Ali Raza',
-                    email: 'ali@hostel.com',
-                    phone: '+92-306-7890123',
-                    role: 'STAFF'
-                },
-                approver: null,
-                hostel: {
-                    id: 'hostel-2',
-                    hostelName: 'Garden View Hostel'
-                }
-            }
-        ];
 
-        setExpenses(sampleExpenses);
-        
-        // Generate sample stats
-        const sampleStats = {
-            summary: {
-                totalExpenses: sampleExpenses.length,
-                recentExpenses: 2,
-                totalAmount: 143500,
-                avgAmount: 35875
-            },
-            statusBreakdown: [
-                { status: 'PENDING', count: 2, amount: 90000 },
-                { status: 'APPROVED', count: 1, amount: 45000 },
-                { status: 'REJECTED', count: 1, amount: 8500 }
-            ],
-            categoryBreakdown: [
-                { category: 'MAINTENANCE', count: 1 },
-                { category: 'UTILITIES', count: 1 },
-                { category: 'SUPPLIES', count: 1 },
-                { category: 'EQUIPMENT', count: 1 }
-            ],
-            topCategories: [
-                { category: 'EQUIPMENT', amount: 75000, count: 1 },
-                { category: 'UTILITIES', amount: 45000, count: 1 },
-                { category: 'MAINTENANCE', amount: 15000, count: 1 },
-                { category: 'SUPPLIES', amount: 8500, count: 1 }
-            ]
-        };
-        
-        setStats(sampleStats);
-    };
-
-    // Remove fetchData - now handled by React Query
-
-    // Create expense
     const handleCreate = (e) => {
         e.preventDefault();
-        
+
         createExpenseMutation.mutate({
             ...formData,
             amount: parseFloat(formData.amount)
@@ -284,7 +113,7 @@ const page = () => {
     const handleUpdate = async (e) => {
         e.preventDefault();
         setIsUpdating(true);
-        
+
         try {
             const response = await fetch(`/api/expenses/${selectedExpense.id}`, {
                 method: 'PUT',
@@ -300,14 +129,11 @@ const page = () => {
                 toast.success('Expense updated successfully');
                 setIsEditDialogOpen(false);
                 setSelectedExpense(null);
-                
-                // Real-time update: Update the expense in the list immediately
-                setExpenses(prev => prev.map(expense => 
+
+                setExpenses(prev => prev.map(expense =>
                     expense.id === selectedExpense.id ? updatedExpense : expense
                 ));
-                
-                // Refresh stats
-                fetchData();
+
             } else {
                 const error = await response.json();
                 toast.error(error.error || 'Failed to update expense');
@@ -332,7 +158,7 @@ const page = () => {
                 toast.success('Expense deleted successfully');
                 setIsDeleteDialogOpen(false);
                 setSelectedExpense(null);
-                fetchData();
+                refetchExpenses();
             } else {
                 const error = await response.json();
                 toast.error(error.error || 'Failed to delete expense');
@@ -345,25 +171,21 @@ const page = () => {
         }
     };
 
-    // Handle receipt upload success
     const handleReceiptUploadSuccess = (url, fileName) => {
         setFormData(prev => ({ ...prev, receiptUrl: url }));
         setUploadError('');
     };
 
-    // Handle receipt upload error
     const handleReceiptUploadError = (error) => {
         setUploadError(error);
         toast.error(error);
     };
 
-    // Handle receipt removal
     const handleReceiptRemove = () => {
         setFormData(prev => ({ ...prev, receiptUrl: '' }));
         setUploadError('');
     };
 
-    // Filter expenses
     const filteredExpenses = expenses.filter(expense => {
         const matchesStatus = statusFilter === "All Status" || expense.status === statusFilter;
         const matchesCategory = categoryFilter === "All Category" || expense.category === categoryFilter;
@@ -375,11 +197,9 @@ const page = () => {
         return matchesStatus && matchesCategory && matchesHostel && matchesSearch;
     });
 
-    // Remove useEffect - data fetching now handled by React Query
-
     if (expensesLoading || statsLoading || hostelsLoading) {
         return (
-            <PageLoadingSkeleton 
+            <PageLoadingSkeleton
                 title={true}
                 statsCards={4}
                 filterTabs={4}
@@ -391,15 +211,14 @@ const page = () => {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div className="flex flex-col lg:flex-row justify-between px-4">
                 <div className="mt-4">
                     <h1 className="text-2xl sm:text-3xl font-bold">Expense Management</h1>
                     <p className="text-muted-foreground leading-loose text-sm sm:text-base">Track and manage hostel expenses</p>
                 </div>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-4 lg:mt-0">
-                    <Button 
-                        variant="outline" 
+                    <Button
+                        variant="outline"
                         className="text-sm sm:text-base"
                         onClick={() => {
                             refetchExpenses();
@@ -410,7 +229,7 @@ const page = () => {
                         <RefreshCw className={`h-4 w-4 mr-2 ${expensesLoading ? 'animate-spin' : ''}`} />
                         <span className="hidden sm:inline">Refresh</span>
                     </Button>
-                    <Button 
+                    <Button
                         onClick={() => setIsCreateDialogOpen(true)}
                         className="text-sm sm:text-base"
                     >
@@ -581,8 +400,8 @@ const page = () => {
                     </Select>
                 </div>
                 <div className="sm:col-span-2 lg:col-span-1 flex items-end">
-                    <Button 
-                        variant="outline" 
+                    <Button
+                        variant="outline"
                         onClick={() => {
                             setSearchTerm('');
                             setStatusFilter('All Status');
@@ -614,9 +433,9 @@ const page = () => {
                                                     </p>
                                                 </div>
                                             </div>
-                                            
+
                                             <p className="text-gray-700 mb-4 text-sm sm:text-base break-words">{expense.description}</p>
-                                            
+
                                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
                                                 <div className="flex items-start gap-2 bg-gray-50 rounded-lg p-3">
                                                     <Building className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
@@ -625,7 +444,7 @@ const page = () => {
                                                         <p className="text-xs text-gray-500">Hostel</p>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div className="flex items-start gap-2 bg-gray-50 rounded-lg p-3">
                                                     <User className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
                                                     <div className="min-w-0 flex-1">
@@ -634,7 +453,7 @@ const page = () => {
                                                         <p className="text-xs text-blue-600 break-words">{expense.user?.phone}</p>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div className="flex items-start gap-2 bg-gray-50 rounded-lg p-3">
                                                     <DollarSign className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
                                                     <div className="min-w-0 flex-1">
@@ -642,7 +461,7 @@ const page = () => {
                                                         <p className="text-xs text-gray-500">{expense.category}</p>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div className="flex items-start gap-2 bg-gray-50 rounded-lg p-3">
                                                     <FileText className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
                                                     <div className="min-w-0 flex-1">
@@ -655,7 +474,7 @@ const page = () => {
                                                     </div>
                                                 </div>
                                             </div>
-                                            
+
                                             {/* Receipt Section */}
                                             <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -666,7 +485,7 @@ const page = () => {
                                                                 {expense.receiptUrl ? 'Receipt Available' : 'No Receipt Uploaded'}
                                                             </p>
                                                             <p className="text-xs text-gray-500 break-words">
-                                                                {expense.receiptUrl 
+                                                                {expense.receiptUrl
                                                                     ? expense.receiptUrl.split('/').pop()
                                                                     : 'Receipt upload is optional'
                                                                 }
@@ -691,32 +510,32 @@ const page = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="flex flex-col gap-3 w-full lg:w-auto">
                                             <div className="flex flex-wrap items-center gap-2 justify-start lg:justify-end">
-                                                <Badge 
+                                                <Badge
                                                     variant={
                                                         expense.category === 'MAINTENANCE' ? 'default' :
-                                                        expense.category === 'UTILITIES' ? 'secondary' :
-                                                        expense.category === 'SUPPLIES' ? 'outline' :
-                                                        expense.category === 'EQUIPMENT' ? 'destructive' : 'default'
+                                                            expense.category === 'UTILITIES' ? 'secondary' :
+                                                                expense.category === 'SUPPLIES' ? 'outline' :
+                                                                    expense.category === 'EQUIPMENT' ? 'destructive' : 'default'
                                                     }
                                                     className="text-xs"
                                                 >
                                                     {expense.category}
                                                 </Badge>
-                                                <Badge 
+                                                <Badge
                                                     variant={
                                                         expense.status === 'APPROVED' ? 'default' :
-                                                        expense.status === 'REJECTED' ? 'destructive' :
-                                                        expense.status === 'PENDING' ? 'outline' : 'secondary'
+                                                            expense.status === 'REJECTED' ? 'destructive' :
+                                                                expense.status === 'PENDING' ? 'outline' : 'secondary'
                                                     }
                                                     className="text-xs"
                                                 >
                                                     {expense.status}
                                                 </Badge>
                                             </div>
-                                            
+
                                             <div className="flex flex-wrap items-center gap-2 justify-start lg:justify-end">
                                                 <Button
                                                     variant="outline"
@@ -731,7 +550,7 @@ const page = () => {
                                                     <Eye className="h-4 w-4 mr-1 sm:mr-2" />
                                                     <span className="hidden sm:inline">View</span>
                                                 </Button>
-                                                <Button 
+                                                <Button
                                                     disabled={expense.status !== 'APPROVED'}
                                                     variant="outline"
                                                     size="sm"
@@ -780,7 +599,7 @@ const page = () => {
                                     ? 'Try adjusting your filters to see more results.'
                                     : 'Get started by creating a new expense.'}
                             </p>
-                            <Button 
+                            <Button
                                 onClick={() => setIsCreateDialogOpen(true)}
                                 className="text-sm sm:text-base"
                             >
@@ -835,7 +654,7 @@ const page = () => {
                                     />
                                 </div>
                             </div>
-                            
+
                             <div className="space-y-2">
                                 <Label htmlFor="description" className="text-sm font-medium text-gray-700">
                                     Description *
@@ -849,7 +668,7 @@ const page = () => {
                                     required
                                 />
                             </div>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="category" className="text-sm font-medium text-gray-700">
@@ -888,7 +707,7 @@ const page = () => {
                                     </Select>
                                 </div>
                             </div>
-                            
+
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <Label className="text-sm font-medium text-gray-700">
@@ -907,7 +726,7 @@ const page = () => {
                                         <p className="text-sm text-red-600">{uploadError}</p>
                                     )}
                                 </div>
-                                
+
                                 <div className="space-y-2">
                                     <Label htmlFor="notes" className="text-sm font-medium text-gray-700">
                                         Additional Notes
@@ -920,16 +739,16 @@ const page = () => {
                                     />
                                 </div>
                             </div>
-                            
+
                             <div className="flex justify-end gap-2 pt-4">
-                                <Button 
-                                    type="button" 
-                                    variant="outline" 
+                                <Button
+                                    type="button"
+                                    variant="outline"
                                     onClick={() => setIsCreateDialogOpen(false)}
                                 >
                                     Cancel
                                 </Button>
-                                <Button 
+                                <Button
                                     type="submit"
                                     disabled={createExpenseMutation.isPending}
                                 >
@@ -994,7 +813,7 @@ const page = () => {
                                     />
                                 </div>
                             </div>
-                            
+
                             <div className="space-y-2">
                                 <Label htmlFor="edit-description" className="text-sm font-medium text-gray-700">
                                     Description *
@@ -1008,7 +827,7 @@ const page = () => {
                                     required
                                 />
                             </div>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="edit-category" className="text-sm font-medium text-gray-700">
@@ -1046,7 +865,7 @@ const page = () => {
                                     </Select>
                                 </div>
                             </div>
-                            
+
                             <div className="space-y-2">
                                 <Label htmlFor="edit-hostel" className="text-sm font-medium text-gray-700">
                                     Hostel *
@@ -1064,7 +883,7 @@ const page = () => {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            
+
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <Label className="text-sm font-medium text-gray-700">
@@ -1083,7 +902,7 @@ const page = () => {
                                         <p className="text-sm text-red-600">{uploadError}</p>
                                     )}
                                 </div>
-                                
+
                                 <div className="space-y-2">
                                     <Label htmlFor="edit-notes" className="text-sm font-medium text-gray-700">
                                         Additional Notes
@@ -1096,16 +915,16 @@ const page = () => {
                                     />
                                 </div>
                             </div>
-                            
+
                             <div className="flex justify-end gap-2 pt-4">
-                                <Button 
-                                    type="button" 
-                                    variant="outline" 
+                                <Button
+                                    type="button"
+                                    variant="outline"
                                     onClick={() => setIsEditDialogOpen(false)}
                                 >
                                     Cancel
                                 </Button>
-                                <Button 
+                                <Button
                                     type="submit"
                                     disabled={isUpdating}
                                 >
@@ -1148,20 +967,20 @@ const page = () => {
                                     <p className="text-sm text-gray-900">PKR {selectedExpense.amount.toLocaleString()}</p>
                                 </div>
                             </div>
-                            
+
                             <div>
                                 <Label className="text-sm font-medium">Description</Label>
                                 <p className="text-sm text-gray-900">{selectedExpense.description}</p>
                             </div>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <Label className="text-sm font-medium">Category</Label>
                                     <Badge variant={
                                         selectedExpense.category === 'MAINTENANCE' ? 'default' :
-                                        selectedExpense.category === 'UTILITIES' ? 'secondary' :
-                                        selectedExpense.category === 'SUPPLIES' ? 'outline' :
-                                        selectedExpense.category === 'EQUIPMENT' ? 'destructive' : 'default'
+                                            selectedExpense.category === 'UTILITIES' ? 'secondary' :
+                                                selectedExpense.category === 'SUPPLIES' ? 'outline' :
+                                                    selectedExpense.category === 'EQUIPMENT' ? 'destructive' : 'default'
                                     }>
                                         {selectedExpense.category}
                                     </Badge>
@@ -1170,14 +989,14 @@ const page = () => {
                                     <Label className="text-sm font-medium">Status</Label>
                                     <Badge variant={
                                         selectedExpense.status === 'APPROVED' ? 'default' :
-                                        selectedExpense.status === 'REJECTED' ? 'destructive' :
-                                        selectedExpense.status === 'PENDING' ? 'outline' : 'secondary'
+                                            selectedExpense.status === 'REJECTED' ? 'destructive' :
+                                                selectedExpense.status === 'PENDING' ? 'outline' : 'secondary'
                                     }>
                                         {selectedExpense.status}
                                     </Badge>
                                 </div>
                             </div>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <Label className="text-sm font-medium">Hostel</Label>
@@ -1189,7 +1008,7 @@ const page = () => {
                                     <p className="text-xs text-gray-500">{selectedExpense.user?.phone}</p>
                                 </div>
                             </div>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <Label className="text-sm font-medium">Submitted At</Label>
@@ -1203,20 +1022,20 @@ const page = () => {
                                     )}
                                 </div>
                             </div>
-                            
+
                             {selectedExpense.approvedAt && (
                                 <div>
                                     <Label className="text-sm font-medium">Approved At</Label>
                                     <p className="text-sm text-gray-900">{new Date(selectedExpense.approvedAt).toLocaleString()}</p>
                                 </div>
                             )}
-                            
+
                             {selectedExpense.receiptUrl && (
                                 <div>
                                     <Label className="text-sm font-medium">Receipt</Label>
-                                    <a 
-                                        href={selectedExpense.receiptUrl} 
-                                        target="_blank" 
+                                    <a
+                                        href={selectedExpense.receiptUrl}
+                                        target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-sm text-blue-600 hover:underline"
                                     >
@@ -1224,14 +1043,14 @@ const page = () => {
                                     </a>
                                 </div>
                             )}
-                            
+
                             {selectedExpense.notes && (
                                 <div>
                                     <Label className="text-sm font-medium">Notes</Label>
                                     <p className="text-sm text-gray-900">{selectedExpense.notes}</p>
                                 </div>
                             )}
-                            
+
                             <div className="flex justify-end gap-2">
                                 <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
                                     Close

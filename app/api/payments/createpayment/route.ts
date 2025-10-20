@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
         const payment = await prisma.payment.create({
             data: {
                 bookingId: bookingId,
-                userId: session.user.id,
+                userId: booking.userId,
                 hostelId: hostelId,
                 roomId: roomId || null,
                 amount: Number(amount),
@@ -86,6 +86,8 @@ export async function POST(request: NextRequest) {
                 }
             }
         });
+
+        // Payment creation email is now handled by booking confirmation email
 
         return NextResponse.json(payment, { status: 201 });
     } catch (error) {

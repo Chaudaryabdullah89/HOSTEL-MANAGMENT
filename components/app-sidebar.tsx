@@ -14,6 +14,8 @@ import {
   UserCheck,
   Shield,
   FileText,
+
+  MessageSquare,
   CreditCard,
   Banknote,
   Wrench,
@@ -162,9 +164,19 @@ const menuItems = {
       icon: User,
     },
     {
-title : "Maintenance",
-url : "/dashboard/admin/maintenance",
-icon : Wrench,
+      title : "Users Records",
+      url: "/dashboard/admin/records",
+      icon: Users,
+    },
+    {
+      title : "Reports",
+      url: "/dashboard/admin/report",
+      icon: FileText,
+    },
+    {
+title : "Complaints",
+url : "/dashboard/admin/complaints",
+icon : MessageSquare,
     },
     {
       title : "Expenses",

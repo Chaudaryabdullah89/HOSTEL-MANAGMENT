@@ -1,12 +1,12 @@
-import { NextRequest , NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { BookingType, BookingStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import  {getServerSession} from "@/lib/server-auth"
+import { getServerSession } from "@/lib/server-auth"
 import { updateRoomStatusBasedOnCapacity, isRoomAvailableForBooking, updateAllRoomStatuses } from "@/lib/room-utils";
 
 export async function POST(request: NextRequest) {
     try {
-        const { roomId,hostelId,checkin,checkout,price,bookingType,duration,notes, status, cancelledAt,cancelledBy,userId } = await request.json();
+        const { roomId, hostelId, checkin, checkout, price, bookingType, duration, notes, status, cancelledAt, cancelledBy, userId } = await request.json();
         const session = await getServerSession(request)
 
         if (!session) {
@@ -16,15 +16,15 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        if (!roomId || !hostelId) {
+        if (!roomId || !hostelId || !userId) {
             return NextResponse.json(
-                { error: "Missing required fields: roomId, hostelId" },
+                { error: "Missing required fields: roomId, hostelId, userId" },
                 { status: 400 }
             )
         }
 
         let checkinDate, checkoutDate;
-        
+
         if (bookingType === 'MONTHLY') {
             checkinDate = checkin ? new Date(checkin) : new Date();
             checkoutDate = checkout ? new Date(checkout) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
             checkoutDate = new Date(checkout);
         }
         const hostel = await prisma.hostel.findUnique({
-            where : {
-                id : hostelId
+            where: {
+                id: hostelId
             }
         })
         if (!hostel) {
@@ -51,9 +51,9 @@ export async function POST(request: NextRequest) {
         }
 
         const room = await prisma.room.findUnique({
-            where : {
-                hostelId : hostelId,
-                id : roomId
+            where: {
+                hostelId: hostelId,
+                id: roomId
             }
         })
         if (!room) {
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
             if (bookingType === 'MONTHLY') {
                 calculatedPrice = room.pricePerMonth;
             } else {
-                
+
                 const durationInDays = Math.ceil((checkoutDate.getTime() - checkinDate.getTime()) / (1000 * 60 * 60 * 24));
                 calculatedPrice = room.pricePerNight * durationInDays;
             }
@@ -89,64 +89,64 @@ export async function POST(request: NextRequest) {
                 checkin: checkinDate,
                 checkout: checkoutDate,
                 price: calculatedPrice ? Number(calculatedPrice) : undefined,
-                bookingType: bookingType ? bookingType as BookingType : undefined ,
+                bookingType: bookingType ? bookingType as BookingType : undefined,
                 status: status ? (status.toUpperCase() as BookingStatus) : "PENDING",
                 duration: duration ? Number(duration) : (bookingType === 'MONTHLY' ? 30 : undefined),
                 notes,
                 cancelledBy: session?.user?.id || undefined,
                 userId: userId,
             },
-            include :{
-                room :{
-                    select :{
-                        id : true,
-                        roomNumber : true,
-                        type : true,
-                        pricePerNight : true,
-                        pricePerMonth : true,
-                        status : true,
-                        amenities : true,
-                        floor : true,
+            include: {
+                room: {
+                    select: {
+                        id: true,
+                        roomNumber: true,
+                        type: true,
+                        pricePerNight: true,
+                        pricePerMonth: true,
+                        status: true,
+                        amenities: true,
+                        floor: true,
                     }
                 },
-                hostel :{
-                    select :{
-                        id : true,
-                        hostelName : true,
-                        floors : true,
-                        amenities : true,
+                hostel: {
+                    select: {
+                        id: true,
+                        hostelName: true,
+                        floors: true,
+                        amenities: true,
                     }
                 },
-                user :{
-                    select :{
-                        id : true,
-                        name : true,
-                        email : true,
-                        role : true,
-                        createdAt : true,
-                        updatedAt : true,
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        role: true,
+                        createdAt: true,
+                        updatedAt: true,
                     }
                 },
-                payment :{
-                    select :{
-                        id : true,
-                        amount : true,
-                        method : true,
-                        status : true,
-                        transactionId : true,
-                        notes : true,
-                        createdAt : true,
-                        updatedAt : true,
+                payment: {
+                    select: {
+                        id: true,
+                        amount: true,
+                        method: true,
+                        status: true,
+                        transactionId: true,
+                        notes: true,
+                        createdAt: true,
+                        updatedAt: true,
                     }
                 }
             },
-           
+
 
         });
 
         await updateRoomStatusBasedOnCapacity(roomId);
         await updateAllRoomStatuses();
-        
+
         // Return updated room data along with booking
         const updatedRoom = await prisma.room.findUnique({
             where: { id: roomId },
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
                 capacity: true
             }
         });
-        
+
         return NextResponse.json({
             ...booking,
             roomStatus: updatedRoom?.status,
@@ -169,5 +169,5 @@ export async function POST(request: NextRequest) {
             { status: 500 }
         )
     }
-    
+
 }

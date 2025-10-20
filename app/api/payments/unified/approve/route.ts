@@ -20,7 +20,6 @@ export async function PUT(request: NextRequest) {
         }
 
         if (type === 'booking') {
-            // Handle booking payment approval
             const payment = await prisma.payment.findUnique({
                 where: { id: paymentId },
                 include: {
@@ -34,13 +33,13 @@ export async function PUT(request: NextRequest) {
             }
 
             if (payment.approvalStatus !== 'PENDING') {
-                return NextResponse.json({ 
-                    error: "Payment is not pending approval" 
+                return NextResponse.json({
+                    error: "Payment is not pending approval"
                 }, { status: 400 });
             }
 
             const result = await prisma.$transaction(async (tx: any) => {
-           
+
                 const updatedPayment = await tx.payment.update({
                     where: { id: paymentId },
                     data: {
@@ -84,8 +83,8 @@ export async function PUT(request: NextRequest) {
                     }
                 });
 
-             
-            
+
+
                 if (updatedPayment.booking && updatedPayment.booking.status === 'PENDING') {
                     await tx.booking.update({
                         where: { id: updatedPayment.booking.id },
@@ -93,14 +92,39 @@ export async function PUT(request: NextRequest) {
                             status: 'CONFIRMED'
                         }
                     });
-                    
-                 
-                    
+
+
+
                     updatedPayment.booking.status = 'CONFIRMED';
                 }
 
                 return updatedPayment;
             });
+
+            // Send payment approval email notification
+            try {
+                const emailPayload = {
+                    type: 'payment_approved',
+                    userEmail: result.user.email,
+                    userName: result.user.name,
+                    bookingId: result.booking.id,
+                    roomNumber: result.booking.room.roomNumber,
+                    hostelName: result.booking.hostel.hostelName,
+                    amount: result.amount,
+                    paymentId: result.id
+                };
+
+                await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/mail/send-notification`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(emailPayload),
+                });
+            } catch (emailError) {
+                console.error("Error sending payment approval email:", emailError);
+                // Don't fail the payment approval if email fails
+            }
 
             return NextResponse.json({
                 success: true,
@@ -109,7 +133,7 @@ export async function PUT(request: NextRequest) {
             });
 
         } else if (type === 'salary') {
-            
+
             const salary = await prisma.salary.findUnique({
                 where: { id: paymentId },
                 include: {
@@ -137,8 +161,8 @@ export async function PUT(request: NextRequest) {
             }
 
             if (salary.status !== 'PENDING') {
-                return NextResponse.json({ 
-                    error: "Salary is not pending approval" 
+                return NextResponse.json({
+                    error: "Salary is not pending approval"
                 }, { status: 400 });
             }
 
