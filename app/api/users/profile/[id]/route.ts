@@ -74,7 +74,7 @@ export async function GET(
                                 pricePerMonth: true,
                             }
                         },
-                        payment: {
+                        payments: {
                             select: {
                                 id: true,
                                 amount: true,

@@ -52,7 +52,12 @@ export default function PaymentApprovalsPage() {
 
     useEffect(() => {
         if (payments.length > 0) {
+            console.log('Payments received:', payments.length);
             const bookingPayments = payments.filter(p => p.type === 'booking');
+            console.log('Booking payments:', bookingPayments.length);
+            if (bookingPayments.length > 0) {
+                console.log('First booking payment:', JSON.stringify(bookingPayments[0], null, 2));
+            }
         }
     }, [payments])
     const approvePaymentMutation = useUnifiedApprovePayment()
@@ -314,182 +319,137 @@ export default function PaymentApprovalsPage() {
             <div className="space-y-4">
                 {filteredPayments.length > 0 ? (
                     filteredPayments.map(payment => (
-                        <Card key={payment.id} className="hover:shadow-md transition-shadow">
-                            <CardContent className="p-6">
-                                <div className="flex-col md:flex-row items-start justify-between">
-                                    <div className="flex-1">
-                                        <div className="flex-col md:flex-row items-center gap-8 mb-4">
-                                            <div className="flex items-center mb-6 md:mb-0 gap-2">
-                                                {getMethodIcon(payment.method)}
-                                                <span className="font-medium text-lg">PKR{payment.amount}</span>
-                                                <Badge variant="outline" className={
-                                                    payment.type === 'salary'
-                                                        ? "bg-blue-50 text-blue-700 border-blue-200"
-                                                        : "bg-green-50 text-green-700 border-green-200"
-                                                }>
-                                                    {payment.type === 'salary' ? 'Salary' : payment.type === 'booking' ? 'Booking' : 'Expense'}
-                                                </Badge>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                {getApprovalStatusBadge(payment.approvalStatus)}
-                                                {getApprovalStatusBadge(payment.approvalStatus)}
-
-                                            </div>
-                                            {/* {getPaymentStatusBadge(payment.status)} */}
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {/* User Info */}
-                                            <div className="space-y-2">
-                                                <div className="flex items-center gap-2">
-                                                    <User className="h-4 w-4 text-gray-500" />
-                                                    <div>
-                                                        <p className="font-medium">
-                                                            {payment.user?.name || 'N/A'}
-                                                        </p>
-                                                        <p className="text-sm text-gray-500">
-                                                            {payment.user?.email || 'N/A'}
-                                                        </p>
-                                                        {payment.type === 'salary' && (
-                                                            <p className="text-xs text-blue-600">
-                                                                {payment.salary?.staff?.position || 'Staff Member'}
-                                                            </p>
-                                                        )}
-
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Booking/Salary/Expense Info */}
-                                            <div className="space-y-2">
-                                                {payment.type === 'booking' ? (
-                                                    <div className="flex items-center gap-2">
-                                                        <Calendar className="h-4 w-4 text-gray-500" />
-                                                        <div>
-                                                            <p className="text-sm font-medium">Booking #{payment.booking?.id?.slice(-8) || 'N/A'}</p>
-                                                            <p className="text-sm text-gray-500">
-                                                                {payment.booking?.room?.roomNumber ? `Room ${payment.booking.room.roomNumber}` : 'N/A'}
-                                                                {payment.booking?.room?.floor && ` • Floor ${payment.booking.room.floor}`}
-                                                            </p>
-                                                            <p className="text-xs text-gray-400">
-                                                                {payment.booking?.checkin && payment.booking?.checkout ?
-                                                                    `${format(new Date(payment.booking.checkin), 'MMM dd')} - ${format(new Date(payment.booking.checkout), 'MMM dd, yyyy')}` :
-                                                                    'Dates not available'
-                                                                }
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                ) : payment.type === 'salary' ? (
-                                                    <div className="flex items-center gap-2">
-                                                        <DollarSign className="h-4 w-4 text-gray-500" />
-                                                        <div>
-                                                            <p className="text-sm font-medium">Salary Payment</p>
-                                                            <p className="text-sm text-gray-500">
-                                                                {payment.salary?.payPeriod || 'N/A'} • {payment.salary?.payDate ? format(new Date(payment.salary.payDate), 'MMM dd, yyyy') : 'N/A'}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex items-center gap-2">
-                                                        <FileText className="h-4 w-4 text-gray-500" />
-                                                        <div>
-                                                            <p className="text-sm font-medium">{payment.expense?.title || 'Expense Payment'}</p>
-                                                            <p className="text-sm text-gray-500">
-                                                                {payment.expense?.category || 'N/A'} • {payment.expense?.hostel?.hostelName || 'N/A'}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Payment Details */}
-                                        <div className="mt-4 pt-4 border-t">
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                                                <div>
-                                                    <span className="text-gray-500">Method:</span>
-                                                    <span className="ml-2 font-medium">{payment.method || 'N/A'}</span>
-                                                </div>
-                                                <div>
-                                                    <span className="text-gray-500">Transaction ID:</span>
-                                                    <span className="ml-2 font-medium">{payment.transactionId || 'N/A'}</span>
-                                                </div>
-                                                <div>
-                                                    <span className="text-gray-500">Created:</span>
-                                                    <span className="ml-2 font-medium">
-                                                        {format(new Date(payment.createdAt), 'MMM dd, yyyy HH:mm')}
-                                                    </span>
-                                                </div>
-
-                                            </div>
-                                            {payment.notes && (
-                                                <div className="mt-2">
-                                                    <span className="text-gray-500">Notes:</span>
-                                                    <p className="text-sm text-gray-700 mt-1">{payment.notes}</p>
-                                                </div>
-                                            )}
+                        <Card
+                            key={payment.id}
+                            className="border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 bg-white"
+                        >
+                            <CardContent className="p-5 space-y-5">
+                                {/* Header */}
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                    <div className="flex items-center gap-3">
+                                        {getMethodIcon(payment.method)}
+                                        <div>
+                                            <p className="text-lg font-semibold text-gray-900">
+                                                PKR {payment.amount.toLocaleString()}
+                                            </p>
+                                            <p className="text-sm text-gray-500 capitalize">{payment.method?.toLowerCase()}</p>
                                         </div>
                                     </div>
-
-                                    {/* Actions */}
-                                    <div className="flex flex-col md:flex-row item-center  gap-2 ml-0 md:ml-4 mt-4 md:mt-0">
-
-                                        <Button
-                                            size="sm"
+                                    <div className="flex items-center gap-2">
+                                        <Badge
                                             variant="outline"
-                                            onClick={() => {
-                                                setSelectedPayment(payment)
-                                                setIsDetailsDialogOpen(true)
-                                            }}
-                                            className="text-black border-blue-200 p-4 cursor-pointer text-md hover:bg-blue-100"
+                                            className={
+                                                payment.type === "salary"
+                                                    ? "bg-blue-50 text-blue-700 border-blue-200"
+                                                    : payment.type === "expense"
+                                                        ? "bg-purple-50 text-purple-700 border-purple-200"
+                                                        : "bg-green-50 text-green-700 border-green-200"
+                                            }
                                         >
-                                            <Eye className="h-6 w-6 mr-1" />
-                                            {payment.type === 'salary' ? 'Salary Details' :
-                                                payment.type === 'expense' ? 'Expense Details' : 'Booking Details'}
-                                        </Button>
+                                            {payment.type.charAt(0).toUpperCase() + payment.type.slice(1)}
+                                        </Badge>
+                                        {getApprovalStatusBadge(payment.approvalStatus)}
+                                    </div>
+                                </div>
 
-                                        {payment.approvalStatus === 'PENDING' && (
-                                            <>
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        setSelectedPayment(payment)
-                                                        setIsApprovalDialogOpen(true)
-                                                    }}
-                                                    className="bg-green-100 hover:bg-green-200 text-green-800 cursor-pointer"
-                                                >
-                                                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                                                    Approve
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="destructive"
-                                                    onClick={() => {
-                                                        setSelectedPayment(payment)
-                                                        setIsRejectionDialogOpen(true)
-                                                    }}
-                                                    className="cursor-pointer bg-red-100 hover:bg-red-200 text-red-800"
-                                                >
-                                                    {/* <XCircle2 className="h-4 w-4 mr-1" /> */}
-                                                    Reject
-                                                </Button>
-                                            </>
-                                        )}
-                                        {payment.approvalStatus === 'APPROVED' && (
-                                            <div className="text-sm bg-green-100 p- rounded-md text-green-800 font-medium flex items-center gap-1 justify-center">
-                                                {/* <CheckCircle2 className="h-4 w-4" /> */}
-                                                <Button variant="" size="" className="bg-green-100 text-md hover:bg-green-200 text-green-800 cursor-pointer">Approved</Button>
-                                            </div>
-                                        )}
-                                        {payment.approvalStatus === 'REJECTED' && (
-                                            <div className="text-sm bg-red-100 p-2   rounded-md  items-center text-center  text-red-800 font-medium flex items-center gap-1 justify-center">
-                                                {/* <XCircle2 className="h-4 w-4" /> */}
-                                                <XCircle className="h-4 w-4" />
-
-                                                <Button variant="outline" size="md" className="bg-red-100 hover:bg-red-200 text-red-800 cursor-pointer">Rejected</Button>
-                                            </div>
+                                {/* User Info */}
+                                <div className="flex flex-col sm:flex-row justify-between text-sm text-gray-600 border-t pt-3">
+                                    <div>
+                                        <span className="font-medium text-gray-800">
+                                            {payment.user?.name || "Unknown User"}
+                                        </span>
+                                        {payment.user?.email && (
+                                            <span className="text-gray-400 ml-2">({payment.user.email})</span>
                                         )}
                                     </div>
+                                    <span>{format(new Date(payment.createdAt), "MMM dd, yyyy hh:mm a")}</span>
+                                </div>
+
+                                {/* Payment Details */}
+                                <div className="bg-gray-50 border rounded-lg p-4 space-y-1 text-sm text-gray-700">
+                                    {payment.type === "booking" && payment.booking && (
+                                        <>
+                                            <p>
+                                                <span className="font-medium text-gray-800">Booking ID:</span> #
+                                                {payment.booking.id?.slice(-8)}
+                                            </p>
+                                            <p>
+                                                <span className="font-medium text-gray-800">Room:</span>{" "}
+                                                {payment.booking.room?.roomNumber || "N/A"}
+                                            </p>
+                                            <p>
+                                                <span className="font-medium text-gray-800">Hostel:</span>{" "}
+                                                {payment.booking.hostel?.hostelName || "N/A"}
+                                            </p>
+                                        </>
+                                    )}
+
+                                    {payment.type === "salary" && payment.salary && (
+                                        <>
+                                            <p>
+                                                <span className="font-medium text-gray-800">Pay Period:</span>{" "}
+                                                {payment.salary.payPeriod}
+                                            </p>
+                                            <p>
+                                                <span className="font-medium text-gray-800">Net Amount:</span> PKR{" "}
+                                                {payment.salary.netAmount?.toLocaleString()}
+                                            </p>
+                                        </>
+                                    )}
+
+                                    {payment.type === "expense" && payment.expense && (
+                                        <>
+                                            <p>
+                                                <span className="font-medium text-gray-800">Title:</span>{" "}
+                                                {payment.expense.title}
+                                            </p>
+                                            <p>
+                                                <span className="font-medium text-gray-800">Category:</span>{" "}
+                                                {payment.expense.category}
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex flex-wrap justify-end gap-2 pt-2 border-t">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                            setSelectedPayment(payment);
+                                            setIsDetailsDialogOpen(true);
+                                        }}
+                                        className="text-gray-700 hover:bg-gray-100"
+                                    >
+                                        <Eye className="h-4 w-4 mr-1" /> View Details
+                                    </Button>
+
+                                    {payment.approvalStatus === "PENDING" && (
+                                        <>
+                                            <Button
+                                                size="sm"
+                                                onClick={() => {
+                                                    setSelectedPayment(payment);
+                                                    setIsApprovalDialogOpen(true);
+                                                }}
+                                                className="bg-green-100 hover:bg-green-200 text-green-800"
+                                            >
+                                                <CheckCircle2 className="h-4 w-4 mr-1" /> Approve
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="destructive"
+                                                onClick={() => {
+                                                    setSelectedPayment(payment);
+                                                    setIsRejectionDialogOpen(true);
+                                                }}
+                                                className="bg-red-100 hover:bg-red-200 text-red-800"
+                                            >
+                                                <XCircle className="h-4 w-4 mr-1" /> Reject
+                                            </Button>
+                                        </>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
