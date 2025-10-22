@@ -18,6 +18,10 @@ export async function sendEmail({ to, subject, html }: EmailOptions) {
       throw new Error("EMAIL_USER environment variable is not set");
     }
 
+    console.log("📧 Attempting to send email to:", to);
+    console.log("📧 Email subject:", subject);
+    console.log("📧 From:", process.env.EMAIL_USER);
+
     const info = await transporter.sendMail({
       from: `"Sama Hostel" <${process.env.EMAIL_USER}>`,
       to,
@@ -25,10 +29,15 @@ export async function sendEmail({ to, subject, html }: EmailOptions) {
       html,
     });
 
-    console.log("📨 Email sent:", info.messageId);
+    console.log("📨 Email sent successfully:", info.messageId);
+    console.log("📨 Response:", info.response);
     return info;
   } catch (error) {
-    console.error("❌ Email sending failed:", error);
+    console.error("❌ Email sending failed:");
+    console.error("❌ Error type:", error.constructor.name);
+    console.error("❌ Error message:", error.message);
+    console.error("❌ Error code:", error.code);
+    console.error("❌ Full error:", error);
     throw error;
   }
 }

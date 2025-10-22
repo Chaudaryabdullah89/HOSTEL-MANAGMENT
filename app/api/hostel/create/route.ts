@@ -25,14 +25,14 @@ export async function POST(request: NextRequest) {
             // occupiedRooms,
             // image,
             // revenue,
-        wardenId,
+            wardenId,
             wardensIds,
         } = body;
         console.log("BODY ", body);
         console.log("hostelStatus received:", hostelStatus);
         console.log("hostelStatus type:", typeof hostelStatus);
-        
-      
+
+
         const getHostelTypeEnum = (type: string) => {
             switch (type?.toLowerCase()) {
                 case 'BUDGET': return HostelType.BUDGET;
@@ -43,14 +43,14 @@ export async function POST(request: NextRequest) {
         };
 
         const hostelTypeEnum = getHostelTypeEnum(hostelType);
-       
-         const getHostelStatusEnum = (status: string) => {
+
+        const getHostelStatusEnum = (status: string) => {
             switch (status?.toLowerCase()) {
                 case 'active': return HostelStatus.ACTIVE;
                 case 'inactive': return HostelStatus.INACTIVE;
                 default: return HostelStatus.ACTIVE;
             }
-        };  
+        };
         const hostelStatusEnum = getHostelStatusEnum(hostelStatus);
         console.log("hostelStatusEnum converted:", hostelStatusEnum);
         // Basic field validation
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        let hostel;
+        let hostel: any;
         try {
             hostel = await prisma.hostel.create({
                 data: {
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
                     hostelType: hostelTypeEnum,
                     hostelsStatus: hostelStatusEnum,
                     contact: contact ? parseInt(contact.toString().replace(/\D/g, '').substring(0, 9)) : null,
-                    floors : parseInt(floors),
+                    floors: parseInt(floors),
                     amenities: amenities,
                     // capacity : parseInt(capacity),
                     // occupiedRooms : parseInt(occupiedRooms),
@@ -110,8 +110,13 @@ export async function POST(request: NextRequest) {
                     // revenue : parseInt(revenue),
                     userId: session.user.id,
                     addressId: addressId.id,
+                    wardensIds: wardensIds && Array.isArray(wardensIds) ? wardensIds : [],
+                    // Sync the wardens relation so UI can display warden names
+                    wardens: wardensIds && Array.isArray(wardensIds) && wardensIds.length > 0
+                        ? { connect: wardensIds.map((id: string) => ({ id })) }
+                        : undefined,
                 },
-                select :{
+                select: {
                     id: true,
                     hostelName: true,
                     description: true,
@@ -133,17 +138,11 @@ export async function POST(request: NextRequest) {
                         }
                     },
                     wardensIds: true,
-                    Warden: {
+                    wardens: {
                         select: {
                             id: true,
-                            userId: true,
-                            user: {
-                                select: {
-                                    id: true,
-                                    name: true,
-                                }
-                            },
-                            hostelId: true,
+                            name: true,
+                            email: true,
                         }
                     },
                     createdAt: true,
@@ -151,46 +150,111 @@ export async function POST(request: NextRequest) {
                 }
             });
 
-          
+
+            // Handle warden assignments with validation
+            const warnings: any[] = [];
             if (wardensIds && Array.isArray(wardensIds) && wardensIds.length > 0) {
                 try {
                     for (const userId of wardensIds) {
-                        // Check if user exists
+                        // Check if user exists and has WARDEN role
                         const user = await prisma.user.findUnique({
-                            where: { id: userId }
+                            where: { id: userId },
+                            include: {
+                                wardens: {
+                                    include: {
+                                        hostel: {
+                                            select: {
+                                                id: true,
+                                                hostelName: true
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         });
 
-                        if (user) {
-                            
-                            const existingWarden = await prisma.warden.findFirst({
-                                where: {
-                                    userId: userId,
-                                    hostelId: hostel.id
+                        if (!user) {
+                            warnings.push({
+                                type: 'USER_NOT_FOUND',
+                                userId: userId,
+                                message: `User with ID ${userId} not found`
+                            });
+                            console.warn(`User with ID ${userId} not found`);
+                            continue;
+                        }
+
+                        // Validate WARDEN role
+                        if (user.role !== 'WARDEN') {
+                            warnings.push({
+                                type: 'INVALID_ROLE',
+                                userId: userId,
+                                userName: user.name,
+                                currentRole: user.role,
+                                message: `User ${user.name} has role ${user.role}, not WARDEN`
+                            });
+                            console.warn(`User ${user.name} has role ${user.role}, cannot assign as warden`);
+                            continue;
+                        }
+
+                        // Get or create warden record for this user
+                        const existingWarden = await prisma.warden.findUnique({
+                            where: { userId: userId }
+                        });
+
+                        if (existingWarden) {
+                            // Check if hostel already assigned
+                            if (existingWarden.hostelIds.includes(hostel.id)) {
+                                console.log(`Warden ${user.name} already assigned to hostel ${hostel.hostelName} - skipping`);
+                                continue;
+                            }
+
+                            // Check for other hostel assignments (warning)
+                            if (existingWarden.hostelIds.length > 0) {
+                                const otherHostels = await prisma.hostel.findMany({
+                                    where: {
+                                        id: { in: existingWarden.hostelIds }
+                                    },
+                                    select: { hostelName: true }
+                                });
+
+                                otherHostels.forEach((h: any) => {
+                                    warnings.push({
+                                        type: 'MULTI_HOSTEL',
+                                        userId: userId,
+                                        userName: user.name,
+                                        otherHostel: h.hostelName,
+                                        message: `Warden ${user.name} is already assigned to ${h.hostelName}`
+                                    });
+                                });
+                            }
+
+                            // Add hostel to the array
+                            await prisma.warden.update({
+                                where: { userId: userId },
+                                data: {
+                                    hostelIds: {
+                                        push: hostel.id
+                                    }
                                 }
                             });
-
-                            if (!existingWarden) {
-                                // Create warden record for this hostel
-                                await prisma.warden.create({
-                                    data: {
-                                        userId: userId,
-                                        hostelId: hostel.id
-                                    }
-                                });
-                                console.log(`Warden ${user.name} assigned to hostel ${hostel.hostelName}`);
-                            } else {    
-                                console.log(`Warden ${user.name} already assigned to hostel ${hostel.hostelName}`);
-                            }
+                            console.log(`Warden ${user.name} assigned to hostel ${hostel.hostelName} (now manages ${existingWarden.hostelIds.length + 1} hostels)`);
                         } else {
-                            console.warn(`User with ID ${userId} not found`);
+                            // Create new warden record
+                            await prisma.warden.create({
+                                data: {
+                                    userId: userId,
+                                    hostelIds: [hostel.id]
+                                }
+                            });
+                            console.log(`Warden ${user.name} newly assigned to hostel ${hostel.hostelName}`);
                         }
                     }
                 } catch (wardenError) {
                     console.error("Error assigning wardens:", wardenError);
                 }
             }
-            
-         
+
+
             if (wardenId && !wardensIds) {
                 try {
                     const warden = await prisma.warden.findUnique({
@@ -199,11 +263,18 @@ export async function POST(request: NextRequest) {
                     });
 
                     if (warden) {
-                        await prisma.warden.update({
-                            where: { id: wardenId },
-                            data: { hostelId: hostel.id }
-                        });
-                        console.log(`Warden ${warden.user.name} assigned to hostel ${hostel.hostelName}`);
+                        // Check if hostel is already in the array
+                        if (!warden.hostelIds.includes(hostel.id)) {
+                            await prisma.warden.update({
+                                where: { id: wardenId },
+                                data: {
+                                    hostelIds: {
+                                        push: hostel.id
+                                    }
+                                }
+                            });
+                            console.log(`Warden ${warden.user.name} assigned to hostel ${hostel.hostelName}`);
+                        }
                     } else {
                         console.warn(`Warden with ID ${wardenId} not found`);
                     }
@@ -211,9 +282,13 @@ export async function POST(request: NextRequest) {
                     console.error("Error assigning warden:", wardenError);
                 }
             }
-        
+
             console.log("HOSTEL ", hostel);
-            return NextResponse.json(hostel, { status: 201 });
+            return NextResponse.json({
+                message: "Hostel created successfully",
+                data: hostel,
+                warnings: warnings.length > 0 ? warnings : undefined
+            }, { status: 201 });
 
         } catch (dbHostelError) {
             console.error("Hostel creation error:", dbHostelError);

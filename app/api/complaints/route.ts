@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
         }
 
         await ensureConnection();
-        
+
         // Build where clause based on user role only
         let whereClause: any = {};
 
@@ -24,9 +24,9 @@ export async function GET(request: NextRequest) {
             // Warden can only see complaints from their managed hostels
             const wardenHostels = await prisma.warden.findMany({
                 where: { userId: session.user.id },
-                select: { hostelId: true }
+                select: { hostelIds: true }
             });
-            const hostelIds = wardenHostels.map((w: any) => w.hostelId).filter(Boolean);
+            const hostelIds = wardenHostels.flatMap((w: any) => w.hostelIds).filter(Boolean);
             whereClause.hostelId = { in: hostelIds };
         } else if (session.user.role === 'GUEST') {
             // Guest can only see their own complaints
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
         }
 
         await ensureConnection();
-        
+
         const body = await request.json();
         const {
             title,

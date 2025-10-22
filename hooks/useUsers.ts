@@ -85,7 +85,7 @@ export function useUserStats() {
 // Create user mutation
 export function useCreateUser() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (userData: any) => {
       const response = await fetch('/api/users', {
@@ -93,12 +93,12 @@ export function useCreateUser() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData),
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to create user');
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -115,7 +115,7 @@ export function useCreateUser() {
 // Update user mutation
 export function useUpdateUser() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
       const response = await fetch(`/api/users/${id}`, {
@@ -123,12 +123,12 @@ export function useUpdateUser() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to update user');
       }
-      
+
       return response.json();
     },
     onSuccess: (data, variables) => {
@@ -149,27 +149,27 @@ export function useUpdateUser() {
 
 export function useUpdateTheUser(userId: string) {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ updateddata }: { updateddata: any }) => {
       const response = await fetch(`/api/users/${userId}`, {
-        method: 'PUT', 
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateddata)
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to update user');
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.users });
       queryClient.invalidateQueries({ queryKey: [...queryKeys.usersList(), 'detail', userId] });
       toast.success('User updated successfully!');
-    },    
+    },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update user');
     }
@@ -179,24 +179,25 @@ export function useUpdateTheUser(userId: string) {
 // Update user role mutation
 export function useUpdateUserRole() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: async ({ userId, newRole, reason }: { 
-      userId: string; 
-      newRole: string; 
-      reason?: string 
+    mutationFn: async ({ userId, newRole, reason, hostelId }: {
+      userId: string;
+      newRole: string;
+      reason?: string;
+      hostelId?: string | null;
     }) => {
       const response = await fetch('/api/users/update-role', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, newRole, reason }),
+        body: JSON.stringify({ userId, newRole, reason, hostelId }),
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to update user role');
       }
-      
+
       return response.json();
     },
     onSuccess: (data, variables) => {
@@ -218,18 +219,18 @@ export function useUpdateUserRole() {
 // Delete user mutation
 export function useDeleteUser() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (id: string) => {
       const response = await fetch(`/api/users/${id}`, {
         method: 'DELETE',
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to delete user');
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -246,7 +247,7 @@ export function useDeleteUser() {
 // Toggle user status mutation (activate/deactivate)
 export function useToggleUserStatus() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: 'active' | 'inactive' }) => {
       const response = await fetch(`/api/users/${id}/status`, {
@@ -254,12 +255,12 @@ export function useToggleUserStatus() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to update user status');
       }
-      
+
       return response.json();
     },
     onSuccess: (data, variables) => {

@@ -3,6 +3,7 @@ import { BookingType, BookingStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/server-auth"
 import { updateRoomStatusBasedOnCapacity, isRoomAvailableForBooking, updateAllRoomStatuses } from "@/lib/room-utils";
+import { googleSheetsService } from "@/lib/googleSheets";
 
 export async function POST(request: NextRequest) {
     try {
@@ -143,11 +144,32 @@ export async function POST(request: NextRequest) {
 
 
         });
+        const updateuserrole = await prisma.user.update({
+            where: { id: booking.user?.id || userId },
+            data: { role: "GUEST" }
+        })
 
         await updateRoomStatusBasedOnCapacity(roomId);
         await updateAllRoomStatuses();
 
-        // Return updated room data along with booking
+        // Add booking to Google Sheets
+        try {
+            await googleSheetsService.addBooking({
+                id: booking.id,
+                guestName: booking.user?.name || 'N/A',
+                guestEmail: booking.user?.email || 'N/A',
+                roomNumber: booking.room?.roomNumber || 'N/A',
+                checkin: booking.checkin,
+                checkout: booking.checkout,
+                status: booking.status,
+                price: booking.price,
+                createdAt: booking.createdAt
+            });
+        } catch (sheetsError) {
+            console.error('Failed to add booking to Google Sheets:', sheetsError);
+            // Don't fail the booking creation if Google Sheets fails
+        }
+
         const updatedRoom = await prisma.room.findUnique({
             where: { id: roomId },
             select: {
@@ -161,6 +183,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             ...booking,
             roomStatus: updatedRoom?.status,
+            userRole: updateuserrole?.role,
             roomCapacity: updatedRoom?.capacity
         });
     } catch (error) {

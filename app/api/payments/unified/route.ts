@@ -14,10 +14,10 @@ export async function GET(request: NextRequest) {
         const type = searchParams.get('type') || 'all';
         const status = searchParams.get('status') || 'all';
 
-        // Build filters per entity type
+
         let whereClause: any = {};
         if (status !== 'all') {
-            // For booking payments we filter by approvalStatus directly
+
             whereClause.approvalStatus = status;
         }
         const salaryWhere: any = {};

@@ -52,12 +52,7 @@ export default function PaymentApprovalsPage() {
 
     useEffect(() => {
         if (payments.length > 0) {
-            console.log('Payments received:', payments.length);
             const bookingPayments = payments.filter(p => p.type === 'booking');
-            console.log('Booking payments:', bookingPayments.length);
-            if (bookingPayments.length > 0) {
-                console.log('First booking payment:', JSON.stringify(bookingPayments[0], null, 2));
-            }
         }
     }, [payments])
     const approvePaymentMutation = useUnifiedApprovePayment()

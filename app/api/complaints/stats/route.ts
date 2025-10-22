@@ -19,13 +19,13 @@ export async function GET(request: NextRequest) {
       // Warden can only see stats for their managed hostels
       const wardenHostels = await prisma.warden.findMany({
         where: { userId: session.user.id },
-        select: { hostelId: true },
+        select: { hostelIds: true },
       });
 
       // here we get all the comaplain that whose warden == session.user.id and we filter the complaint  by particular hostel
 
       const hostelIds = wardenHostels
-        .map((w: any) => w.hostelId)
+        .flatMap((w: any) => w.hostelIds)
         .filter(Boolean);
       whereClause.hostelId = { in: hostelIds };
     } else if (session.user.role === "GUEST") {
@@ -107,10 +107,10 @@ export async function GET(request: NextRequest) {
     const avgResolutionTime =
       resolvedComplaintsWithTimes.length > 0
         ? resolvedComplaintsWithTimes.reduce((sum: number, complaint: any) => {
-            const resolutionTime =
-              complaint.resolvedAt!.getTime() - complaint.createdAt.getTime();
-            return sum + resolutionTime / (1000 * 60 * 60 * 24); // Convert to days
-          }, 0) / resolvedComplaintsWithTimes.length
+          const resolutionTime =
+            complaint.resolvedAt!.getTime() - complaint.createdAt.getTime();
+          return sum + resolutionTime / (1000 * 60 * 60 * 24); // Convert to days
+        }, 0) / resolvedComplaintsWithTimes.length
         : 0;
 
     const stats = {

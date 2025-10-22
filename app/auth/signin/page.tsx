@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useContext } from "react";
 import { SessionContext } from "../../context/sessiondata";
+import Link from "next/link";
 
 export default function SigninPage() {
   const [email, setEmail] = useState("");
@@ -119,12 +120,12 @@ export default function SigninPage() {
             </form>
 
             <div className="flex justify-between items-center text-sm text-gray-500 mt-2">
-              <a href="/forgot-password" className="hover:underline">
+              <Link href="/auth/forgot-password" className="hover:underline">
                 Forgot password?
-              </a>
-              <a href="/auth/signup" className="text-primary hover:underline">
+              </Link>
+              <Link href="/auth/signup" className="text-primary hover:underline">
                 Create account
-              </a>
+              </Link>
             </div>
 
             {/* Divider */}

@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
         }
 
         await ensureConnection();
-        
+
         const { searchParams } = new URL(request.url);
         const email = searchParams.get('email');
 
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        
+
         const user = await prisma.user.findUnique({
             where: { email: email.toLowerCase() },
             include: {
@@ -99,16 +99,7 @@ export async function GET(request: NextRequest) {
                         }
                     }
                 },
-                wardens: {
-                    include: {
-                        hostel: {
-                            select: {
-                                hostelName: true,
-                                address: true
-                            }
-                        }
-                    }
-                }
+                wardens: true
             }
         });
 
@@ -119,47 +110,47 @@ export async function GET(request: NextRequest) {
             );
         }
 
-      
+
 
         const userBookings = await prisma.booking.findMany({
             where: { userId: user.id },
             select: { id: true }
         });
-        
+
         const bookingIds = userBookings.map((booking: any) => booking.id);
         const allPaymentsForUserBookings = await prisma.payment.findMany({
             where: { bookingId: { in: bookingIds } },
             select: { id: true, userId: true, amount: true, method: true, bookingId: true }
         });
-        
+
         console.log('All payments for user bookings:', allPaymentsForUserBookings.length);
-        console.log('Payments with different userId:', allPaymentsForUserBookings.filter((p : any) => p.userId !== user.id));
+        console.log('Payments with different userId:', allPaymentsForUserBookings.filter((p: any) => p.userId !== user.id));
 
         const totalBookings = user.bookings.length;
         const totalPayments = user.payments.length;
         const totalMaintenanceRequests = user.maintenances.length;
         const totalAmountPaid = user.payments.reduce((sum: number, payment: any) => sum + (payment.amount || 0), 0);
-        const activeBookings = user.bookings.filter((booking: any) => 
+        const activeBookings = user.bookings.filter((booking: any) =>
             booking.status === 'confirmed' || booking.status === 'pending'
         ).length;
-        const completedBookings = user.bookings.filter((booking: any) => 
+        const completedBookings = user.bookings.filter((booking: any) =>
             booking.status === 'completed'
         ).length;
-        const pendingPayments = user.payments.filter((payment: any) => 
+        const pendingPayments = user.payments.filter((payment: any) =>
             payment.status === 'pending'
         ).length;
-        const completedPayments = user.payments.filter((payment: any) => 
+        const completedPayments = user.payments.filter((payment: any) =>
             payment.status === 'completed'
         ).length;
-        const pendingMaintenance = user.maintenances.filter((maintenance: any) => 
+        const pendingMaintenance = user.maintenances.filter((maintenance: any) =>
             maintenance.status === 'pending'
         ).length;
 
-        
+
 
         // Get all payments for user's bookings (including those with different userId)
         const allUserPayments = await prisma.payment.findMany({
-            where: { 
+            where: {
                 OR: [
                     { userId: user.id }, // Direct payments by user
                     { bookingId: { in: bookingIds } } // Payments for user's bookings
@@ -234,10 +225,10 @@ export async function GET(request: NextRequest) {
         // Recalculate summary with all payments
         const totalPaymentsAll = allUserPayments.length;
         const totalAmountPaidAll = allUserPayments.reduce((sum: number, payment: any) => sum + (payment.amount || 0), 0);
-        const pendingPaymentsAll = allUserPayments.filter((payment: any) => 
+        const pendingPaymentsAll = allUserPayments.filter((payment: any) =>
             payment.status === 'pending'
         ).length;
-        const completedPaymentsAll = allUserPayments.filter((payment: any) => 
+        const completedPaymentsAll = allUserPayments.filter((payment: any) =>
             payment.status === 'completed'
         ).length;
 

@@ -5,16 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Search, 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Calendar, 
-  CreditCard, 
-  Wrench, 
-  Bed, 
+import {
+  Search,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  CreditCard,
+  Wrench,
+  Bed,
   Building,
   DollarSign,
   Clock,
@@ -62,13 +62,7 @@ export default function UserRecordsPage() {
       }
 
       setUserRecords(data);
-      
-      // Debug logging
-      console.log('User Records Data:', data);
-      console.log('Bookings count:', data.bookings?.length || 0);
-      console.log('Payments count:', data.payments?.length || 0);
-      console.log('Maintenances count:', data.maintenances?.length || 0);
-      
+
       // Add to search history
       const newSearch = {
         email: email,
@@ -77,12 +71,11 @@ export default function UserRecordsPage() {
         result: 'success'
       };
       setSearchHistory(prev => [newSearch, ...prev.slice(0, 4)]); // Keep last 5 searches
-      
+
       toast.success(`User records loaded successfully for ${data.user.name || data.user.email}`);
     } catch (error) {
-      console.error("Error fetching user records:", error);
       setError(error.message);
-      
+
       // Add failed search to history
       const newSearch = {
         email: email,
@@ -91,7 +84,7 @@ export default function UserRecordsPage() {
         result: 'error'
       };
       setSearchHistory(prev => [newSearch, ...prev.slice(0, 4)]);
-      
+
       toast.error(error.message);
     } finally {
       setIsLoading(false);
@@ -100,7 +93,7 @@ export default function UserRecordsPage() {
 
   const handleExport = () => {
     if (!userRecords) return;
-    
+
     const dataStr = JSON.stringify(userRecords, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
@@ -160,12 +153,12 @@ export default function UserRecordsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-1 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
+      <div className="flex-col md:flex-row gap-4 md:gap-0 mt-4 md:mt-0 justify-between items-center">
+        <div className="mb-4" >
           <h1 className="text-3xl font-bold">User Records</h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground ">
             Search and view complete user records including bookings, payments, and maintenance requests
           </p>
         </div>
@@ -189,7 +182,7 @@ export default function UserRecordsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
+          <div className="flex flex-col md:flex-row gap-4 md:gap-0">
             <Input
               placeholder="Enter user email address"
               value={email}
@@ -197,24 +190,27 @@ export default function UserRecordsPage() {
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
               className="flex-1"
             />
-            <Button onClick={handleSearch} disabled={isLoading || !email.trim()}>
-              {isLoading ? (
-                <LoadingSpinner size="sm" />
-              ) : (
-                <>
-                  <Search className="h-4 w-4 mr-2" />
-                  Search
-                </>
-              )}
-            </Button>
-            {userRecords && (
-              <Button onClick={handleClear} variant="outline">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Clear
+            <div className="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-0" >
+
+              <Button onClick={handleSearch} disabled={isLoading || !email.trim()}>
+                {isLoading ? (
+                  <LoadingSpinner size="sm" />
+                ) : (
+                  <>
+                    <Search className="h-4 w-4 mr-2" />
+                    Search
+                  </>
+                )}
               </Button>
-            )}
+              {userRecords && (
+                <Button onClick={handleClear} variant="outline">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Clear
+                </Button>
+              )}
+            </div>
           </div>
-          
+
           {/* Search History */}
           {/* {searchHistory.length > 0 && (
             <div className="mt-4">
@@ -386,8 +382,8 @@ export default function UserRecordsPage() {
           </div>
 
           {/* Detailed Records Tabs */}
-          <Tabs defaultValue="bookings" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+          <Tabs defaultValue="bookings" className="">
+            <TabsList className="grid w-fit grid-cols-4 mx-auto md:mx-0 md:grid-cols-4 mb-10">
               <TabsTrigger value="bookings">Bookings</TabsTrigger>
               <TabsTrigger value="payments">Payments</TabsTrigger>
               <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
@@ -458,7 +454,7 @@ export default function UserRecordsPage() {
                               </span>
                             </div>
                           </div>
-                          
+
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm mb-3">
                             <div className="space-y-1">
                               <span className="font-medium text-muted-foreground">Check-in Date</span>
@@ -474,8 +470,8 @@ export default function UserRecordsPage() {
                               <span className="font-medium text-muted-foreground">Total Price</span>
                               <p className="font-medium text-lg">PKR {booking.price?.toLocaleString() || 'N/A'}</p>
                               <p className="text-xs text-muted-foreground">
-                                {booking.room?.pricePerNight && booking.price ? 
-                                  `${Math.ceil(booking.price / booking.room.pricePerNight)} nights` : 
+                                {booking.room?.pricePerNight && booking.price ?
+                                  `${Math.ceil(booking.price / booking.room.pricePerNight)} nights` :
                                   'Duration unknown'
                                 }
                               </p>
@@ -544,7 +540,7 @@ export default function UserRecordsPage() {
                               </p>
                               {payment.booking && (
                                 <p className="text-xs text-muted-foreground">
-                                  Room {payment.booking.room?.roomNumber || 'TBD'} • 
+                                  Room {payment.booking.room?.roomNumber || 'TBD'} •
                                   {payment.booking.checkin && payment.booking.checkout && (
                                     <> {format(new Date(payment.booking.checkin), 'MMM dd')} - {format(new Date(payment.booking.checkout), 'MMM dd, yyyy')}</>
                                   )}
@@ -563,7 +559,7 @@ export default function UserRecordsPage() {
                               </div>
                             </div>
                           </div>
-                          
+
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm mb-3">
                             <div className="space-y-1">
                               <span className="font-medium text-muted-foreground">Payment Method</span>
@@ -574,12 +570,12 @@ export default function UserRecordsPage() {
                                 {payment.method}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {payment.method === 'Credit Card' ? 'Card payment' : 
-                                 payment.method === 'UPI' ? 'UPI transfer' : 
-                                 payment.method === 'Bank Transfer' ? 'Bank transfer' : 'Other method'}
+                                {payment.method === 'Credit Card' ? 'Card payment' :
+                                  payment.method === 'UPI' ? 'UPI transfer' :
+                                    payment.method === 'Bank Transfer' ? 'Bank transfer' : 'Other method'}
                               </p>
                             </div>
-                            
+
                             <div className="space-y-1">
                               <span className="font-medium text-muted-foreground">Payment Date</span>
                               <p className="font-medium">{format(new Date(payment.createdAt), 'MMM dd, yyyy')}</p>
@@ -587,7 +583,7 @@ export default function UserRecordsPage() {
                                 {format(new Date(payment.createdAt), 'EEEE, HH:mm')}
                               </p>
                             </div>
-                            
+
                             <div className="space-y-1">
                               <span className="font-medium text-muted-foreground">Transaction Status</span>
                               <div className="flex items-center gap-2">
@@ -598,8 +594,8 @@ export default function UserRecordsPage() {
                               </div>
                               <p className="text-xs text-muted-foreground">
                                 {payment.status === 'completed' ? 'Successfully processed' :
-                                 payment.status === 'pending' ? 'Awaiting confirmation' :
-                                 payment.status === 'failed' ? 'Transaction failed' : 'Unknown status'}
+                                  payment.status === 'pending' ? 'Awaiting confirmation' :
+                                    payment.status === 'failed' ? 'Transaction failed' : 'Unknown status'}
                               </p>
                             </div>
                           </div>
@@ -610,16 +606,16 @@ export default function UserRecordsPage() {
                               <span className="font-medium text-muted-foreground">Payment Description</span>
                               <p className="text-sm">{payment.description || 'No description provided'}</p>
                             </div>
-                            
+
                             <div className="space-y-1">
                               <span className="font-medium text-muted-foreground">Receipt</span>
                               <div className="flex items-center gap-2">
                                 {payment.receiptUrl ? (
                                   <div className="flex items-center gap-2">
                                     <FileText className="h-4 w-4 text-green-600" />
-                                    <a 
-                                      href={payment.receiptUrl} 
-                                      target="_blank" 
+                                    <a
+                                      href={payment.receiptUrl}
+                                      target="_blank"
                                       rel="noopener noreferrer"
                                       className="text-blue-600 hover:underline text-sm"
                                     >

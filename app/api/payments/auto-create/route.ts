@@ -44,7 +44,17 @@ export async function POST(request: NextRequest) {
                         email: true
                     }
                 },
-                payment: true
+                payments: {
+                    select: {
+                        id: true,
+                        createdAt: true,
+                        amount: true,
+                        status: true
+                    },
+                    orderBy: {
+                        createdAt: 'desc'
+                    }
+                }
             }
         });
 
@@ -52,11 +62,18 @@ export async function POST(request: NextRequest) {
         const skippedBookings = [];
 
         for (const booking of activeBookings) {
-            if (booking.payment) {
+            // Check if payment for current month already exists
+            const currentMonthPayment = booking.payments.find(p => {
+                const paymentDate = new Date(p.createdAt);
+                return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
+            });
+
+            if (currentMonthPayment) {
                 skippedBookings.push({
                     bookingId: booking.id,
-                    reason: "Payment already exists for this booking",
-                    existingPayment: booking.payment.id
+                    reason: "Payment for current month already exists",
+                    existingPayment: currentMonthPayment.id,
+                    paymentDate: currentMonthPayment.createdAt
                 });
                 continue;
             }
@@ -90,7 +107,7 @@ export async function POST(request: NextRequest) {
                         hostelId: booking.hostelId,
                         roomId: booking.roomId,
                         amount: paymentAmount,
-                        method: 'AUTO_GENERATED',
+                        method: 'BANK_TRANSFER', // AUTO_GENERATED placeholder
                         status: 'PENDING',
                         notes: `Auto-generated payment for ${booking.bookingType.toLowerCase()} booking - ${currentDate.toLocaleDateString()}`,
                         transactionId: `AUTO_${booking.id}_${Date.now()}`,

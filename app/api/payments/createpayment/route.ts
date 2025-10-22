@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/server-auth";
+import { googleSheetsService } from "@/lib/googleSheets";
 
 
 export async function POST(request: NextRequest) {
@@ -86,6 +87,22 @@ export async function POST(request: NextRequest) {
                 }
             }
         });
+
+        // Add payment to Google Sheets
+        try {
+            await googleSheetsService.addPayment({
+                id: payment.id,
+                bookingId: payment.bookingId,
+                amount: payment.amount,
+                method: payment.method,
+                status: payment.status,
+                description: payment.notes || 'Payment for booking',
+                createdAt: payment.createdAt
+            });
+        } catch (sheetsError) {
+            console.error('Failed to add payment to Google Sheets:', sheetsError);
+            // Don't fail the payment creation if Google Sheets fails
+        }
 
         // Payment creation email is now handled by booking confirmation email
 

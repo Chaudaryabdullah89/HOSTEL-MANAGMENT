@@ -6,6 +6,7 @@ export async function GET(request: Request) {
         const payments = await prisma.payment.findMany({
             select: {
                 id: true,
+                bookingId: true,
                 amount: true,
                 method: true,
                 status: true,

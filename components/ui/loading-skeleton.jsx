@@ -21,11 +21,11 @@ export const LoadingSpinner = ({ size = 'md', text = 'Loading...', className = '
 };
 
 // Page-level loading skeleton
-export const PageLoadingSkeleton = ({ 
-  title = true, 
-  statsCards = 4, 
-  filterTabs = 5, 
-  searchBar = true, 
+export const PageLoadingSkeleton = ({
+  title = true,
+  statsCards = 4,
+  filterTabs = 5,
+  searchBar = true,
   contentCards = 5,
   className = ''
 }) => {
@@ -41,20 +41,20 @@ export const PageLoadingSkeleton = ({
             </>
           )}
         </div>
-        <div className="flex items-center gap-2 mt-4 md:mt-0">
-          <div className="h-10 bg-gray-200 rounded animate-pulse w-24"></div>
-          <div className="h-10 bg-gray-200 rounded animate-pulse w-32"></div>
-          <div className="h-10 bg-gray-200 rounded animate-pulse w-28"></div>
+        <div className="flex flex-wrap items-center gap-2 mt-4 md:mt-0">
+          <div className="h-10 bg-gray-200 rounded animate-pulse w-20 sm:w-24"></div>
+          <div className="h-10 bg-gray-200 rounded animate-pulse w-24 sm:w-32"></div>
+          <div className="h-10 bg-gray-200 rounded animate-pulse w-20 sm:w-28"></div>
         </div>
       </div>
 
       {/* Stats Cards Skeleton */}
       {statsCards > 0 && (
-        <div className="grid md:grid-cols-2 p-4 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4">
           {Array.from({ length: statsCards }).map((_, i) => (
             <Card key={i} className="p-4">
               <div className="flex items-center space-x-4">
-                <div className="h-12 w-12 bg-gray-200 rounded-full animate-pulse"></div>
+                <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gray-200 rounded-full animate-pulse"></div>
                 <div className="space-y-2 flex-1">
                   <div className="h-4 bg-gray-200 rounded animate-pulse w-16"></div>
                   <div className="h-6 bg-gray-200 rounded animate-pulse w-12"></div>
@@ -68,9 +68,9 @@ export const PageLoadingSkeleton = ({
       {/* Filter Tabs Skeleton */}
       {filterTabs > 0 && (
         <div className="px-4 py-2">
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap gap-2">
             {Array.from({ length: filterTabs }).map((_, i) => (
-              <div key={i} className="h-8 bg-gray-200 rounded animate-pulse w-20"></div>
+              <div key={i} className="h-8 bg-gray-200 rounded animate-pulse w-16 sm:w-20"></div>
             ))}
           </div>
         </div>
@@ -79,10 +79,10 @@ export const PageLoadingSkeleton = ({
       {/* Search and Filter Skeleton */}
       {searchBar && (
         <div className="px-4 py-2">
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="h-10 bg-gray-200 rounded animate-pulse flex-1"></div>
-            <div className="h-10 bg-gray-200 rounded animate-pulse w-32"></div>
-            <div className="h-10 bg-gray-200 rounded animate-pulse w-32"></div>
+            <div className="h-10 bg-gray-200 rounded animate-pulse w-full sm:w-32"></div>
+            <div className="h-10 bg-gray-200 rounded animate-pulse w-full sm:w-32"></div>
           </div>
         </div>
       )}
@@ -101,7 +101,7 @@ export const PageLoadingSkeleton = ({
                       <div className="h-4 bg-gray-200 rounded animate-pulse w-48"></div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     {Array.from({ length: 4 }).map((_, j) => (
                       <div key={j} className="space-y-1">
                         <div className="h-3 bg-gray-200 rounded animate-pulse w-16"></div>
@@ -110,10 +110,10 @@ export const PageLoadingSkeleton = ({
                     ))}
                   </div>
                 </div>
-                <div className="flex gap-2 ml-4">
-                  <div className="h-8 bg-gray-200 rounded animate-pulse w-16"></div>
-                  <div className="h-8 bg-gray-200 rounded animate-pulse w-20"></div>
-                  <div className="h-8 bg-gray-200 rounded animate-pulse w-16"></div>
+                <div className="flex flex-wrap gap-2 ml-0 sm:ml-4 mt-4 sm:mt-0">
+                  <div className="h-8 bg-gray-200 rounded animate-pulse w-12 sm:w-16"></div>
+                  <div className="h-8 bg-gray-200 rounded animate-pulse w-16 sm:w-20"></div>
+                  <div className="h-8 bg-gray-200 rounded animate-pulse w-12 sm:w-16"></div>
                 </div>
               </div>
             </Card>
@@ -126,18 +126,26 @@ export const PageLoadingSkeleton = ({
 
 // Table loading skeleton
 export const TableLoadingSkeleton = ({ rows = 5, columns = 4, className = '' }) => {
+  // Responsive grid classes based on column count
+  const getGridCols = (cols) => {
+    if (cols <= 2) return 'grid-cols-1 sm:grid-cols-2';
+    if (cols <= 3) return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3';
+    if (cols <= 4) return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
+    return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5';
+  };
+
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Table header skeleton */}
-      <div className="grid grid-cols-4 gap-4 p-4 bg-gray-50 rounded">
+      <div className={`grid ${getGridCols(columns)} gap-2 sm:gap-4 p-4 bg-gray-50 rounded`}>
         {Array.from({ length: columns }).map((_, i) => (
           <div key={i} className="h-4 bg-gray-200 rounded animate-pulse"></div>
         ))}
       </div>
-      
+
       {/* Table rows skeleton */}
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="grid grid-cols-4 gap-4 p-4 border rounded">
+        <div key={i} className={`grid ${getGridCols(columns)} gap-2 sm:gap-4 p-4 border rounded`}>
           {Array.from({ length: columns }).map((_, j) => (
             <div key={j} className="h-4 bg-gray-200 rounded animate-pulse"></div>
           ))}
@@ -148,23 +156,23 @@ export const TableLoadingSkeleton = ({ rows = 5, columns = 4, className = '' }) 
 };
 
 // Card loading skeleton
-export const CardLoadingSkeleton = ({ 
-  showAvatar = true, 
-  showTitle = true, 
-  showDescription = true, 
+export const CardLoadingSkeleton = ({
+  showAvatar = true,
+  showTitle = true,
+  showDescription = true,
   showActions = true,
-  className = '' 
+  className = ''
 }) => {
   return (
     <Card className={`p-4 ${className}`}>
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
         <div className="space-y-3 flex-1">
           {showAvatar && (
             <div className="flex items-center space-x-3">
-              <div className="h-12 w-12 bg-gray-200 rounded-full animate-pulse"></div>
+              <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gray-200 rounded-full animate-pulse"></div>
               <div className="space-y-2">
-                {showTitle && <div className="h-5 bg-gray-200 rounded animate-pulse w-32"></div>}
-                {showDescription && <div className="h-4 bg-gray-200 rounded animate-pulse w-48"></div>}
+                {showTitle && <div className="h-5 bg-gray-200 rounded animate-pulse w-24 sm:w-32"></div>}
+                {showDescription && <div className="h-4 bg-gray-200 rounded animate-pulse w-32 sm:w-48"></div>}
               </div>
             </div>
           )}
@@ -176,9 +184,9 @@ export const CardLoadingSkeleton = ({
           )}
         </div>
         {showActions && (
-          <div className="flex gap-2 ml-4">
-            <div className="h-8 bg-gray-200 rounded animate-pulse w-16"></div>
-            <div className="h-8 bg-gray-200 rounded animate-pulse w-20"></div>
+          <div className="flex flex-wrap gap-2 mt-4 sm:mt-0 sm:ml-4">
+            <div className="h-8 bg-gray-200 rounded animate-pulse w-12 sm:w-16"></div>
+            <div className="h-8 bg-gray-200 rounded animate-pulse w-16 sm:w-20"></div>
           </div>
         )}
       </div>
@@ -189,7 +197,7 @@ export const CardLoadingSkeleton = ({
 // Button loading state
 export const ButtonLoading = ({ loading, children, className = '', ...props }) => {
   return (
-    <button 
+    <button
       className={`${className} ${loading ? 'opacity-75 pointer-events-none' : ''}`}
       disabled={loading}
       {...props}
@@ -200,6 +208,85 @@ export const ButtonLoading = ({ loading, children, className = '', ...props }) =
   );
 };
 
+
+// Mobile-optimized skeleton for small screens
+export const MobileSkeleton = ({
+  showHeader = true,
+  showCards = 3,
+  showList = 5,
+  className = ''
+}) => {
+  return (
+    <div className={`p-2 ${className}`}>
+      {/* Mobile Header */}
+      {showHeader && (
+        <div className="px-2 py-4">
+          <div className="h-6 bg-gray-200 rounded animate-pulse w-3/4 mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2"></div>
+        </div>
+      )}
+
+      {/* Mobile Cards */}
+      {showCards > 0 && (
+        <div className="space-y-3 px-2">
+          {Array.from({ length: showCards }).map((_, i) => (
+            <div key={i} className="bg-white rounded-lg p-3 border">
+              <div className="flex items-center space-x-3">
+                <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
+                <div className="flex-1">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3 mb-1"></div>
+                  <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2"></div>
+                </div>
+                <div className="h-6 bg-gray-200 rounded animate-pulse w-12"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Mobile List */}
+      {showList > 0 && (
+        <div className="px-2 py-2">
+          {Array.from({ length: showList }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between py-3 border-b border-gray-100">
+              <div className="flex items-center space-x-3">
+                <div className="h-6 w-6 bg-gray-200 rounded animate-pulse"></div>
+                <div className="space-y-1">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
+                  <div className="h-3 bg-gray-200 rounded animate-pulse w-16"></div>
+                </div>
+              </div>
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-12"></div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Responsive skeleton that adapts to screen size
+export const ResponsiveSkeleton = ({
+  mobile = true,
+  desktop = true,
+  children,
+  className = ''
+}) => {
+  return (
+    <div className={className}>
+      {mobile && (
+        <div className="block sm:hidden">
+          <MobileSkeleton />
+        </div>
+      )}
+      {desktop && (
+        <div className="hidden sm:block">
+          {children || <PageLoadingSkeleton />}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const ItemLoadingOverlay = ({ loading, children, text = 'Processing...' }) => {
   return (

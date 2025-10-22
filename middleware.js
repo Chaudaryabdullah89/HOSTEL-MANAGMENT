@@ -24,83 +24,85 @@ function verifyJWT(token, secret) {
 
 export default async function middleware(request) {
     const { pathname } = request.nextUrl;
-    
-    const isPublicRoute = pathname.startsWith("/api/auth") || 
-                         pathname.startsWith("/auth") || 
-                         pathname === "/" ||
-                         pathname.startsWith("/_next") ||
-                         pathname.startsWith("/static");
-    
-    const isDashboardRoute = pathname.startsWith("/dashboard");
-    
+
+    // Define public routes that don't require authentication
+    const isPublicRoute = pathname.startsWith("/api/auth") ||
+        pathname.startsWith("/auth") ||
+        pathname === "/" ||
+        pathname.startsWith("/_next") ||
+        pathname.startsWith("/static") ||
+        pathname.startsWith("/api/") ||
+        pathname.startsWith("/favicon.ico");
+
+    // Allow all public routes
     if (isPublicRoute) {
         return NextResponse.next();
     }
-    
-    if (isDashboardRoute) {
+
+    // Only protect dashboard routes
+    if (pathname.startsWith("/dashboard")) {
         const token = request.cookies.get("token")?.value;
+
+        // If no token, redirect to signin
         if (!token) {
             return NextResponse.redirect(new URL("/auth/signin", request.url));
         }
-        
+
         try {
             const decoded = verifyJWT(token, process.env.JWT_SECRET);
             const role = decoded.role;
-            const roleRoutes = {
-                "GUEST": ["/dashboard/guest"],
-                "WARDEN": ["/dashboard/warden"],
-                "ADMIN": ["/dashboard/admin"],
-                "USER": ["/dashboard/guest"]
-            };
-            
+
+            // Handle root dashboard redirect
             if (pathname === "/dashboard") {
-                if (role === "GUEST") {
-                    return NextResponse.redirect(new URL("/dashboard/guest", request.url));
-                }
-                else if (role === "WARDEN") {
-                    return NextResponse.redirect(new URL("/dashboard/warden", request.url));
-                }
-                else if (role === "ADMIN") {
-                    return NextResponse.redirect(new URL("/dashboard/admin", request.url));
-                }
-                else if (role === "USER") {
-                    return NextResponse.redirect(new URL("/dashboard/user", request.url));
-                }
-            }
-            
-            const allowedRoutes = roleRoutes[role] || [];
-            const isAllowedRoute = allowedRoutes.some(route => pathname.startsWith(route));
-            
-            if (!isAllowedRoute) {
-                if (role === "GUEST") {
-                    return NextResponse.redirect(new URL("/dashboard/guest", request.url));
-                }
-                else if (role === "WARDEN") {
-                    return NextResponse.redirect(new URL("/dashboard/warden", request.url));
-                }
-                else if (role === "ADMIN") {
-                    return NextResponse.redirect(new URL("/dashboard/admin", request.url));
-                }
-                else if (role === "USER") {
-                    return NextResponse.redirect(new URL("/dashboard/user", request.url));
-                }
-                else {
-                    return NextResponse.redirect(new URL("/auth/signin", request.url));
+                switch (role) {
+                    case "GUEST":
+                        return NextResponse.redirect(new URL("/dashboard/guest", request.url));
+                    case "WARDEN":
+                        return NextResponse.redirect(new URL("/dashboard/warden", request.url));
+                    case "ADMIN":
+                        return NextResponse.redirect(new URL("/dashboard/admin", request.url));
+                    case "USER":
+                        return NextResponse.redirect(new URL("/", request.url));
+                    default:
+                        return NextResponse.redirect(new URL("/dashboard/guest", request.url));
                 }
             }
-            
+
+            // Check if user has access to the specific dashboard route
+            const hasAccess = (
+                (role === "GUEST" && pathname.startsWith("/dashboard/guest")) ||
+                (role === "WARDEN" && pathname.startsWith("/dashboard/warden")) ||
+                (role === "ADMIN" && pathname.startsWith("/dashboard/admin"))
+            );
+
+            if (!hasAccess) {
+                // Redirect to appropriate dashboard based on role
+                switch (role) {
+                    case "GUEST":
+                        return NextResponse.redirect(new URL("/dashboard/guest", request.url));
+                    case "WARDEN":
+                        return NextResponse.redirect(new URL("/dashboard/warden", request.url));
+                    case "ADMIN":
+                        return NextResponse.redirect(new URL("/dashboard/admin", request.url));
+                    default:
+                        return NextResponse.redirect(new URL("/dashboard/guest", request.url));
+                }
+            }
+
             return NextResponse.next();
-            
+
         } catch (error) {
+            console.error("JWT verification failed:", error);
             return NextResponse.redirect(new URL("/auth/signin", request.url));
         }
     }
-    
+
+    // For all other routes, allow access
     return NextResponse.next();
 }
 
 export const config = {
     matcher: [
-        "/((?!api|_next/static|_next/image|favicon.ico).*)",
+        "/dashboard/:path*",
     ],
 };

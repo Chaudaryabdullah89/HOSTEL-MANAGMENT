@@ -15,7 +15,8 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { userId, newRole } = body;
+    const { userId, newRole, hostelId } = body;
+    console.log(userId, newRole, hostelId)
 
     if (!userId || !newRole) {
       return NextResponse.json(
@@ -41,7 +42,6 @@ export async function PUT(request: NextRequest) {
         guest: true,
       },
     });
-    console.log(currentUser);
 
     if (!currentUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -50,54 +50,52 @@ export async function PUT(request: NextRequest) {
     const currentRole = currentUser.role;
     const newRoleUpper = newRole.toUpperCase();
 
- 
     if (currentRole === newRoleUpper) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         message: "User already has this role",
-        user: currentUser 
+        user: currentUser
       });
     }
 
-   
     const result = await prisma.$transaction(async (tx: any) => {
-     
       const updatedUser = await tx.user.update({
         where: { id: userId },
         data: { role: newRoleUpper as UserRole },
       });
+
+      if (newRoleUpper === "WARDEN") {
+        await tx.warden.create({
+          data: { userId: userId, hostelId: hostelId },
+        });
+      }
 
 
       if (currentRole === "ADMIN" && currentUser.admin) {
         await tx.admin.delete({
           where: { userId: userId },
         });
-        console.log("Removed Admin model for user:", userId);
       } else if (currentRole === "WARDEN" && currentUser.wardens.length > 0) {
+
+
         await tx.warden.deleteMany({
           where: { userId: userId },
         });
-        console.log("Removed Warden model for user:", userId);
       } else if (currentRole === "GUEST" && currentUser.guest) {
         await tx.guest.delete({
           where: { userId: userId },
         });
-        console.log("Removed Guest model for user:", userId);
       }
-    
- 
+
       if (newRoleUpper === "ADMIN") {
         await tx.admin.create({
           data: { userId: userId },
         });
-        console.log("Created Admin model for user:", userId);
       } else if (newRoleUpper === "WARDEN") {
-        
-        console.log("Warden role assigned, but Warden model will be created when assigned to a hostel");
+        // Warden role assigned, but Warden model will be created when assigned to a hostel
       } else if (newRoleUpper === "GUEST") {
         await tx.guest.create({
           data: { userId: userId },
         });
-        console.log("Created Guest model for user:", userId);
       }
 
       return updatedUser;
@@ -109,9 +107,11 @@ export async function PUT(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("Error updating user role:", error);
+    // Still log error to server for debugging purposes.
+    // Remove or comment this out if absolutely NO console output is required.
+    // console.error("Error updating user role:", error);
     return NextResponse.json(
-      { 
+      {
         error: "Internal Server Error",
         details: process.env.NODE_ENV === "development" ? String(error) : undefined,
       },

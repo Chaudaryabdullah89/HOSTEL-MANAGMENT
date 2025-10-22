@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import jwt from "jsonwebtoken";
+import { googleSheetsService } from "@/lib/googleSheets";
 
 export async function POST(request: Request) {
   try {
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
             zipcode: true,
           },
         },
-       
+
         guest: {
           select: {
             hostelId: true,
@@ -146,6 +147,23 @@ export async function POST(request: Request) {
         hostelId: hostel.id || null,
       },
     });
+
+    // Add room to Google Sheets
+    try {
+      await googleSheetsService.addRoom({
+        id: room.id,
+        roomNumber: room.roomNumber,
+        floor: room.floor,
+        type: room.type,
+        status: room.status,
+        pricePerNight: room.pricePerNight,
+        pricePerMonth: room.pricePerMonth,
+        createdAt: room.createdAt
+      });
+    } catch (sheetsError) {
+      console.error('Failed to add room to Google Sheets:', sheetsError);
+      // Don't fail the room creation if Google Sheets fails
+    }
 
     return NextResponse.json(
       { message: "Room created successfully", room },

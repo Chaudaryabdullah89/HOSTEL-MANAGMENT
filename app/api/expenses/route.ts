@@ -122,6 +122,7 @@ export async function POST(request: NextRequest) {
                 description,
                 amount,
                 category,
+
                 submittedBy: session.user.id,
                 hostelId,
                 receiptUrl: receiptUrl || null,

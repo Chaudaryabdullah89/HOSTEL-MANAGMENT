@@ -38,56 +38,11 @@ import {
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { title } from "process";
+import { logout } from "@/lib/logout";
 
 // Menu items for different roles
 const menuItems = {
-  warden: [
-    {
-      title: "Dashboard",
-      url: "/dashboard/warden",
-      icon: Home,
-    },
-    {
-      title: "Rooms",
-      url: "/dashboard/warden/rooms",
-      icon: Bed,
-    },
-    {
-      title: "Bookings",
-      url: "/dashboard/warden/booking",
-      icon: Calendar,
-    },
-    {
-      title: "Guests",
-      url: "/dashboard/warden/guest",
-      icon: Users,
-    },
-    {
-      title: "Payments",
-      url: "/dashboard/warden/payment",
-      icon: CreditCard,
-    },
-    {
-      title: "Maintenance",
-      url: "/dashboard/warden/maintenance",
-      icon: Wrench,
-    },
-    {
-      title: "Expenses",
-      url: "/dashboard/warden/expenses",
-      icon: DollarSign,
-    },
-    {
-      title: "Reports",
-      url: "/dashboard/warden/report",
-      icon: FileText,
-    },
-    {
-      title: "Settings",
-      url: "/dashboard/warden/setting",
-      icon: Settings,
-    },
-  ],
+
   guest: [
     {
       title: "Dashboard",
@@ -152,45 +107,119 @@ const menuItems = {
       icon: UserCheck,
     },
     {
-      title : "Salaries",
+      title: "Salaries",
       url: "/dashboard/admin/salaries",
       icon: DollarSign,
     },
 
 
     {
-      title : "Roles",
+      title: "Roles",
       url: "/dashboard/admin/roles",
       icon: User,
     },
     {
-      title : "Users Records",
+      title: "Users Records",
       url: "/dashboard/admin/records",
       icon: Users,
     },
     {
-      title : "Reports",
+      title: "Reports",
       url: "/dashboard/admin/report",
       icon: FileText,
     },
     {
-title : "Complaints",
-url : "/dashboard/admin/complaints",
-icon : MessageSquare,
+      title: "Complaints",
+      url: "/dashboard/admin/complaints",
+      icon: MessageSquare,
     },
     {
-      title : "Expenses",
+      title: "Expenses",
       url: "/dashboard/admin/expenses",
       icon: DollarSign,
     },
-      // {
-      //   title: "Reports",
-      //   url: "/dashboard/admin/report",
-      //   icon: FileText,
-      // },
+    // {
+    //   title: "Reports",
+    //   url: "/dashboard/admin/report",
+    //   icon: FileText,
+    // },
     {
       title: "Profile",
       url: "/dashboard/admin/profile",
+      icon: UserCircle,
+    },
+  ],
+  warden: [
+    {
+      title: "Dashboard",
+      url: "/dashboard/warden",
+      icon: Home,
+    },
+    {
+      title: "All Hostels",
+      url: "/dashboard/warden/hostel",
+      icon: Bed,
+    },
+    {
+      title: "All Rooms",
+      url: "/dashboard/warden/rooms",
+      icon: Bed,
+    },
+    {
+      title: "All Bookings",
+      url: "/dashboard/warden/bookings",
+      icon: Calendar,
+    },
+    {
+      title: "All Payments",
+      url: "/dashboard/warden/payments",
+      icon: CreditCard,
+    },
+    {
+      title: "Payment Approvals",
+      url: "/dashboard/warden/payment-approvals",
+      icon: UserCheck,
+    },
+    {
+      title: "Salaries",
+      url: "/dashboard/warden/salaries",
+      icon: DollarSign,
+    },
+
+
+    {
+      title: "Roles",
+      url: "/dashboard/warden/roles",
+      icon: User,
+    },
+    {
+      title: "Users Records",
+      url: "/dashboard/warden/records",
+      icon: Users,
+    },
+    {
+      title: "Reports",
+      url: "/dashboard/warden/report",
+      icon: FileText,
+    },
+    {
+      title: "Complaints",
+      url: "/dashboard/warden/complaints",
+      icon: MessageSquare,
+    },
+    {
+      title: "Expenses",
+      url: "/dashboard/warden/expenses",
+      icon: DollarSign,
+    },
+    // {
+    //   title: "Reports",
+    //   url: "/dashboard/admin/report",
+    //   icon: FileText,
+    // },
+    {
+      title: "Profile",
+      url: "/dashboard/warden/profile",
       icon: UserCircle,
     },
   ],
@@ -252,16 +281,11 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              asChild
-              className="flex items-center gap-3 px-4 py-2 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
+              onClick={logout}
+              className="flex items-center gap-3 px-4 py-2 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors cursor-pointer"
             >
-              <Link
-                href="/api/auth/signout"
-                className="flex items-center w-full"
-              >
-                <LogOut className="h-5 w-5" />
-                <span className="text-sm font-medium">Sign Out</span>
-              </Link>
+              <LogOut className="h-5 w-5" />
+              <span className="text-sm font-medium">Sign Out</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

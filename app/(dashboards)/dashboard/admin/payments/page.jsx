@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react'
 // import { Users,Calendar,TrendingUp, CheckCircle, AlertTriangle, Wrench} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from '@/components/ui/button'
-import { Plus, Filter, Users ,TrendingUp , ChevronDown, Search, Edit, Wifi, Tv, Wind, Delete, Bin, Trash, Clock, User, Bed, Calendar, CardSim, CreditCard, BookIcon, MoreVertical, RefreshCw, AlertTriangle,DollarSign, CheckCircle2, XCircle } from 'lucide-react'
+import { Plus, Filter, Users, TrendingUp, ChevronDown, Search, Edit, Wifi, Tv, Wind, Delete, Bin, Trash, Clock, User, Bed, Calendar, CardSim, CreditCard, BookIcon, MoreVertical, RefreshCw, AlertTriangle, DollarSign, CheckCircle2, XCircle } from 'lucide-react'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -48,25 +48,24 @@ import { PageLoadingSkeleton } from '@/components/ui/loading-skeleton'
 
 
 const page = () => {
-    const [searchTerm ,setSearchTerm] = useState('')
-    const [status ,setActiveStatus] = useState('All Status')
+    const [searchTerm, setSearchTerm] = useState('')
+    const [status, setActiveStatus] = useState('All Status')
     const [paymentType, setPaymentType] = useState('All Types')
-    
+
     // Month/Year filtering states - default to current month/year
     const currentDate = new Date()
     const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0')
     const currentYear = currentDate.getFullYear().toString()
-    
     const [selectedMonth, setSelectedMonth] = useState(currentMonth)
     const [selectedYear, setSelectedYear] = useState(currentYear)
     const [showAllPayments, setShowAllPayments] = useState(false)
     const [isCreatePaymentOpen, setIsCreatePaymentOpen] = useState(false)
-    
+
     // Payment management states
     const [isUpdateStatusOpen, setIsUpdateStatusOpen] = useState(false)
     const [selectedPayment, setSelectedPayment] = useState(null)
     const [newStatus, setNewStatus] = useState('')
-    
+
     // Approval states
     const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false)
     const [isRejectionDialogOpen, setIsRejectionDialogOpen] = useState(false)
@@ -84,158 +83,158 @@ const page = () => {
     const rejectPaymentMutation = useRejectPayment();
 
 
-  const getMonthOptions = () => {
-    const months = [
-      { value: '01', label: 'January' },
-      { value: '02', label: 'February' },
-      { value: '03', label: 'March' },
-      { value: '04', label: 'April' },
-      { value: '05', label: 'May' },
-      { value: '06', label: 'June' },
-      { value: '07', label: 'July' },
-      { value: '08', label: 'August' },
-      { value: '09', label: 'September' },
-      { value: '10', label: 'October' },
-      { value: '11', label: 'November' },
-      { value: '12', label: 'December' }
-    ]
-    return months
-  }
-
-  const getYearOptions = () => {
-    const currentYear = new Date().getFullYear()
-    const years = []    
-    for (let i = 0; i < 3; i++) {
-      years.push(currentYear - i)
+    const getMonthOptions = () => {
+        const months = [
+            { value: '01', label: 'January' },
+            { value: '02', label: 'February' },
+            { value: '03', label: 'March' },
+            { value: '04', label: 'April' },
+            { value: '05', label: 'May' },
+            { value: '06', label: 'June' },
+            { value: '07', label: 'July' },
+            { value: '08', label: 'August' },
+            { value: '09', label: 'September' },
+            { value: '10', label: 'October' },
+            { value: '11', label: 'November' },
+            { value: '12', label: 'December' }
+        ]
+        return months
     }
-    return years
-  }
 
-  const handleDateFilterChange = (month, year) => {
-    setSelectedMonth(month)
-    setSelectedYear(year)
-    setShowAllPayments(!month || !year)
-  }
+    const getYearOptions = () => {
+        const currentYear = new Date().getFullYear()
+        const years = []
+        for (let i = 0; i < 3; i++) {
+            years.push(currentYear - i)
+        }
+        return years
+    }
+
+    const handleDateFilterChange = (month, year) => {
+        setSelectedMonth(month)
+        setSelectedYear(year)
+        setShowAllPayments(!month || !year)
+    }
 
     const handleShowAllToggle = () => {
-    setShowAllPayments(!showAllPayments)
-    if (!showAllPayments) {
-      setSelectedMonth('')
-      setSelectedYear('')
-    } else {
-      setSelectedMonth(currentMonth)
-      setSelectedYear(currentYear)
-    }
-  }
-
-
-  const handleUpdateStatus = () => {
-    if (!selectedPayment || !newStatus) return
-    
-    updateStatusMutation.mutate(
-      { id: selectedPayment.id, status: newStatus },
-      {
-        onSuccess: () => {
-          setIsUpdateStatusOpen(false)
-          setSelectedPayment(null)
-          setNewStatus('')
+        setShowAllPayments(!showAllPayments)
+        if (!showAllPayments) {
+            setSelectedMonth('')
+            setSelectedYear('')
+        } else {
+            setSelectedMonth(currentMonth)
+            setSelectedYear(currentYear)
         }
-      }
-    )
-  }
-
-  const handleDeletePayment = (paymentId) => {
-    deletePaymentMutation.mutate(paymentId)
-  }
-
-  // Approval functions
-  const handleApprove = (paymentId) => {
-    approvePaymentMutation.mutate(
-      { id: paymentId },
-      {
-        onSuccess: () => {
-          setIsApprovalDialogOpen(false)
-          setSelectedPayment(null)
-        }
-      }
-    )
-  }
-
-  const handleReject = () => {
-    if (!selectedPayment || !rejectionReason.trim()) {
-      toast.error('Please provide a rejection reason')
-      return
     }
 
-    rejectPaymentMutation.mutate(
-      { id: selectedPayment.id, reason: rejectionReason },
-      {
-        onSuccess: () => {
-          setIsRejectionDialogOpen(false)
-          setSelectedPayment(null)
-          setRejectionReason('')
-        }
-      }
-    )
-  }
 
-  const handleAutoCreatePayments = async () => {
-    setLoading(true)
-    try {
-      const response = await fetch('/api/payments/auto-create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      })
+    const handleUpdateStatus = () => {
+        if (!selectedPayment || !newStatus) return
 
-      const data = await response.json()
-
-      if (response.ok) {
-        toast.success(`Auto-payment creation completed! Created ${data.summary.paymentsCreated} payments, skipped ${data.summary.bookingsSkipped} bookings.`)
-        refetch()
-        
-        if (data.createdPayments.length > 0) {
-          console.log('Created payments:', data.createdPayments)
-        }
-        if (data.skippedBookings.length > 0) {
-          console.log('Skipped bookings:', data.skippedBookings)
-        }
-      } else {
-        toast.error(data.error || 'Failed to create automated payments')
-      }
-    } catch (error) {
-      console.error('Error creating automated payments:', error)
-      toast.error('Error creating automated payments')
-    } finally {
-      setLoading(false)
+        updateStatusMutation.mutate(
+            { id: selectedPayment.id, status: newStatus },
+            {
+                onSuccess: () => {
+                    setIsUpdateStatusOpen(false)
+                    setSelectedPayment(null)
+                    setNewStatus('')
+                }
+            }
+        )
     }
-  }
+
+    const handleDeletePayment = (paymentId) => {
+        deletePaymentMutation.mutate(paymentId)
+    }
+
+    // Approval functions
+    const handleApprove = (paymentId) => {
+        approvePaymentMutation.mutate(
+            { id: paymentId },
+            {
+                onSuccess: () => {
+                    setIsApprovalDialogOpen(false)
+                    setSelectedPayment(null)
+                }
+            }
+        )
+    }
+
+    const handleReject = () => {
+        if (!selectedPayment || !rejectionReason.trim()) {
+            toast.error('Please provide a rejection reason')
+            return
+        }
+
+        rejectPaymentMutation.mutate(
+            { id: selectedPayment.id, reason: rejectionReason },
+            {
+                onSuccess: () => {
+                    setIsRejectionDialogOpen(false)
+                    setSelectedPayment(null)
+                    setRejectionReason('')
+                }
+            }
+        )
+    }
+
+    const handleAutoCreatePayments = async () => {
+        setLoading(true)
+        try {
+            const response = await fetch('/api/payments/auto-create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+
+            const data = await response.json()
+
+            if (response.ok) {
+                toast.success(`Auto-payment creation completed! Created ${data.summary.paymentsCreated} payments, skipped ${data.summary.bookingsSkipped} bookings.`)
+                refetch()
+
+                if (data.createdPayments.length > 0) {
+                    console.log('Created payments:', data.createdPayments)
+                }
+                if (data.skippedBookings.length > 0) {
+                    console.log('Skipped bookings:', data.skippedBookings)
+                }
+            } else {
+                toast.error(data.error || 'Failed to create automated payments')
+            }
+        } catch (error) {
+            console.error('Error creating automated payments:', error)
+            toast.error('Error creating automated payments')
+        } finally {
+            setLoading(false)
+        }
+    }
 
     // Frontend filtering logic
     const filteredPayments = allPayments.filter(payment => {
-      // Status filter
-      const matchedStatus = status === "All Status" || payment.status === status;
-      
-      // Payment type filter
-      const matchedType = paymentType === "All Types" || payment.type === paymentType.toLowerCase();
-      
-      // Search filter
-      const matchedSearch = searchTerm === '' || 
-                           payment.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                           payment.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           payment.booking?.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           payment.salary?.staff?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           payment.salary?.staff?.email?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      // Date filter
-      let matchedDate = true;
-      if (!showAllPayments && selectedMonth && selectedYear) {
-        const paymentDate = new Date(payment.createdAt);
-        const paymentMonth = String(paymentDate.getMonth() + 1).padStart(2, '0');
-        const paymentYear = paymentDate.getFullYear().toString();
-        matchedDate = paymentMonth === selectedMonth && paymentYear === selectedYear;
-      }
-      
-      return matchedStatus && matchedType && matchedSearch && matchedDate;
+        // Status filter
+        const matchedStatus = status === "All Status" || payment.status === status;
+
+        // Payment type filter
+        const matchedType = paymentType === "All Types" || payment.type === paymentType.toLowerCase();
+
+        // Search filter
+        const matchedSearch = searchTerm === '' ||
+            payment.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            payment.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            payment.booking?.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            payment.salary?.staff?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            payment.salary?.staff?.email?.toLowerCase().includes(searchTerm.toLowerCase());
+
+        // Date filter
+        let matchedDate = true;
+        if (!showAllPayments && selectedMonth && selectedYear) {
+            const paymentDate = new Date(payment.createdAt);
+            const paymentMonth = String(paymentDate.getMonth() + 1).padStart(2, '0');
+            const paymentYear = paymentDate.getFullYear().toString();
+            matchedDate = paymentMonth === selectedMonth && paymentYear === selectedYear;
+        }
+
+        return matchedStatus && matchedType && matchedSearch && matchedDate;
     });
 
     // Calculate stats from filtered payments
@@ -243,8 +242,8 @@ const page = () => {
     const pendingPayments = filteredPayments.filter(payment => payment.status === "PENDING").length;
     const completedPayments = filteredPayments.filter(payment => payment.status === "COMPLETED").length;
     const totalRevenue = filteredPayments
-      .filter(payment => payment.status === "COMPLETED")
-      .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+        .filter(payment => payment.status === "COMPLETED")
+        .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
 
     // Reset filters when switching to "Show All"
     useEffect(() => {
@@ -253,15 +252,13 @@ const page = () => {
             setSelectedYear(currentYear);
         }
     }, [showAllPayments, currentMonth, currentYear]);
-        
-    
-    
-    console.log(filteredPayments);
-    
+
+
+
     // Show loading state while data is being fetched
     if (isLoading) {
         return (
-            <PageLoadingSkeleton 
+            <PageLoadingSkeleton
                 title={true}
                 statsCards={4}
                 filterTabs={3}
@@ -281,7 +278,7 @@ const page = () => {
                     <p className="mt-1 text-sm text-gray-500">
                         {error.message || "Unable to load payments"}
                     </p>
-                    <Button 
+                    <Button
                         className="mt-4"
                         onClick={() => refetch()}
                     >
@@ -293,97 +290,97 @@ const page = () => {
     }
 
     return (
-    <div>
-         <div className="flex md:flex-row flex-col justify-between px-4">
-                 <div className="mt-4 ">
-                     <h1 className="text-3xl font-bold">Payments</h1>
-                     <p className="text-muted-foreground leading-loose" >Manage all payment transactions and records here.</p>
- 
-                 </div>
-                 <div className="flex items-center overflow-visible gap-2 mt-4 md:mt-0">
-                     <Button 
-                         className='cursor-pointer p-4' 
-                         variant="outline"
-                         onClick={() => {
-                             refetch();
-                             toast.success("Payments refreshed!");
-                         }}
-                         disabled={isLoading}
-                     >
-                         <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /> 
-                         {isLoading ? 'Refreshing...' : 'Refresh'}
-                     </Button>
-                     <Button 
-                         className='cursor-pointer p-4' 
-                         variant="outline"
-                         onClick={handleAutoCreatePayments}
-                         disabled={isLoading}
-                     >
-                         <Calendar className="h-4 w-4 mr-2" />
-                         {isLoading ? 'Creating...' : 'Auto Create Monthly Payments'}
-                     </Button>
+        <div>
+            <div className="flex md:flex-row flex-col justify-between px-4">
+                <div className="mt-4 ">
+                    <h1 className="text-3xl font-bold">Payments</h1>
+                    <p className="text-muted-foreground leading-loose" >Manage all payment transactions and records here.</p>
+
+                </div>
+                <div className="flex items-center overflow-visible gap-2 mt-4 md:mt-0">
+                    <Button
+                        className='cursor-pointer p-4'
+                        variant="outline"
+                        onClick={() => {
+                            refetch();
+                            toast.success("Payments refreshed!");
+                        }}
+                        disabled={isLoading}
+                    >
+                        <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                        {isLoading ? 'Refreshing...' : 'Refresh'}
+                    </Button>
+                    <Button
+                        className='cursor-pointer p-4'
+                        variant="outline"
+                        onClick={handleAutoCreatePayments}
+                        disabled={isLoading}
+                    >
+                        <Calendar className="h-4 w-4 mr-2" />
+                        {isLoading ? 'Creating...' : 'Auto Create Monthly Payments'}
+                    </Button>
                 </div>
             </div>
-        <div className="grid md:grid-cols-2 p-4 lg:grid-cols-4 gap-4">
-     <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0">
-            <CardTitle className="text-sm font-medium">Total Payments</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalPayments}</div>
-            <p className="text-xs text-muted-foreground">
-              All payments
-            </p>
-          </CardContent>
-        </Card>
-        <Card>  
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0">
-            <CardTitle className="text-sm font-medium">Pending Payments</CardTitle>
-            <User className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendingPayments}</div>
-            <p className="text-xs text-muted-foreground">
-              Pending payments
-            </p>  
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0">
-            <CardTitle className="text-sm font-medium">Completed Payments</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{completedPayments}</div>
-            <p className="text-xs text-muted-foreground">
-                Completed payments
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <Calendar className="w-4 h-4 text-muted-foreground"/>
-          </CardHeader>
-          <CardContent> 
-            <div className="text-2xl font-bold">
-              {totalRevenue.toLocaleString()} PKR
+            <div className="grid md:grid-cols-2 p-4 lg:grid-cols-4 gap-4">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0">
+                        <CardTitle className="text-sm font-medium">Total Payments</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{totalPayments}</div>
+                        <p className="text-xs text-muted-foreground">
+                            All payments
+                        </p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0">
+                        <CardTitle className="text-sm font-medium">Pending Payments</CardTitle>
+                        <User className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{pendingPayments}</div>
+                        <p className="text-xs text-muted-foreground">
+                            Pending payments
+                        </p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0">
+                        <CardTitle className="text-sm font-medium">Completed Payments</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{completedPayments}</div>
+                        <p className="text-xs text-muted-foreground">
+                            Completed payments
+                        </p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0">
+                        <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">
+                            {totalRevenue.toLocaleString()} PKR
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            Revenue from completed payments
+                        </p>
+                    </CardContent>
+                </Card>
             </div>
-            <p className="text-xs text-muted-foreground">
-           Revenue from completed payments
-            </p>
-          </CardContent>
-        </Card>
-     </div>
-     {/* Date Filter Section */}
-     <div className='bg-white p-6 my-6 shadow-sm rounded-md'>
+            {/* Date Filter Section */}
+            <div className='bg-white p-6 my-6 shadow-sm rounded-md'>
                 <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between mb-4">
                     <div>
                         <h3 className="text-lg font-semibold text-gray-900">Payment History</h3>
                         <p className="text-sm text-gray-600">
-                            {showAllPayments 
-                                ? "Showing all payments" 
+                            {showAllPayments
+                                ? "Showing all payments"
                                 : `Showing payments for ${getMonthOptions().find(m => m.value === selectedMonth)?.label} ${selectedYear}`
                             }
                         </p>
@@ -412,7 +409,7 @@ const page = () => {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="w-full">
                                 {getMonthOptions().map((month) => (
-                                    <DropdownMenuItem 
+                                    <DropdownMenuItem
                                         key={month.value}
                                         onClick={() => handleDateFilterChange(month.value, selectedYear)}
                                         className={month.value === selectedMonth ? "bg-blue-50 text-blue-700" : ""}
@@ -436,7 +433,7 @@ const page = () => {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="w-full">
                                 {getYearOptions().map((year) => (
-                                    <DropdownMenuItem 
+                                    <DropdownMenuItem
                                         key={year}
                                         onClick={() => handleDateFilterChange(selectedMonth, year.toString())}
                                         className={year.toString() === selectedYear ? "bg-blue-50 text-blue-700" : ""}
@@ -539,187 +536,206 @@ const page = () => {
                 )}
             </div>
             <div>
-            <div className='grid grid-cols-1  bg-white p-6 my-6  shadow-sm rounded-md' >
-                {filteredPayments.length > 0 ? (
-                    filteredPayments.map(payment => (
-                        <Card key={payment.id} className="mb-6 border-0 shadow-lg hover:shadow-xl transition-shadow duration-200">
-                            <CardHeader className="pb-4">
-                                {/* Header Section */}
-                                <div className="flex items-center justify-between mb-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-blue-50 rounded-lg">
-                                            <CreditCard className="h-5 w-5 text-blue-600" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-gray-900">
-                                                Payment #{payment.id.slice(-8)}
-                                            </h3>
-                                            <p className="text-sm text-gray-500">
-                                                {payment.createdAt ? format(new Date(payment.createdAt), "MMM dd, yyyy 'at' hh:mm a") : "N/A"}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Badge
-                                            className={`px-3 py-1 text-xs font-medium ${
-                                                payment.type === 'salary' 
-                                                    ? "bg-blue-50 text-blue-700 border-blue-200" 
-                                                    : "bg-green-50 text-green-700 border-green-200"
-                                            }`}
-                                        >
-                                            {payment.type === 'salary' ? 'Salary' : 'Booking'}
-                                        </Badge>
-                                        <Badge
-                                            className={`px-3 py-1 text-xs font-medium ${
-                                                payment.status === "PENDING"
-                                                    ? "bg-yellow-100 text-yellow-800 border-yellow-200"
-                                                    : payment.status === "COMPLETED"
-                                                    ? "bg-green-100 text-green-800 border-green-200"
-                                                    : payment.status === "FAILED"
-                                                    ? "bg-red-100 text-red-800 border-red-200"
-                                                    : payment.status === "REFUND"
-                                                    ? "bg-purple-100 text-purple-800 border-purple-200"
-                                                    : "bg-gray-100 text-gray-800 border-gray-200"
-                                            }`}
-                                        >
-                                            {payment.status}
-                                        </Badge>
-                                        
-                                        {/* Action Menu */}
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                    <MoreVertical className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem 
-                                                    onClick={() => {
-                                                        setSelectedPayment(payment)
-                                                        setNewStatus(payment.status)
-                                                        setIsUpdateStatusOpen(true)
-                                                    }}
-                                                >
-                                                    <Edit className="h-4 w-4 mr-2" />
-                                                    Update Status
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem 
-                                                    onClick={() => handleDeletePayment(payment.id)}
-                                                    className="text-red-600"
-                                                >
-                                                    <Trash className="h-4 w-4 mr-2" />
-                                                    Delete Payment
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                </div>
+                <div className='grid grid-cols-1  bg-white p-6 my-6  shadow-sm rounded-md' >
+                    {filteredPayments.length > 0 ? (
+                        (() => {
+                            // Group payments by booking
+                            const groupedPayments = filteredPayments.reduce((acc, payment) => {
+                                const bookingId = payment.bookingId || `standalone-${payment.id}`;
+                                if (!acc[bookingId]) {
+                                    acc[bookingId] = [];
+                                }
+                                acc[bookingId].push(payment);
+                                return acc;
+                            }, {});
 
-                                {/* Main Content Grid */}
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    {/* Left Column */}
-                                    <div className="space-y-4">
-                                        {/* Guest Information */}
-                                        <div className="bg-gray-50 rounded-lg p-4">
-                                            <div className="flex items-center gap-2 mb-3">
-                                                <User className="h-4 w-4 text-gray-600" />
-                                                <h4 className="font-medium text-gray-900">Guest Information</h4>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <div>
-                                                    <p className="text-sm text-gray-500">Name</p>
-                                                    <p className="font-medium text-gray-900">{payment.user.name}</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm text-gray-500">Email</p>
-                                                    <p className="text-gray-700">{payment.user.email}</p>
-                                                </div>
-                                                {payment.user.phone && (
-                                                    <div>
-                                                        <p className="text-sm text-gray-500">Phone</p>
-                                                        <p className="text-gray-700">{payment.user.phone}</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
+                            return Object.entries(groupedPayments).map(([bookingId, payments]) => {
+                                const isGrouped = payments.length > 1;
+                                const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+                                const allPaid = payments.every(p => p.status === "PAID" || p.approvalStatus === "APPROVED");
+                                const anyPending = payments.some(p => p.status === "PENDING" || p.approvalStatus === "PENDING");
+                                const firstPayment = payments[0];
 
-                                        {/* Room/Salary Information */}
-                                        {payment.type === 'booking' && payment.booking ? (
-                                            <div className="bg-gray-50 rounded-lg p-4">
-                                                <div className="flex items-center gap-2 mb-3">
-                                                    <Bed className="h-4 w-4 text-gray-600" />
-                                                    <h4 className="font-medium text-gray-900">Room Details</h4>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <div>
-                                                        <p className="text-sm text-gray-500">Room Number</p>
-                                                        <p className="font-medium text-gray-900">{payment.booking.room?.roomNumber || 'N/A'}</p>
+                                if (!isGrouped) {
+                                    // Render single payment as before
+                                    const payment = firstPayment;
+                                    return (
+                                        <Card key={payment.id} className="mb-6 border-0 shadow-lg hover:shadow-xl transition-shadow duration-200">
+                                            <CardHeader className="pb-4">
+                                                {/* Header Section */}
+                                                <div className="flex items-center justify-between mb-6">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="p-2 bg-blue-50 rounded-lg">
+                                                            <CreditCard className="h-5 w-5 text-blue-600" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-lg font-semibold text-gray-900">
+                                                                Payment #{payment.id.slice(-8)}
+                                                            </h3>
+                                                            <p className="text-sm text-gray-500">
+                                                                {payment.createdAt ? format(new Date(payment.createdAt), "MMM dd, yyyy 'at' hh:mm a") : "N/A"}
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <p className="text-sm text-gray-500">Floor</p>
-                                                        <p className="text-gray-700">Floor {payment.booking.room?.floor || 'N/A'}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm text-gray-500">Hostel</p>
-                                                        <p className="text-gray-700">{payment.booking.hostel?.hostelName || 'N/A'}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ) : payment.type === 'salary' && payment.salary ? (
-                                            <div className="bg-gray-50 rounded-lg p-4">
-                                                <div className="flex items-center gap-2 mb-3">
-                                                    <DollarSign className="h-4 w-4 text-gray-600" />
-                                                    <h4 className="font-medium text-gray-900">Salary Details</h4>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <div>
-                                                        <p className="text-sm text-gray-500">Pay Period</p>
-                                                        <p className="font-medium text-gray-900">{payment.salary.payPeriod || 'N/A'}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm text-gray-500">Pay Date</p>
-                                                        <p className="text-gray-700">
-                                                            {payment.salary.payDate ? format(new Date(payment.salary.payDate), "MMM dd, yyyy") : 'N/A'}
-                                                        </p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm text-gray-500">Position</p>
-                                                        <p className="text-gray-700">{payment.salary.staff?.position || 'N/A'}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ) : null}
-                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge
+                                                            className={`px-3 py-1 text-xs font-medium ${payment.type === 'salary'
+                                                                ? "bg-blue-50 text-blue-700 border-blue-200"
+                                                                : "bg-green-50 text-green-700 border-green-200"
+                                                                }`}
+                                                        >
+                                                            {payment.type === 'salary' ? 'Salary' : 'Booking'}
+                                                        </Badge>
+                                                        <Badge
+                                                            className={`px-3 py-1 text-xs font-medium ${payment.status === "PENDING"
+                                                                ? "bg-yellow-100 text-yellow-800 border-yellow-200"
+                                                                : payment.status === "COMPLETED"
+                                                                    ? "bg-green-100 text-green-800 border-green-200"
+                                                                    : payment.status === "FAILED"
+                                                                        ? "bg-red-100 text-red-800 border-red-200"
+                                                                        : payment.status === "REFUND"
+                                                                            ? "bg-purple-100 text-purple-800 border-purple-200"
+                                                                            : "bg-gray-100 text-gray-800 border-gray-200"
+                                                                }`}
+                                                        >
+                                                            {payment.status}
+                                                        </Badge>
 
-                                    {/* Right Column */}
-                                    <div className="space-y-4">
-                                        {/* Booking Dates */}
-                                        <div className="bg-gray-50 rounded-lg p-4">
-                                            <div className="flex items-center gap-2 mb-3">
-                                                <Calendar className="h-4 w-4 text-gray-600" />
-                                                <h4 className="font-medium text-gray-900">Booking Period</h4>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <div>
-                                                    <p className="text-sm text-gray-500">Check-in</p>
-                                                    <p className="text-gray-700">
-                                                        {payment.booking?.checkin
-                                                            ? format(new Date(payment.booking.checkin), "MMM dd, yyyy")
-                                                            : "N/A"}
-                                                    </p>
+                                                        {/* Action Menu */}
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                                    <MoreVertical className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuItem
+                                                                    onClick={() => {
+                                                                        setSelectedPayment(payment)
+                                                                        setNewStatus(payment.status)
+                                                                        setIsUpdateStatusOpen(true)
+                                                                    }}
+                                                                >
+                                                                    <Edit className="h-4 w-4 mr-2" />
+                                                                    Update Status
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuItem
+                                                                    onClick={() => handleDeletePayment(payment.id)}
+                                                                    className="text-red-600"
+                                                                >
+                                                                    <Trash className="h-4 w-4 mr-2" />
+                                                                    Delete Payment
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="text-sm text-gray-500">Check-out</p>
-                                                    <p className="text-gray-700">
-                                                        {payment.booking?.checkout
-                                                            ? format(new Date(payment.booking.checkout), "MMM dd, yyyy")
-                                                            : "N/A"}
-                                                    </p>
-                                                </div>
-                                                {/* <div>
+
+                                                {/* Main Content Grid */}
+                                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                                    {/* Left Column */}
+                                                    <div className="space-y-4">
+                                                        {/* Guest Information */}
+                                                        <div className="bg-gray-50 rounded-lg p-4">
+                                                            <div className="flex items-center gap-2 mb-3">
+                                                                <User className="h-4 w-4 text-gray-600" />
+                                                                <h4 className="font-medium text-gray-900">Guest Information</h4>
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <div>
+                                                                    <p className="text-sm text-gray-500">Name</p>
+                                                                    <p className="font-medium text-gray-900">{payment.user.name}</p>
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-sm text-gray-500">Email</p>
+                                                                    <p className="text-gray-700">{payment.user.email}</p>
+                                                                </div>
+                                                                {payment.user.phone && (
+                                                                    <div>
+                                                                        <p className="text-sm text-gray-500">Phone</p>
+                                                                        <p className="text-gray-700">{payment.user.phone}</p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Room/Salary Information */}
+                                                        {payment.type === 'booking' && payment.booking ? (
+                                                            <div className="bg-gray-50 rounded-lg p-4">
+                                                                <div className="flex items-center gap-2 mb-3">
+                                                                    <Bed className="h-4 w-4 text-gray-600" />
+                                                                    <h4 className="font-medium text-gray-900">Room Details</h4>
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <div>
+                                                                        <p className="text-sm text-gray-500">Room Number</p>
+                                                                        <p className="font-medium text-gray-900">{payment.booking.room?.roomNumber || 'N/A'}</p>
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="text-sm text-gray-500">Floor</p>
+                                                                        <p className="text-gray-700">Floor {payment.booking.room?.floor || 'N/A'}</p>
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="text-sm text-gray-500">Hostel</p>
+                                                                        <p className="text-gray-700">{payment.booking.hostel?.hostelName || 'N/A'}</p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ) : payment.type === 'salary' && payment.salary ? (
+                                                            <div className="bg-gray-50 rounded-lg p-4">
+                                                                <div className="flex items-center gap-2 mb-3">
+                                                                    <DollarSign className="h-4 w-4 text-gray-600" />
+                                                                    <h4 className="font-medium text-gray-900">Salary Details</h4>
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <div>
+                                                                        <p className="text-sm text-gray-500">Pay Period</p>
+                                                                        <p className="font-medium text-gray-900">{payment.salary.payPeriod || 'N/A'}</p>
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="text-sm text-gray-500">Pay Date</p>
+                                                                        <p className="text-gray-700">
+                                                                            {payment.salary.payDate ? format(new Date(payment.salary.payDate), "MMM dd, yyyy") : 'N/A'}
+                                                                        </p>
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="text-sm text-gray-500">Position</p>
+                                                                        <p className="text-gray-700">{payment.salary.staff?.position || 'N/A'}</p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ) : null}
+                                                    </div>
+
+                                                    {/* Right Column */}
+                                                    <div className="space-y-4">
+                                                        {/* Booking Dates */}
+                                                        <div className="bg-gray-50 rounded-lg p-4">
+                                                            <div className="flex items-center gap-2 mb-3">
+                                                                <Calendar className="h-4 w-4 text-gray-600" />
+                                                                <h4 className="font-medium text-gray-900">Booking Period</h4>
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <div>
+                                                                    <p className="text-sm text-gray-500">Check-in</p>
+                                                                    <p className="text-gray-700">
+                                                                        {payment.booking?.checkin
+                                                                            ? format(new Date(payment.booking.checkin), "MMM dd, yyyy")
+                                                                            : "N/A"}
+                                                                    </p>
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-sm text-gray-500">Check-out</p>
+                                                                    <p className="text-gray-700">
+                                                                        {payment.booking?.checkout
+                                                                            ? format(new Date(payment.booking.checkout), "MMM dd, yyyy")
+                                                                            : "N/A"}
+                                                                    </p>
+                                                                </div>
+                                                                {/* <div>
                                                     <p className="text-sm text-gray-500">Duration</p>
                                                     <p className="text-gray-700">
                                                         {payment.booking.checkin && payment.booking.checkout
@@ -727,35 +743,35 @@ const page = () => {
                                                             : "N/A"}
                                                     </p>
                                                 </div> */}
-                                            </div>
-                                        </div>
+                                                            </div>
+                                                        </div>
 
-                                        {/* Payment Details */}
-                                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-100">
-                                            <div className="flex items-center gap-2 mb-3">
-                                                <CreditCard className="h-4 w-4 text-green-600" />
-                                                <h4 className="font-medium text-gray-900">Payment Details</h4>
-                                            </div>
-                                            <div className="space-y-3">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-sm text-gray-500">Amount</span>
-                                                    <span className="text-lg font-bold text-green-700">{payment.amount}PKR</span>
-                                                </div>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-sm text-gray-500">Method</span>
-                                                    <span className="px-2 py-1 bg-white rounded text-sm font-medium text-gray-700">
-                                                        {payment.method || "N/A"}
-                                                    </span>
-                                                </div>
-                                                {payment.transactionId && (
-                                                    <div>
-                                                        <p className="text-sm text-gray-500 mb-1">Transaction ID</p>
-                                                        <p className="text-xs font-mono bg-white  p-3 rounded text-gray-700">
-                                                            {payment.transactionId}
-                                                        </p>
-                                                    </div>
-                                                )}
-                                                {/* {payment.notes && (
+                                                        {/* Payment Details */}
+                                                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-100">
+                                                            <div className="flex items-center gap-2 mb-3">
+                                                                <CreditCard className="h-4 w-4 text-green-600" />
+                                                                <h4 className="font-medium text-gray-900">Payment Details</h4>
+                                                            </div>
+                                                            <div className="space-y-3">
+                                                                <div className="flex justify-between items-center">
+                                                                    <span className="text-sm text-gray-500">Amount</span>
+                                                                    <span className="text-lg font-bold text-green-700">{payment.amount}PKR</span>
+                                                                </div>
+                                                                <div className="flex justify-between items-center">
+                                                                    <span className="text-sm text-gray-500">Method</span>
+                                                                    <span className="px-2 py-1 bg-white rounded text-sm font-medium text-gray-700">
+                                                                        {payment.method || "N/A"}
+                                                                    </span>
+                                                                </div>
+                                                                {payment.transactionId && (
+                                                                    <div>
+                                                                        <p className="text-sm text-gray-500 mb-1">Transaction ID</p>
+                                                                        <p className="text-xs font-mono bg-white  p-3 rounded text-gray-700">
+                                                                            {payment.transactionId}
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+                                                                {/* {payment.notes && (
                                                     <div>
                                                         <p className="text-sm text-gray-500 mb-1">Notes</p>
                                                         <p className="text-sm text-gray-700 bg-white px-2 py-1 rounded">
@@ -763,38 +779,36 @@ const page = () => {
                                                         </p>
                                                     </div>
                                                 )} */}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                {/* Actions */}
-                                <div className="mt-6 pt-4 border-t border-gray-200">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm text-gray-500">Status:</span>
-                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                payment.status === 'COMPLETED' 
-                                                    ? 'bg-green-100 text-green-800' 
-                                                    : payment.status === 'FAILED'
-                                                    ? 'bg-red-100 text-red-800'
-                                                    : 'bg-yellow-100 text-yellow-800'
-                                            }`}>
-                                                {payment.status}
-                                            </span>
-                                            <span className="text-sm text-gray-500">Approval:</span>
-                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                payment.approvalStatus === 'APPROVED' 
-                                                    ? 'bg-green-100 text-green-800' 
-                                                    : payment.approvalStatus === 'REJECTED'
-                                                    ? 'bg-red-100 text-red-800'
-                                                    : 'bg-yellow-100 text-yellow-800'
-                                            }`}>
-                                                {payment.approvalStatus}
-                                            </span>
-                                        </div>
-                                        
-                                        {/* {payment.approvalStatus === 'PENDING' && (
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Actions */}
+                                                <div className="mt-6 pt-4 border-t border-gray-200">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-sm text-gray-500">Status:</span>
+                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${payment.status === 'COMPLETED'
+                                                                ? 'bg-green-100 text-green-800'
+                                                                : payment.status === 'FAILED'
+                                                                    ? 'bg-red-100 text-red-800'
+                                                                    : 'bg-yellow-100 text-yellow-800'
+                                                                }`}>
+                                                                {payment.status}
+                                                            </span>
+                                                            <span className="text-sm text-gray-500">Approval:</span>
+                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${payment.approvalStatus === 'APPROVED'
+                                                                ? 'bg-green-100 text-green-800'
+                                                                : payment.approvalStatus === 'REJECTED'
+                                                                    ? 'bg-red-100 text-red-800'
+                                                                    : 'bg-yellow-100 text-yellow-800'
+                                                                }`}>
+                                                                {payment.approvalStatus}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* {payment.approvalStatus === 'PENDING' && (
                                             <div className="flex items-center gap-2">
                                                 <Button
                                                     size="sm"
@@ -820,37 +834,182 @@ const page = () => {
                                                 </Button>
                                             </div>
                                         )} */}
-                                        
-                                        {payment.approvalStatus === 'APPROVED' && (
-                                            <div className="text-sm text-green-600 font-medium flex items-center gap-1">
-                                                <CheckCircle2 className="h-4 w-4" />
-                                                Approved
-                                            </div>
-                                        )}
-                                        
-                                        {payment.approvalStatus === 'REJECTED' && (
-                                            <div className="text-sm text-red-600 font-medium flex items-center gap-1">
-                                                {/* <XCircle className="h-4 w-4" /> */}
-                                                Rejected
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </CardHeader>
-                        </Card>
-                    ))
-                ) : (
-                    <div className="text-center py-8">
-                        <p className="text-gray-500">
-                            {searchTerm ? `No payments found matching "${searchTerm}"` : 
-                             status !== "All Status" ? `No ${status.toLowerCase()} payments found` :
-                             paymentType !== "All Types" ? `No ${paymentType.toLowerCase()} payments found` :
-                             "No payments found"}
-                        </p>
-                    </div>
-                )}
+
+                                                        {payment.approvalStatus === 'APPROVED' && (
+                                                            <div className="text-sm text-green-600 font-medium flex items-center gap-1">
+                                                                <CheckCircle2 className="h-4 w-4" />
+                                                                Approved
+                                                            </div>
+                                                        )}
+
+                                                        {payment.approvalStatus === 'REJECTED' && (
+                                                            <div className="text-sm text-red-600 font-medium flex items-center gap-1">
+                                                                {/* <XCircle className="h-4 w-4" /> */}
+                                                                Rejected
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </CardHeader>
+                                        </Card>
+                                    );
+                                } else {
+                                    // Render grouped payments
+                                    return (
+                                        <Card key={bookingId} className="mb-6 border-0 shadow-lg hover:shadow-xl transition-shadow duration-200 overflow-hidden">
+                                            {/* Group Header */}
+                                            <CardHeader className="pb-4 bg-gradient-to-r from-blue-50 to-indigo-50">
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-3 mb-2">
+                                                            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
+                                                                {payments.length}
+                                                            </div>
+                                                            <div>
+                                                                <h3 className="text-lg font-semibold text-gray-900">
+                                                                    Multiple Payments - {firstPayment.booking?.hostel?.hostelName || 'Unknown Hostel'}
+                                                                </h3>
+                                                                <p className="text-sm text-gray-600">
+                                                                    Guest: {firstPayment.user?.name || 'Unknown'} • Room {firstPayment.booking?.room?.roomNumber || 'N/A'}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        {firstPayment.booking && (
+                                                            <div className="flex items-center gap-4 text-sm text-gray-600 ml-13">
+                                                                <span className="flex items-center gap-1">
+                                                                    <Calendar className="h-4 w-4" />
+                                                                    {format(new Date(firstPayment.booking.checkin), "MMM dd")} - {format(new Date(firstPayment.booking.checkout), "MMM dd, yyyy")}
+                                                                </span>
+                                                                <Badge variant="outline">{firstPayment.booking.status}</Badge>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex flex-col items-end gap-2">
+                                                        <Badge className={allPaid ? "bg-green-100 text-green-800 px-4 py-1" : anyPending ? "bg-yellow-100 text-yellow-800 px-4 py-1" : "bg-gray-100 text-gray-800 px-4 py-1"}>
+                                                            {payments.length} Payments
+                                                        </Badge>
+                                                        <div className="text-right">
+                                                            <p className="text-xs text-gray-500">Total Paid</p>
+                                                            <p className="text-2xl font-bold text-green-700">{totalPaid} PKR</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </CardHeader>
+
+                                            {/* Individual Payments List */}
+                                            <CardContent className="p-0">
+                                                <div className="divide-y">
+                                                    {payments.map((payment, index) => (
+                                                        <div key={payment.id} className="p-6 hover:bg-gray-50 transition-colors">
+                                                            {/* Payment Header */}
+                                                            <div className="flex items-center justify-between mb-4">
+                                                                <div className="flex items-center gap-4">
+                                                                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-bold">
+                                                                        #{index + 1}
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="font-semibold text-gray-900">Payment #{index + 1}</p>
+                                                                        <p className="text-sm text-gray-500">
+                                                                            {format(new Date(payment.createdAt), "PPP 'at' p")}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="flex gap-2">
+                                                                        <Badge className={
+                                                                            payment.status === 'PAID' ? 'bg-green-100 text-green-800' :
+                                                                                payment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                                                                                    'bg-red-100 text-red-800'
+                                                                        }>
+                                                                            {payment.status}
+                                                                        </Badge>
+                                                                        <Badge variant="outline" className={
+                                                                            payment.approvalStatus === 'APPROVED' ? 'border-green-500 text-green-700' :
+                                                                                payment.approvalStatus === 'PENDING' ? 'border-yellow-500 text-yellow-700' :
+                                                                                    'border-red-500 text-red-700'
+                                                                        }>
+                                                                            {payment.approvalStatus}
+                                                                        </Badge>
+                                                                    </div>
+                                                                    <DropdownMenu>
+                                                                        <DropdownMenuTrigger asChild>
+                                                                            <Button variant="ghost" size="sm">
+                                                                                <MoreVertical className="h-4 w-4" />
+                                                                            </Button>
+                                                                        </DropdownMenuTrigger>
+                                                                        <DropdownMenuContent align="end">
+                                                                            <DropdownMenuItem onClick={() => {
+                                                                                setSelectedPayment(payment);
+                                                                                setIsUpdateStatusOpen(true);
+                                                                            }}>
+                                                                                <Edit className="h-4 w-4 mr-2" />
+                                                                                Update Status
+                                                                            </DropdownMenuItem>
+                                                                            <DropdownMenuSeparator />
+                                                                            <DropdownMenuItem
+                                                                                onClick={() => handleDeletePayment(payment.id)}
+                                                                                className="text-red-600"
+                                                                            >
+                                                                                <Trash className="h-4 w-4 mr-2" />
+                                                                                Delete
+                                                                            </DropdownMenuItem>
+                                                                        </DropdownMenuContent>
+                                                                    </DropdownMenu>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Payment Details Grid */}
+                                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                                                <div className="bg-green-50 p-3 rounded-lg">
+                                                                    <p className="text-xs text-gray-500 mb-1">Amount</p>
+                                                                    <p className="text-lg font-bold text-green-700">{payment.amount} PKR</p>
+                                                                </div>
+                                                                <div className="bg-gray-50 p-3 rounded-lg">
+                                                                    <p className="text-xs text-gray-500 mb-1">Method</p>
+                                                                    <p className="font-medium text-gray-900">{payment.method || 'N/A'}</p>
+                                                                </div>
+                                                                <div className="bg-gray-50 p-3 rounded-lg">
+                                                                    <p className="text-xs text-gray-500 mb-1">Transaction ID</p>
+                                                                    <p className="font-mono text-xs text-gray-900 truncate">
+                                                                        {payment.transactionId || 'N/A'}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="bg-gray-50 p-3 rounded-lg">
+                                                                    <p className="text-xs text-gray-500 mb-1">Payment Date</p>
+                                                                    <p className="font-medium text-gray-900">
+                                                                        {format(new Date(payment.createdAt), "MMM dd, yyyy")}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Notes */}
+                                                            {payment.notes && (
+                                                                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                                                                    <p className="text-xs text-gray-500 mb-1">Notes</p>
+                                                                    <p className="text-sm text-gray-700">{payment.notes}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                }
+                            });
+                        })()
+                    ) : (
+                        <div className="text-center py-8">
+                            <p className="text-gray-500">
+                                {searchTerm ? `No payments found matching "${searchTerm}"` :
+                                    status !== "All Status" ? `No ${status.toLowerCase()} payments found` :
+                                        paymentType !== "All Types" ? `No ${paymentType.toLowerCase()} payments found` :
+                                            "No payments found"}
+                            </p>
+                        </div>
+                    )}
+                </div>
             </div>
-</div>
 
 
             {/* Update Status Dialog */}
@@ -917,7 +1076,7 @@ const page = () => {
                                 <Button variant="outline" onClick={() => setIsApprovalDialogOpen(false)}>
                                     Cancel
                                 </Button>
-                                <Button 
+                                <Button
                                     onClick={() => handleApprove(selectedPayment.id)}
                                     disabled={approvePaymentMutation.isPending}
                                     className="bg-green-600 hover:bg-green-700"
@@ -968,7 +1127,7 @@ const page = () => {
                                 }}>
                                     Cancel
                                 </Button>
-                                <Button 
+                                <Button
                                     variant="destructive"
                                     onClick={handleReject}
                                     disabled={rejectPaymentMutation.isPending || !rejectionReason.trim()}
@@ -980,8 +1139,8 @@ const page = () => {
                     )}
                 </DialogContent>
             </Dialog>
-    </div>
-  )
+        </div>
+    )
 }
 
 export default page 
