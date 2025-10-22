@@ -572,7 +572,7 @@ export async function getDetailedRooms(hostelFilter: any) {
                     status: { in: ["CONFIRMED", "CHECKED_IN", "CHECKED_OUT"] }
                 },
                 include: {
-                    payment: true
+                    payments: true
                 }
             }
         }
@@ -580,7 +580,7 @@ export async function getDetailedRooms(hostelFilter: any) {
 
     return rooms.map((room: any) => {
         const totalRevenue = room.bookings.reduce((sum: number, booking: any) => {
-            return sum + (booking.payment?.amount || 0);
+            return sum + (booking.payments?.reduce((pSum: number, pay: any) => pSum + (pay.amount || 0), 0) || 0);
         }, 0);
 
         return {
