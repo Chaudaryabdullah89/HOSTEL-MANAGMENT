@@ -137,7 +137,7 @@ class GoogleSheetsService {
             // First, ensure the sheet exists
             await this.ensureSheetExists('Bookings', ['ID', 'Guest Name', 'Email', 'Room Number', 'Check-in', 'Check-out', 'Status', 'Price', 'Created At']);
 
-            const values = [[e
+            const values = [[
                 booking.id,
                 booking.guestName || 'N/A',
                 booking.guestEmail || 'N/A',

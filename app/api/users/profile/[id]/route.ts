@@ -5,7 +5,7 @@ import { getServerSession } from "@/lib/server-auth";
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await getServerSession(request);
@@ -25,7 +25,7 @@ export async function GET(
 
         await ensureConnection();
 
-        const userId = params.id;
+        const { id: userId } = await params;
 
         // Fetch user with all related data
         const user = await prisma.user.findUnique({

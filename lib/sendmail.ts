@@ -34,9 +34,11 @@ export async function sendEmail({ to, subject, html }: EmailOptions) {
     return info;
   } catch (error) {
     console.error("❌ Email sending failed:");
-    console.error("❌ Error type:", error.constructor.name);
-    console.error("❌ Error message:", error.message);
-    console.error("❌ Error code:", error.code);
+    if (error && typeof error === 'object') {
+      console.error("❌ Error type:", (error as Error).constructor.name);
+      console.error("❌ Error message:", (error as Error).message);
+      console.error("❌ Error code:", (error as any).code);
+    }
     console.error("❌ Full error:", error);
     throw error;
   }
