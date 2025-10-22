@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/server-auth";
+import { requireWardenAuth } from "@/lib/warden-auth";
 
 export async function GET(request: NextRequest) {
     try {
         const session = await getServerSession(request);
         if (!session) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // Check if user is warden and get their hostel assignments
+        let wardenHostelIds: string[] = [];
+        try {
+            const wardenAuth = await requireWardenAuth(request);
+            wardenHostelIds = wardenAuth.hostelIds;
+        } catch (error) {
+            // If not a warden, continue without filtering (admin access)
+            console.log("No warden auth, showing all stats");
         }
 
         const { searchParams } = new URL(request.url);
@@ -23,8 +34,13 @@ export async function GET(request: NextRequest) {
             };
         }
 
-        // Build hostel filter
-        const hostelFilter = hostelId ? { hostelId } : {};
+        // Build hostel filter - prioritize warden filtering
+        let hostelFilter: any = {};
+        if (wardenHostelIds.length > 0) {
+            hostelFilter.hostelId = { in: wardenHostelIds };
+        } else if (hostelId) {
+            hostelFilter.hostelId = hostelId;
+        }
 
         // Get current date for today's data
         const today = new Date();
@@ -67,10 +83,10 @@ export async function GET(request: NextRequest) {
             where: { role: "GUEST" }
         });
         const totalStaff = await prisma.user.count({
-            where: { 
-                role: { 
-                    in: ["STAFF", "WARDEN", "ADMIN"] 
-                } 
+            where: {
+                role: {
+                    in: ["STAFF", "WARDEN", "ADMIN"]
+                }
             }
         });
 
@@ -343,7 +359,7 @@ export async function GET(request: NextRequest) {
                         ...dateFilter
                     },
                     include: {
-                        payment: {
+                        payments: {
                             where: {
                                 status: "COMPLETED"
                             }
@@ -351,13 +367,13 @@ export async function GET(request: NextRequest) {
                     }
                 }
             },
-                take: 10
+            take: 10
         });
 
         const roomsWithRevenue = topPerformingRooms.map((room: any) => ({
             roomNumber: room.roomNumber,
             floor: room.floor,
-            totalRevenue: room.bookings.reduce((sum: number, booking: any) => 
+            totalRevenue: room.bookings.reduce((sum: number, booking: any) =>
                 sum + (booking.payment?.amount || 0), 0
             ),
             bookingCount: room.bookings.length
@@ -371,49 +387,49 @@ export async function GET(request: NextRequest) {
                 availableRooms,
                 maintenanceRooms,
                 occupancyRate,
-                
+
                 // User stats
                 totalUsers,
                 totalGuests,
                 totalStaff,
-                
+
                 // Booking stats
                 totalBookings,
                 activeBookings,
                 pendingBookings,
                 todayCheckIns,
                 todayCheckOuts,
-                
+
                 // Payment stats
                 totalPayments,
                 completedPayments,
                 pendingPayments,
                 totalRevenue: totalRevenue._sum.amount || 0,
                 monthlyRevenue: monthlyRevenue._sum.amount || 0,
-                
+
                 // Maintenance stats
                 totalMaintenanceRequests,
                 pendingMaintenanceRequests,
                 inProgressMaintenanceRequests,
                 completedMaintenanceRequests,
-                
+
                 // Expense stats
                 totalExpenses,
                 totalExpenseAmount: totalExpenseAmount._sum.amount || 0
             },
-            
+
             // Distribution data
             bookingStatusDistribution: bookingStatusDistribution.map((item: any) => ({
                 status: item.status,
                 count: item._count.status
             })),
-            
+
             paymentMethodDistribution: paymentMethodDistribution.map((item: any) => ({
                 method: item.method,
                 count: item._count.method,
                 amount: item._sum.amount || 0
             })),
-            
+
             // Recent activities
             recentActivities: {
                 bookings: recentBookings.map((booking: any) => ({
@@ -441,7 +457,7 @@ export async function GET(request: NextRequest) {
                     status: maintenance.status
                 }))
             },
-            
+
             // Analytics data
             topPerformingRooms: roomsWithRevenue,
             monthlyRevenueData: monthlyRevenueData.map((item: any) => ({

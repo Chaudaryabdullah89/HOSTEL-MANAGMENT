@@ -154,7 +154,10 @@ export async function POST(request: NextRequest) {
                         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
                     };
 
-                    await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3001'}/api/mail/send-notification`, {
+                    // Use localhost with correct port for development
+                    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3001';
+
+                    await fetch(`${baseUrl}/api/mail/send-notification`, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",

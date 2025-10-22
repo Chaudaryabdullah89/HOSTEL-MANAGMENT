@@ -617,11 +617,7 @@ export async function getDetailedUsers() {
             },
             wardens: {
                 select: {
-                    hostel: {
-                        select: {
-                            hostelName: true
-                        }
-                    }
+                    hostelIds: true
                 }
             }
         },
@@ -636,7 +632,7 @@ export async function getDetailedUsers() {
         email: user.email,
         role: user.role,
         hostelName: user.guest?.Hostel?.hostelName ||
-            user.wardens?.[0]?.hostel?.hostelName || 'N/A',
+            user.wardens?.[0]?.hostelIds?.[0] || 'N/A',
         createdAt: user.createdAt
     }));
 }

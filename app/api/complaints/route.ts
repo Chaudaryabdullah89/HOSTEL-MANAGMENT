@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma, ensureConnection } from "@/lib/prisma";
 import { getServerSession } from "@/lib/server-auth";
+import { requireWardenAuth } from "@/lib/warden-auth";
 
 export async function GET(request: NextRequest) {
     try {
@@ -17,20 +18,18 @@ export async function GET(request: NextRequest) {
         // Build where clause based on user role only
         let whereClause: any = {};
 
-        // Role-based filtering
-        if (session.user.role === 'ADMIN') {
-            // Admin can see all complaints
-        } else if (session.user.role === 'WARDEN') {
-            // Warden can only see complaints from their managed hostels
-            const wardenHostels = await prisma.warden.findMany({
-                where: { userId: session.user.id },
-                select: { hostelIds: true }
-            });
-            const hostelIds = wardenHostels.flatMap((w: any) => w.hostelIds).filter(Boolean);
-            whereClause.hostelId = { in: hostelIds };
-        } else if (session.user.role === 'GUEST') {
-            // Guest can only see their own complaints
-            whereClause.reportedBy = session.user.id;
+        // Check if user is warden and get their hostel assignments
+        try {
+            const wardenAuth = await requireWardenAuth(request);
+            whereClause.hostelId = { in: wardenAuth.hostelIds };
+        } catch (error) {
+            // If not a warden, continue without filtering (admin access)
+            console.log("No warden auth, showing all complaints");
+
+            if (session.user.role === 'GUEST') {
+                // Guest can only see their own complaints
+                whereClause.reportedBy = session.user.id;
+            }
         }
 
         const complaints = await prisma.complaint.findMany({

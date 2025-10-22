@@ -125,7 +125,7 @@ const menuItems = {
     },
     {
       title: "Reports",
-      url: "/dashboard/admin/report",
+      url: "/dashboard/admin/reports",
       icon: FileText,
     },
     {

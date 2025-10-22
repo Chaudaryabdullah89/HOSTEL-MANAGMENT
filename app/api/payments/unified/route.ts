@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/server-auth";
+import { requireWardenAuth } from "@/lib/warden-auth";
 
 // Get all payments (booking payments + salary payments) for approval
 export async function GET(request: NextRequest) {
@@ -10,6 +11,16 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        // Check if user is warden and get their hostel assignments
+        let wardenHostelIds: string[] = [];
+        try {
+            const wardenAuth = await requireWardenAuth(request);
+            wardenHostelIds = wardenAuth.hostelIds;
+        } catch (error) {
+            // If not a warden, continue without filtering (admin access)
+            console.log("No warden auth, showing all payments");
+        }
+
         const { searchParams } = new URL(request.url);
         const type = searchParams.get('type') || 'all';
         const status = searchParams.get('status') || 'all';
@@ -17,8 +28,12 @@ export async function GET(request: NextRequest) {
 
         let whereClause: any = {};
         if (status !== 'all') {
-
             whereClause.approvalStatus = status;
+        }
+
+        // Add warden filtering for booking payments
+        if (wardenHostelIds.length > 0) {
+            whereClause.hostelId = { in: wardenHostelIds };
         }
         const salaryWhere: any = {};
         if (status !== 'all') {
@@ -27,10 +42,22 @@ export async function GET(request: NextRequest) {
             else if (status === 'APPROVED') salaryWhere.status = 'PAID';
             else if (status === 'REJECTED') salaryWhere.status = 'CANCELLED';
         }
+
+        // Add warden filtering for salary payments
+        if (wardenHostelIds.length > 0) {
+            salaryWhere.staff = {
+                hostelId: { in: wardenHostelIds }
+            };
+        }
         const expenseWhere: any = {};
         if (status !== 'all') {
             // Expense uses status directly with same values
             expenseWhere.status = status;
+        }
+
+        // Add warden filtering for expenses
+        if (wardenHostelIds.length > 0) {
+            expenseWhere.hostelId = { in: wardenHostelIds };
         }
 
         // Get booking payments

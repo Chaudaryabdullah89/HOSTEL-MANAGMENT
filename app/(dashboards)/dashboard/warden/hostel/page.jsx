@@ -269,7 +269,7 @@ const HostelPage = () => {
         await refetchHostels();
 
         setTimeout(() => {
-          router.push("/dashboard/admin/hostel");
+          router.push("/dashboard/warden/hostel");
           router.refresh();
         }, 1000);
       }
@@ -413,7 +413,7 @@ const HostelPage = () => {
         await refetchHostels();
 
         setTimeout(() => {
-          router.push("/dashboard/admin/hostel");
+          router.push("/dashboard/warden/hostel");
           router.refresh();
         }, 1000);
       }
@@ -461,9 +461,9 @@ const HostelPage = () => {
       {/* HEADER */}
       <div className="flex md:flex-row flex-col justify-between px-2 md:px-4">
         <div className="mt-4">
-          <h1 className="text-3xl font-bold">Hostels !</h1>
+          <h1 className="text-3xl font-bold">My Assigned Hostels</h1>
           <p className="text-muted-foreground leading-loose">
-            Manage your hostels here.
+            View your assigned hostels. Contact admin to modify assignments.
           </p>
         </div>
 
@@ -498,12 +498,14 @@ const HostelPage = () => {
               setWardensIds([]);
             }
           }} className="overflow-visible max-h-[90%]">
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2 cursor-pointer px-5 py-2 rounded-md border border-gray-300 shadow-sm bg-white hover:bg-gray-100 transition" variant="outline">
-                <Plus className="h-4 w-4" />
-                <span className="font-medium text-base">Add Hostel</span>
-              </Button>
-            </DialogTrigger>
+            <Button
+              className="flex items-center gap-2 cursor-not-allowed px-5 py-2 rounded-md border border-gray-300 shadow-sm bg-gray-100 text-gray-500"
+              variant="outline"
+              disabled
+            >
+              <Plus className="h-4 w-4" />
+              <span className="font-medium text-base">Add Hostel (Admin Only)</span>
+            </Button>
             <DialogContent className="sm:max-w-[600px] px-0 py-0 rounded-lg overflow-hidden bg-white border border-gray-200">
               <div className="px-6 py-8 max-h-[90vh] overflow-y-auto bg-white">
                 <DialogHeader>

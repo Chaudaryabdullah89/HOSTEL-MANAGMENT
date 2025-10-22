@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/server-auth";
+import { requireWardenAuth } from "@/lib/warden-auth";
 
 export async function GET(request: NextRequest) {
     try {
@@ -9,13 +10,23 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        // Check if user is warden and get their hostel assignments
+        let wardenHostelIds: string[] = [];
+        try {
+            const wardenAuth = await requireWardenAuth(request);
+            wardenHostelIds = wardenAuth.hostelIds;
+        } catch (error) {
+            // If not a warden, continue without filtering (admin access)
+            console.log("No warden auth, showing all staff");
+        }
+
         const { searchParams } = new URL(request.url);
         const hostelId = searchParams.get('hostelId');
         const isActive = searchParams.get('isActive');
         const department = searchParams.get('department');
 
         const whereClause: any = {};
-        
+
         if (hostelId) {
             whereClause.hostelId = hostelId;
         }
@@ -24,6 +35,11 @@ export async function GET(request: NextRequest) {
         }
         if (department) {
             whereClause.department = department;
+        }
+
+        // Add warden filtering for staff
+        if (wardenHostelIds.length > 0) {
+            whereClause.hostelId = { in: wardenHostelIds };
         }
 
         const existingStaff = await prisma.staff.findMany({
@@ -48,7 +64,11 @@ export async function GET(request: NextRequest) {
                 },
                 email: {
                     notIn: existingStaff.map((staff: any) => staff.email)
-                }
+                },
+                // Add warden filtering for users
+                ...(wardenHostelIds.length > 0 && {
+                    hostelId: { in: wardenHostelIds }
+                })
             },
             select: {
                 id: true,
@@ -65,10 +85,10 @@ export async function GET(request: NextRequest) {
             name: user.name || 'Unknown User',
             email: user.email,
             phone: user.phone || '',
-            position: user.role === "ADMIN" ? "Administrator" : 
-                     user.role === "WARDEN" ? "Warden" : "Staff Member",
-            department: user.role === "ADMIN" ? "Administration" : 
-                       user.role === "WARDEN" ? "Management" : "Operations",
+            position: user.role === "ADMIN" ? "Administrator" :
+                user.role === "WARDEN" ? "Warden" : "Staff Member",
+            department: user.role === "ADMIN" ? "Administration" :
+                user.role === "WARDEN" ? "Management" : "Operations",
             hostelId: user.hostelId,
             hostel: user.hostelId ? { hostelName: "Assigned Hostel" } : null,
             isActive: true,

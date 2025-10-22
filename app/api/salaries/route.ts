@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/server-auth";
+import { requireWardenAuth } from "@/lib/warden-auth";
 
 // Get all salaries
 export async function GET(request: NextRequest) {
@@ -10,13 +11,23 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        // Check if user is warden and get their hostel assignments
+        let wardenHostelIds: string[] = [];
+        try {
+            const wardenAuth = await requireWardenAuth(request);
+            wardenHostelIds = wardenAuth.hostelIds;
+        } catch (error) {
+            // If not a warden, continue without filtering (admin access)
+            console.log("No warden auth, showing all salaries");
+        }
+
         const { searchParams } = new URL(request.url);
         const status = searchParams.get('status');
         const payPeriod = searchParams.get('payPeriod');
         const staffId = searchParams.get('staffId');
 
         const whereClause: any = {};
-        
+
         if (status) {
             whereClause.status = status;
         }
@@ -25,6 +36,13 @@ export async function GET(request: NextRequest) {
         }
         if (staffId) {
             whereClause.staffId = staffId;
+        }
+
+        // Add warden filtering for salaries
+        if (wardenHostelIds.length > 0) {
+            whereClause.staff = {
+                hostelId: { in: wardenHostelIds }
+            };
         }
 
         const salaries = await prisma.salary.findMany({
@@ -138,10 +156,10 @@ export async function POST(request: NextRequest) {
                     email: user.email,
                     phone: user.phone || '',
                     hostelId: defaultHostelId || 'default-hostel-id',
-                    position: user.role === "ADMIN" ? "Administrator" : 
-                             user.role === "WARDEN" ? "Warden" : "Staff Member",
-                    department: user.role === "ADMIN" ? "Administration" : 
-                               user.role === "WARDEN" ? "Management" : "Operations",
+                    position: user.role === "ADMIN" ? "Administrator" :
+                        user.role === "WARDEN" ? "Warden" : "Staff Member",
+                    department: user.role === "ADMIN" ? "Administration" :
+                        user.role === "WARDEN" ? "Management" : "Operations",
                     baseSalary: 0, // Default value, can be updated later
                     isActive: true,
                     joinDate: new Date()

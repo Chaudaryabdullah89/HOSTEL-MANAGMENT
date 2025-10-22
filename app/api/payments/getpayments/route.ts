@@ -1,9 +1,25 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireWardenAuth } from "@/lib/warden-auth";
 
 export async function GET(request: Request) {
     try {
+        // Check if user is warden and get their hostel assignments
+        let wardenHostelIds: string[] = [];
+        try {
+            const wardenAuth = await requireWardenAuth(request);
+            wardenHostelIds = wardenAuth.hostelIds;
+        } catch (error) {
+            // If not a warden, continue without filtering (admin access)
+            console.log("No warden auth, showing all payments");
+        }
+
+        const whereClause = wardenHostelIds.length > 0
+            ? { hostelId: { in: wardenHostelIds } }
+            : {};
+
         const payments = await prisma.payment.findMany({
+            where: whereClause,
             select: {
                 id: true,
                 bookingId: true,
@@ -21,14 +37,6 @@ export async function GET(request: Request) {
                 rejectedBy: true,
                 rejectedAt: true,
                 rejectionReason: true,
-                expense: {
-                    select: {
-                        id: true,
-                        title: true,
-                        amount: true,
-                        status: true,
-                    }
-                },
                 approver: {
                     select: {
                         id: true,

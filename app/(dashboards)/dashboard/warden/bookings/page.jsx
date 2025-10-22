@@ -881,9 +881,9 @@ const page = () => {
       <div className="p-2">
         <div className="flex md:flex-row flex-col justify-between px-4">
           <div className="mt-4">
-            <h1 className="text-3xl font-bold">Bookings</h1>
+            <h1 className="text-3xl font-bold">My Hostel Bookings</h1>
             <p className="text-muted-foreground leading-loose">
-              Manage your bookings and payments here.
+              Manage bookings and payments for your assigned hostels only.
             </p>
           </div>
         </div>
@@ -920,9 +920,9 @@ const page = () => {
     <div className="p-2">
       <div className="flex md:flex-row flex-col justify-between px-4">
         <div className="mt-4 ">
-          <h1 className="text-3xl font-bold">Bookings</h1>
+          <h1 className="text-3xl font-bold">My Hostel Bookings</h1>
           <p className="text-muted-foreground leading-loose">
-            Manage your bookings and payments here.
+            Manage bookings and payments for your assigned hostels only.
           </p>
         </div>
         <div className="flex items-center overflow-visible gap-2 mt-4 md:mt-0">

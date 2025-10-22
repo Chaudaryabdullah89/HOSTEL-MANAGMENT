@@ -1,10 +1,27 @@
 import { NextResponse } from "next/server";
 import { prisma, ensureConnection } from "@/lib/prisma";
+import { requireWardenAuth } from "@/lib/warden-auth";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await ensureConnection();
+
+    // Check if user is warden and get their hostel assignments
+    let wardenHostelIds: string[] = [];
+    try {
+      const wardenAuth = await requireWardenAuth(request);
+      wardenHostelIds = wardenAuth.hostelIds;
+    } catch (error) {
+      // If not a warden, continue without filtering (admin access)
+      console.log("No warden auth, showing all rooms");
+    }
+
+    const whereClause = wardenHostelIds.length > 0
+      ? { hostelId: { in: wardenHostelIds } }
+      : {};
+
     const rooms = await prisma.room.findMany({
+      where: whereClause,
       orderBy: {
         createdAt: "desc",
       },

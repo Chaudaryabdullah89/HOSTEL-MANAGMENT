@@ -166,9 +166,8 @@ const page = () => {
   // Guest type state (existing or new)
   const [guestType, setGuestType] = useState("existing");
 
-  // Payment dialog state
-  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [selectedBookingPayments, setSelectedBookingPayments] = useState(null);
+  // Payment history state - track which bookings have expanded payment history
+  const [expandedPayments, setExpandedPayments] = useState({});
 
   // New guest creation state
   const [newGuestName, setNewGuestName] = useState("");
@@ -2090,17 +2089,32 @@ const page = () => {
                         {/* Payment Details Section */}
                         <div className="flex flex-col gap-2 bg-white rounded-xl p-4 h-full">
                           {(() => {
+                            const currentMonth = new Date().getMonth();
+                            const currentYear = new Date().getFullYear();
                             const payments = booking.payments || [];
-                            const latestPayment = payments.length > 0 ? payments[0] : null;
+
+                            // Separate current month and previous payments
+                            const currentMonthPayments = payments.filter(p => {
+                              const paymentDate = new Date(p.createdAt);
+                              return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
+                            });
+
+                            const previousPayments = payments.filter(p => {
+                              const paymentDate = new Date(p.createdAt);
+                              return paymentDate.getMonth() !== currentMonth || paymentDate.getFullYear() !== currentYear;
+                            });
+
+                            const isExpanded = expandedPayments[booking.id];
+                            const displayPayments = isExpanded ? payments : currentMonthPayments;
                             const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
                             return (
                               <>
-                                <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center justify-between">
                                   <p className="text-md font-medium flex items-center gap-2">
                                     <CreditCard className="w-4 h-4" />
                                     <span className="text-sm font-semibold text-gray-800">
-                                      Payment
+                                      {isExpanded ? 'All Payments' : 'Current Month'}
                                     </span>
                                   </p>
                                   {payments.length > 0 && (
@@ -2110,7 +2124,7 @@ const page = () => {
                                   )}
                                 </div>
 
-                                {latestPayment ? (
+                                {payments.length > 0 ? (
                                   <div className="space-y-2">
                                     {/* Summary */}
                                     <div className="pb-2 border-b">
@@ -2126,59 +2140,103 @@ const page = () => {
                                           PKR {(booking.price || 0).toLocaleString()}
                                         </span>
                                       </div>
-                                    </div>
-
-                                    {/* Latest Payment */}
-                                    <div className="pb-2">
-                                      <div className="flex items-start justify-between mb-1">
-                                        <span className="text-xs font-medium text-gray-700">
-                                          Latest: {new Date(latestPayment.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                        </span>
-                                        <span
-                                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${latestPayment.status === "COMPLETED"
-                                              ? "bg-green-100 text-green-800"
-                                              : latestPayment.status === "PENDING"
-                                                ? "bg-yellow-100 text-yellow-800"
-                                                : latestPayment.status === "FAILED"
-                                                  ? "bg-red-100 text-red-800"
-                                                  : "bg-gray-100 text-gray-800"
-                                            }`}
-                                        >
-                                          {latestPayment.status || "N/A"}
-                                        </span>
-                                      </div>
-                                      <div className="space-y-1">
-                                        <div className="flex items-center justify-between">
-                                          <span className="text-xs text-gray-500">Amount</span>
-                                          <span className="text-sm font-semibold text-gray-900">
-                                            PKR {latestPayment.amount?.toLocaleString() || "0"}
+                                      {!isExpanded && previousPayments.length > 0 && (
+                                        <div className="flex items-center justify-between mt-1">
+                                          <span className="text-xs text-gray-500">Previous Payments</span>
+                                          <span className="text-xs text-blue-600">
+                                            {previousPayments.length} payment{previousPayments.length > 1 ? 's' : ''}
                                           </span>
                                         </div>
-                                        <div className="flex items-center justify-between">
-                                          <span className="text-xs text-gray-500">Method</span>
-                                          <span className="text-xs text-gray-700">
-                                            {latestPayment.method || "N/A"}
-                                          </span>
-                                        </div>
-                                      </div>
+                                      )}
                                     </div>
 
-                                    {/* View All Button */}
-                                    {payments.length > 1 && (
+                                    {/* Current/All Payments */}
+                                    <div className="space-y-2">
+                                      {displayPayments.length > 0 ? (
+                                        displayPayments.map((payment) => (
+                                          <div key={payment.id} className="pb-2 border-b last:border-0">
+                                            <div className="flex items-start justify-between mb-1">
+                                              <div className="flex flex-col">
+                                                <span className="text-xs font-medium text-gray-700">
+                                                  {new Date(payment.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                </span>
+                                              </div>
+                                              <span
+                                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${payment.status === "COMPLETED"
+                                                  ? "bg-green-100 text-green-800"
+                                                  : payment.status === "PENDING"
+                                                    ? "bg-yellow-100 text-yellow-800"
+                                                    : payment.status === "FAILED"
+                                                      ? "bg-red-100 text-red-800"
+                                                      : "bg-gray-100 text-gray-800"
+                                                  }`}
+                                              >
+                                                {payment.status || "N/A"}
+                                              </span>
+                                            </div>
+                                            <div className="space-y-1">
+                                              <div className="flex items-center justify-between">
+                                                <span className="text-xs text-gray-500">Amount</span>
+                                                <span className="text-xs font-semibold text-gray-900">
+                                                  PKR {payment.amount?.toLocaleString() || "0"}
+                                                </span>
+                                              </div>
+                                              <div className="flex items-center justify-between">
+                                                <span className="text-xs text-gray-500">Method</span>
+                                                <span className="text-xs text-gray-700">
+                                                  {payment.method || "N/A"}
+                                                </span>
+                                              </div>
+                                              {payment.transactionId && (
+                                                <div className="flex items-center justify-between">
+                                                  <span className="text-xs text-gray-500">Txn ID</span>
+                                                  <span className="text-xs text-gray-600 font-mono truncate max-w-24">
+                                                    {payment.transactionId}
+                                                  </span>
+                                                </div>
+                                              )}
+                                              {payment.notes && (
+                                                <p className="text-xs text-gray-500 italic mt-1 truncate">
+                                                  {payment.notes}
+                                                </p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <div className="text-center py-2">
+                                          <p className="text-xs text-gray-500">
+                                            No payments this month
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Toggle Button */}
+                                    {previousPayments.length > 0 && (
                                       <button
-                                        onClick={() => {
-                                          setSelectedBookingPayments({ booking, payments });
-                                          setPaymentDialogOpen(true);
-                                        }}
-                                        className="w-full py-2 px-3 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors flex items-center justify-center gap-1"
+                                        onClick={() => setExpandedPayments(prev => ({
+                                          ...prev,
+                                          [booking.id]: !prev[booking.id]
+                                        }))}
+                                        className="w-full mt-2 py-1.5 px-3 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors flex items-center justify-center gap-1"
                                       >
-                                        <CreditCard className="h-3 w-3" />
-                                        View All {payments.length} Payments
+                                        {isExpanded ? (
+                                          <>
+                                            <ChevronDown className="h-3 w-3 rotate-180" />
+                                            Show Current Month Only
+                                          </>
+                                        ) : (
+                                          <>
+                                            <ChevronDown className="h-3 w-3" />
+                                            Show All {payments.length} Payments
+                                          </>
+                                        )}
                                       </button>
                                     )}
                                   </div>
                                 ) : (
-                                  <div className="text-center py-4">
+                                  <div className="text-center py-2">
                                     <p className="text-xs text-gray-500">
                                       No payments yet
                                     </p>
@@ -2500,115 +2558,6 @@ const page = () => {
           </div>
         )}
       </div>
-
-      {/* Payment History Dialog */}
-      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Payment History</DialogTitle>
-            <DialogDescription>
-              {selectedBookingPayments && (
-                <div className="text-sm text-gray-600 mt-2">
-                  <div>Guest: {selectedBookingPayments.booking.user?.name}</div>
-                  <div>Room: {selectedBookingPayments.booking.room?.roomNumber} - {selectedBookingPayments.booking.hostel?.hostelName}</div>
-                </div>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedBookingPayments && (
-            <div className="space-y-4 mt-4">
-              {/* Summary Card */}
-              <Card className="bg-gradient-to-r from-blue-50 to-indigo-50">
-                <CardContent className="pt-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-600">Total Paid</p>
-                      <p className="text-2xl font-bold text-green-600">
-                        PKR {selectedBookingPayments.payments.reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Booking Price</p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        PKR {(selectedBookingPayments.booking.price || 0).toLocaleString()}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Total Payments</p>
-                      <p className="text-lg font-semibold">{selectedBookingPayments.payments.length}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Balance</p>
-                      <p className="text-lg font-semibold text-orange-600">
-                        PKR {Math.max(0, (selectedBookingPayments.booking.price || 0) - selectedBookingPayments.payments.reduce((sum, p) => sum + p.amount, 0)).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Payments List */}
-              <div className="space-y-3">
-                <h3 className="font-semibold text-gray-900">All Payments</h3>
-                {selectedBookingPayments.payments.map((payment, index) => (
-                  <Card key={payment.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="pt-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-gray-900">Payment #{index + 1}</span>
-                            <Badge className={
-                              payment.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                                payment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-red-100 text-red-800'
-                            }>
-                              {payment.status}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-gray-500 mt-1">
-                            {new Date(payment.createdAt).toLocaleString('en-US', {
-                              month: 'long',
-                              day: 'numeric',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-gray-900">
-                            PKR {payment.amount.toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4 pt-3 border-t">
-                        <div>
-                          <p className="text-xs text-gray-500">Payment Method</p>
-                          <p className="text-sm font-medium text-gray-900">{payment.method || 'N/A'}</p>
-                        </div>
-                        {payment.transactionId && (
-                          <div>
-                            <p className="text-xs text-gray-500">Transaction ID</p>
-                            <p className="text-sm font-mono text-gray-900 truncate">{payment.transactionId}</p>
-                          </div>
-                        )}
-                        {payment.notes && (
-                          <div className="col-span-2">
-                            <p className="text-xs text-gray-500">Notes</p>
-                            <p className="text-sm text-gray-700 italic">{payment.notes}</p>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Toast notifications */}
     </div>

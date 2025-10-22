@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/server-auth";
+import { requireWardenAuth } from "@/lib/warden-auth";
 
 export async function GET(request: NextRequest) {
     try {
         const session = await getServerSession(request);
         if (!session) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // Check if user is warden and get their hostel assignments
+        let wardenHostelIds: string[] = [];
+        try {
+            const wardenAuth = await requireWardenAuth(request);
+            wardenHostelIds = wardenAuth.hostelIds;
+        } catch (error) {
+            // If not a warden, continue without filtering (admin access)
+            console.log("No warden auth, showing all maintenance requests");
         }
 
         const { searchParams } = new URL(request.url);
@@ -18,6 +29,11 @@ export async function GET(request: NextRequest) {
         const search = searchParams.get('search');
 
         const whereClause: any = {};
+
+        // Add warden hostel filtering
+        if (wardenHostelIds.length > 0) {
+            whereClause.hostelId = { in: wardenHostelIds };
+        }
 
         if (status) {
             whereClause.status = status;
@@ -81,11 +97,11 @@ export async function GET(request: NextRequest) {
         });
 
         const response = NextResponse.json(maintenances);
-        
+
         // Add cache headers for better performance
         response.headers.set('Cache-Control', 'public, max-age=120, stale-while-revalidate=300'); // 2 min cache, 5 min stale
         response.headers.set('ETag', `"maintenance-${Date.now()}"`);
-        
+
         return response;
     } catch (error) {
         console.error("Error fetching maintenance requests:", error);
@@ -133,7 +149,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        
+
         const hostelExists = await prisma.hostel.findUnique({
             where: { id: hostelId },
             select: { id: true }
@@ -158,7 +174,7 @@ export async function POST(request: NextRequest) {
                 );
             }
 
-                  
+
             if (roomExists.hostelId !== hostelId) {
                 return NextResponse.json(
                     { error: "Room does not belong to the specified hostel" },
@@ -207,7 +223,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(maintenance, { status: 201 });
     } catch (error) {
         console.error("Error creating maintenance request:", error);
-        
+
         // Handle specific Prisma errors
         if (error instanceof Error) {
             if (error.message.includes('Foreign key constraint violated')) {
@@ -223,7 +239,7 @@ export async function POST(request: NextRequest) {
                 );
             }
         }
-        
+
         return NextResponse.json(
             { error: "Failed to create maintenance request" },
             { status: 500 }

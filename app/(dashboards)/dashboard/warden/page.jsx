@@ -40,7 +40,7 @@ export default function Home() {
   };
 
   const handleGenerateReport = () => {
-    window.location.href = '/dashboard/admin/reports';
+    window.location.href = '/dashboard/warden/reports';
   };
 
   const handleInitializeGoogleSheets = async () => {
@@ -317,13 +317,13 @@ export default function Home() {
               {/* Quick Actions */}
               <div className="grid grid-cols-2 gap-3 pt-4 border-t">
                 <Button variant="outline" className="justify-start" asChild>
-                  <Link href="/dashboard/admin/payment-approvals">
+                  <Link href="/dashboard/warden/payment-approvals">
                     <CheckCircle className="h-4 w-4 mr-2" />
                     Review Payments
                   </Link>
                 </Button>
                 <Button variant="outline" className="justify-start" asChild>
-                  <Link href="/dashboard/admin/payments">
+                  <Link href="/dashboard/warden/payments">
                     <DollarSign className="h-4 w-4 mr-2" />
                     View All Payments
                   </Link>
@@ -393,31 +393,31 @@ export default function Home() {
           </CardHeader>
           <CardContent className="space-y-2">
             <Button className="w-full justify-start" variant="outline" asChild>
-              <Link href="/dashboard/admin/bookings">
+              <Link href="/dashboard/warden/bookings">
                 <Calendar className="mr-2 h-4 w-4" />
                 Manage Bookings
               </Link>
             </Button>
             <Button className="w-full justify-start" variant="outline" asChild>
-              <Link href="/dashboard/admin/rooms">
+              <Link href="/dashboard/warden/rooms">
                 <Bed className="mr-2 h-4 w-4" />
                 Manage Rooms
               </Link>
             </Button>
             <Button className="w-full justify-start" variant="outline" asChild>
-              <Link href="/dashboard/admin/payments">
+              <Link href="/dashboard/warden/payments">
                 <DollarSign className="mr-2 h-4 w-4" />
                 View Payments
               </Link>
             </Button>
             <Button className="w-full justify-start" variant="outline" asChild>
-              <Link href="/dashboard/admin/maintenance">
+              <Link href="/dashboard/warden/maintenance">
                 <Wrench className="mr-2 h-4 w-4" />
                 Maintenance
               </Link>
             </Button>
             <Button className="w-full justify-start" variant="outline" asChild>
-              <Link href="/dashboard/admin/reports">
+              <Link href="/dashboard/warden/reports">
                 <BarChart3 className="mr-2 h-4 w-4" />
                 Reports
               </Link>
