@@ -73,8 +73,6 @@ export async function POST(request: NextRequest) {
         // Hash the new password
         const hashedPassword = await bcrypt.hash(password, 12);
 
-        // Update user password and mark token as used in a transaction
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await prisma.$transaction(async (tx: any) => {
             // Update user password
             await tx.user.update({
