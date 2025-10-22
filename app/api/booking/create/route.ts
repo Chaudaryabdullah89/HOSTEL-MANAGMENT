@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
                             updatedAt: true,
                         },
                     },
-                    payments: {
+                    payments: {  // Changed from payment to payments
                         select: {
                             id: true,
                             amount: true,
