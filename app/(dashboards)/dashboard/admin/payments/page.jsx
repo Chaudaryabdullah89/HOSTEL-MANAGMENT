@@ -1,4 +1,5 @@
 "use client"
+export const dynamic = "force-dynamic";
 import React, { useState, useEffect } from 'react'
 // import { Users,Calendar,TrendingUp, CheckCircle, AlertTriangle, Wrench} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
