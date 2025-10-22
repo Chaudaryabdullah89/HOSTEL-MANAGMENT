@@ -83,67 +83,60 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        const booking = await prisma.booking.create({
-            data: {
-                roomId,
-                hostelId,
-                checkin: checkinDate,
-                checkout: checkoutDate,
-                price: calculatedPrice ? Number(calculatedPrice) : undefined,
-                bookingType: bookingType ? bookingType as BookingType : undefined,
-                status: status ? (status.toUpperCase() as BookingStatus) : "PENDING",
-                duration: duration ? Number(duration) : (bookingType === 'MONTHLY' ? 30 : undefined),
-                notes,
-                cancelledBy: session?.user?.id || undefined,
-                userId: userId,
-            },
-            include: {
-                room: {
-                    select: {
-                        id: true,
-                        roomNumber: true,
-                        type: true,
-                        pricePerNight: true,
-                        pricePerMonth: true,
-                        status: true,
-                        amenities: true,
-                        floor: true,
-                    }
+        let booking;
+        try {
+            booking = await prisma.booking.create({
+                data: {
+                    roomId,
+                    hostelId,
+                    checkin: checkinDate,
+                    checkout: checkoutDate,
+                    price: calculatedPrice ? Number(calculatedPrice) : undefined,
+                    bookingType: bookingType ? bookingType as BookingType : undefined,
+                    status: status ? (status.toUpperCase() as BookingStatus) : "PENDING",
+                    duration: duration ? Number(duration) : (bookingType === 'MONTHLY' ? 30 : undefined),
+                    notes,
+                    cancelledBy: session?.user?.id || undefined,
+                    userId: userId,
                 },
-                hostel: {
-                    select: {
-                        id: true,
-                        hostelName: true,
-                        floors: true,
-                        amenities: true,
-                    }
-                },
-                user: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                        role: true,
-                        createdAt: true,
-                        updatedAt: true,
-                    }
-                },
-                payment: {
-                    select: {
-                        id: true,
-                        amount: true,
-                        method: true,
-                        status: true,
-                        transactionId: true,
-                        notes: true,
-                        createdAt: true,
-                        updatedAt: true,
-                    }
+                include: {
+                    room: {
+                        select: {
+                            id: true,
+                            roomNumber: true,
+                            type: true,
+                            pricePerNight: true,
+                            pricePerMonth: true,
+                            status: true,
+                            amenities: true,
+                            floor: true,
+                        }
+                    },
+                    hostel: {
+                        select: {
+                            id: true,
+                            hostelName: true,
+                            floors: true,
+                            amenities: true,
+                        }
+                    },
+                    user: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                            role: true,
+                            createdAt: true,
+                            updatedAt: true,
+                        }
+                    },
+                    payments: true // Only need the relationship, not detailed fields
                 }
-            },
-
-
-        });
+            });
+        } catch (prismaError) {
+            console.error("Prisma booking.create failed:", prismaError);
+            throw prismaError;
+        }
         const updateuserrole = await prisma.user.update({
             where: { id: booking.user?.id || userId },
             data: { role: "GUEST" }
@@ -187,10 +180,11 @@ export async function POST(request: NextRequest) {
             roomCapacity: updatedRoom?.capacity
         });
     } catch (error) {
+        console.error("Booking creation failed:", error);
         return NextResponse.json(
-            { error: "Failed to create booking" },
+            { error: "Failed to create booking", details: error instanceof Error ? error.message : "Unknown error" },
             { status: 500 }
-        )
+        );
     }
 
 }
