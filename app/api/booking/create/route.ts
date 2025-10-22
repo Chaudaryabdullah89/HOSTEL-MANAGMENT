@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
                             status: true,
                             amenities: true,
                             floor: true,
-                        }
+                        },
                     },
                     hostel: {
                         select: {
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
                             hostelName: true,
                             floors: true,
                             amenities: true,
-                        }
+                        },
                     },
                     user: {
                         select: {
@@ -128,9 +128,20 @@ export async function POST(request: NextRequest) {
                             role: true,
                             createdAt: true,
                             updatedAt: true,
-                        }
+                        },
                     },
-                    payments: true // Only need the relationship, not detailed fields
+                    payments: {
+                        select: {
+                            id: true,
+                            amount: true,
+                            method: true,
+                            status: true,
+                            transactionId: true,
+                            notes: true,
+                            createdAt: true,
+                            updatedAt: true,
+                        },
+                    },
                 }
             });
         } catch (prismaError) {

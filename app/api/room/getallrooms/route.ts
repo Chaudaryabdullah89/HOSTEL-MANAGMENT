@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma, ensureConnection } from "@/lib/prisma";
 import { requireWardenAuth } from "@/lib/warden-auth";
+import { getServerSession } from "@/lib/server-auth";
 
 export async function GET(request: Request) {
   try {
@@ -12,8 +13,14 @@ export async function GET(request: Request) {
       const wardenAuth = await requireWardenAuth(request);
       wardenHostelIds = wardenAuth.hostelIds;
     } catch (error) {
-      // If not a warden, continue without filtering (admin access)
-      console.log("No warden auth, showing all rooms");
+      const session = await getServerSession(request);
+      if (!session || session.user.role !== "ADMIN") {
+        return NextResponse.json(
+          { error: "Unauthorized: Only admins or wardens can view rooms" },
+          { status: 403 }
+        );
+      }
+      console.log("Admin access: showing all rooms");
     }
 
     const whereClause = wardenHostelIds.length > 0
