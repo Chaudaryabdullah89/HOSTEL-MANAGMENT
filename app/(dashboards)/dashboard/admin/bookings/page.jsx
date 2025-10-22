@@ -1721,16 +1721,16 @@ const page = () => {
                                 </span>
                                 <span
                                   className={`inline-flex items-center px-4 py-1 rounded-full text-xs font-medium ${
-                                    booking.payment.status === "COMPLETED"
+                                    booking.payments.status === "COMPLETED"
                                       ? "bg-green-100 text-green-800"
-                                      : booking.payment.status === "PENDING"
+                                      : booking.payments.status === "PENDING"
                                         ? "bg-yellow-100 text-yellow-800"
-                                        : booking.payment.status === "FAILED"
+                                        : booking.payments.status === "FAILED"
                                           ? "bg-red-100 text-red-800"
                                           : "bg-gray-100 text-gray-800"
                                   }`}
                                 >
-                                  {booking.payment.status || "N/A"}
+                                  {booking.payments.status || "N/A"}
                                 </span>
                               </div>
                               <div className="flex items-center justify-between">
@@ -1739,7 +1739,7 @@ const page = () => {
                                 </span>
                                 <span className="text-sm font-medium text-gray-900">
                                   PKR
-                                  {booking.payment.amount?.toLocaleString() ||
+                                  {booking.payments.amount?.toLocaleString() ||
                                     "0"}
                                 </span>
                               </div>
@@ -1748,26 +1748,26 @@ const page = () => {
                                   Method
                                 </span>
                                 <span className="text-sm text-gray-900">
-                                  {booking.payment.method || "N/A"}
+                                  {booking.payments.method || "N/A"}
                                 </span>
                               </div>
-                              {booking.payment.transactionId && (
+                              {booking.payments.transactionId && (
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs text-gray-500">
                                     Txn ID
                                   </span>
                                   <span className="text-xs text-gray-600 font-mono truncate max-w-20">
-                                    {booking.payment.transactionId}
+                                    {booking.payments.transactionId}
                                   </span>
                                 </div>
                               )}
-                              {booking.payment.notes && (
+                              {booking.payments.notes && (
                                 <div className="pt-1 border-t">
                                   <span className="text-xs text-gray-500">
                                     Notes
                                   </span>
                                   <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                                    {booking.payment.notes}
+                                    {booking.payments.notes}
                                   </p>
                                 </div>
                               )}
