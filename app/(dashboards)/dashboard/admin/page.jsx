@@ -293,7 +293,7 @@ export default function Home() {
                           <DollarSign className="h-4 w-4 text-gray-600" />
                         </div>
                         <div>
-                          <div className="font-medium text-gray-900">{payment.user.name}</div>
+                          <div className="font-medium text-gray-900">{payment?.user?.name || "undefined"}</div>
                           <div className="text-sm text-gray-500">{payment.message}</div>
                         </div>
                       </div>
@@ -348,7 +348,7 @@ export default function Home() {
                     <div key={activity.id} className="flex items-center space-x-4">
                       <Avatar className="h-9 w-9">
                         <AvatarFallback className="bg-blue-100 text-blue-600">
-                          {activity.user.name.charAt(0)}
+                          {activity.user?.name?.charAt(0) || 'U'}
                         </AvatarFallback>
                       </Avatar>
                       <div className="space-y-1 flex-1">
@@ -356,7 +356,7 @@ export default function Home() {
                           {activity.message}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {activity.user.name} • {format(new Date(activity.timestamp), 'MMM dd, HH:mm')}
+                          {activity.user?.name || 'Unknown User'} • {format(new Date(activity.timestamp), 'MMM dd, HH:mm')}
                         </p>
                       </div>
                       <Badge
