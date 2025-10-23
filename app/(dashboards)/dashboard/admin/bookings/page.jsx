@@ -1384,18 +1384,21 @@ const page = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {filteredBookings
-                .filter(
-                  (booking) =>
-                    ["COMPLETED", "CHECKED_OUT"].includes(
-                      (booking.status || "").toUpperCase(),
-                    ) && booking.payment?.status === "COMPLETED",
-                )
-                .reduce(
-                  (sum, booking) => sum + Number(booking.payment?.amount || 0),
-                  0,
-                )
-                .toLocaleString()}{" "}
+              {(() => {
+                let total = 0;
+                filteredBookings.forEach((booking) => {
+                  const status = (booking.status || "").toUpperCase();
+                  const paymentStatus = booking.payment?.status?.toUpperCase();
+                  if (
+                    ["COMPLETED", "CHECKED_OUT", "CONFIRMED"].includes(status) &&
+                    paymentStatus === "COMPLETED"
+                  ) {
+                    const amount = Number(booking.payment?.amount || 0);
+                    if (!isNaN(amount)) total += amount;
+                  }
+                });
+                return total.toLocaleString();
+              })()}{" "}
               PKR
             </div>
             <p className="text-xs text-muted-foreground">
@@ -1870,15 +1873,15 @@ const page = () => {
                                         <div className="flex items-center">
                                           <Badge
                                             className={`px-3 py-1 text-xs font-medium rounded-full ${getPaymentStatus(payment.status) === "COMPLETED"
-                                                ? "bg-green-100 text-green-800"
-                                                : getPaymentStatus(payment.status) === "PENDING"
-                                                  ? "bg-yellow-100 text-yellow-800"
-                                                  : getPaymentStatus(payment.status) === "FAILED"
-                                                    ? "bg-red-100 text-red-800"
-                                                    : "bg-gray-100 text-gray-800"
+                                              ? "bg-green-100 text-green-800"
+                                              : getPaymentStatus(payment.status) === "PENDING"
+                                                ? "bg-yellow-100 text-yellow-800"
+                                                : getPaymentStatus(payment.status) === "FAILED"
+                                                  ? "bg-red-100 text-red-800"
+                                                  : "bg-gray-100 text-gray-800"
                                               }`}
                                           >
-                                            {getPaymentStatus(payment.status)}
+                                            {payment.status}
                                           </Badge>
                                         </div>
                                       </div>

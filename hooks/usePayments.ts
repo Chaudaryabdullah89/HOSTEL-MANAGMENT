@@ -61,7 +61,7 @@ export function usePaymentById(id: string) {
 // Create payment mutation
 export function useCreatePayment() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (paymentData: any) => {
       const response = await fetch('/api/payments/createpayment', {
@@ -69,12 +69,12 @@ export function useCreatePayment() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(paymentData),
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to create payment');
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -90,7 +90,7 @@ export function useCreatePayment() {
 // Update payment status mutation
 export function useUpdatePaymentStatus() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const response = await fetch(`/api/payments/${id}`, {
@@ -98,12 +98,12 @@ export function useUpdatePaymentStatus() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to update payment status');
       }
-      
+
       return response.json();
     },
     onSuccess: (data, variables) => {
@@ -123,7 +123,7 @@ export function useUpdatePaymentStatus() {
 // Approve payment mutation
 export function useApprovePayment() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ id, notes }: { id: string; notes?: string }) => {
       const response = await fetch(`/api/payments/${id}/approve`, {
@@ -131,12 +131,12 @@ export function useApprovePayment() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notes }),
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to approve payment');
       }
-      
+
       return response.json();
     },
     onSuccess: (data, variables) => {
@@ -156,7 +156,7 @@ export function useApprovePayment() {
 
 export function useRejectPayment() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
       const response = await fetch(`/api/payments/${id}/reject`, {
@@ -164,12 +164,12 @@ export function useRejectPayment() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason }),
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to reject payment');
       }
-      
+
       return response.json();
     },
     onSuccess: (data, variables) => {
@@ -189,18 +189,18 @@ export function useRejectPayment() {
 // Delete payment mutation
 export function useDeletePayment() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (id: string) => {
       const response = await fetch(`/api/payments/${id}`, {
         method: 'DELETE',
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to delete payment');
       }
-      
+
       return response.json();
     },
     onSuccess: (data, id) => {
@@ -219,7 +219,7 @@ export function useDeletePayment() {
 // Unified payment approval mutation
 export function useUnifiedApprovePayment() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ paymentId, type }: { paymentId: string; type: string }) => {
       const response = await fetch('/api/payments/unified/approve', {
@@ -227,12 +227,12 @@ export function useUnifiedApprovePayment() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ paymentId, type }),
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to approve payment');
       }
-      
+
       return response.json();
     },
     onSuccess: (data, variables) => {
@@ -240,18 +240,24 @@ export function useUnifiedApprovePayment() {
       queryClient.invalidateQueries({ queryKey: queryKeys.payments });
       queryClient.invalidateQueries({ queryKey: queryKeys.paymentsUnified() });
       queryClient.invalidateQueries({ queryKey: queryKeys.paymentsList() });
-      
+
+      // If it's a booking payment, also invalidate booking queries to refresh booking status
+      if (variables.type === 'booking') {
+        queryClient.invalidateQueries({ queryKey: queryKeys.bookings });
+        queryClient.invalidateQueries({ queryKey: queryKeys.bookingsList() });
+      }
+
       // Update specific payment in cache if it exists
       queryClient.setQueryData(
         [...queryKeys.paymentsList(), 'detail', variables.paymentId],
         data
       );
-      
-      const successMessage = variables.type === 'booking' 
+
+      const successMessage = variables.type === 'booking'
         ? 'Payment approved and booking confirmed successfully!'
-        : variables.type === 'salary' 
-        ? 'Salary payment approved successfully!'
-        : 'Payment approved successfully!';
+        : variables.type === 'salary'
+          ? 'Salary payment approved successfully!'
+          : 'Payment approved successfully!';
       toast.success(successMessage);
     },
     onError: (error: Error) => {
@@ -263,7 +269,7 @@ export function useUnifiedApprovePayment() {
 // Unified payment rejection mutation
 export function useUnifiedRejectPayment() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ paymentId, type, reason }: { paymentId: string; type: string; reason: string }) => {
       const response = await fetch('/api/payments/unified/reject', {
@@ -271,12 +277,12 @@ export function useUnifiedRejectPayment() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ paymentId, type, reason }),
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to reject payment');
       }
-      
+
       return response.json();
     },
     onSuccess: (data, variables) => {
@@ -284,18 +290,24 @@ export function useUnifiedRejectPayment() {
       queryClient.invalidateQueries({ queryKey: queryKeys.payments });
       queryClient.invalidateQueries({ queryKey: queryKeys.paymentsUnified() });
       queryClient.invalidateQueries({ queryKey: queryKeys.paymentsList() });
-      
+
+      // If it's a booking payment, also invalidate booking queries to refresh booking status
+      if (variables.type === 'booking') {
+        queryClient.invalidateQueries({ queryKey: queryKeys.bookings });
+        queryClient.invalidateQueries({ queryKey: queryKeys.bookingsList() });
+      }
+
       // Update specific payment in cache if it exists
       queryClient.setQueryData(
         [...queryKeys.paymentsList(), 'detail', variables.paymentId],
         data
       );
-      
-      const successMessage = variables.type === 'booking' 
+
+      const successMessage = variables.type === 'booking'
         ? 'Payment rejected and booking cancelled successfully!'
-        : variables.type === 'salary' 
-        ? 'Salary payment rejected successfully!'
-        : 'Payment rejected successfully!';
+        : variables.type === 'salary'
+          ? 'Salary payment rejected successfully!'
+          : 'Payment rejected successfully!';
       toast.success(successMessage);
     },
     onError: (error: Error) => {

@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
         // Calculate total expenses including salary and expense payments
         const totalExpenses = (financialData.summary.totalExpenses || 0) + (expenseData.summary.totalAmount || 0);
         const netProfit = financialData.summary.totalRevenue - totalExpenses;
-        const profitMargin = financialData.summary.totalRevenue > 0 
+        const profitMargin = financialData.summary.totalRevenue > 0
             ? ((netProfit / financialData.summary.totalRevenue) * 100).toFixed(2)
             : 0;
 
@@ -216,10 +216,9 @@ export async function getFinancialData(dateFilter: any, hostelFilter: any) {
         where: {
             ...dateFilter,
             booking: {
-                ...hostelFilter
+                isNot: null
             },
-            status: "COMPLETED",
-            type: "booking"
+            status: "COMPLETED"
         },
         include: {
             booking: {
@@ -535,22 +534,9 @@ export async function getDetailedPayments(dateFilter: any, hostelFilter: any) {
                     }
                 }
             },
-            salary: {
-                include: {
-                    staff: {
-                        select: {
-                            name: true
-                        }
-                    }
-                }
-            },
-            expense: {
-                include: {
-                    user: {
-                        select: {
-                            name: true
-                        }
-                    }
+            user: {
+                select: {
+                    name: true
                 }
             }
         },
@@ -562,32 +548,27 @@ export async function getDetailedPayments(dateFilter: any, hostelFilter: any) {
     return payments.map((payment: any) => {
         let guestName = 'Unknown';
         let roomNumber = 'N/A';
-        let description = payment.description || 'Payment';
+        let description = 'Payment';
 
-        if (payment.type === 'booking' && payment.booking) {
+        if (payment.booking) {
             guestName = payment.booking.user?.name || 'Unknown';
             roomNumber = payment.booking.room?.roomNumber || 'N/A';
             description = 'Booking payment';
-        } else if (payment.type === 'salary' && payment.salary) {
-            guestName = payment.salary.staff?.name || 'Unknown';
+        } else if (payment.user) {
+            guestName = payment.user.name || 'Unknown';
             roomNumber = 'N/A';
-            description = 'Salary payment';
-        } else if (payment.type === 'expense' && payment.expense) {
-            guestName = payment.expense.user?.name || 'Unknown';
-            roomNumber = 'N/A';
-            description = payment.expense.title || 'Expense payment';
+            description = 'Direct payment';
         }
 
         return {
             id: payment.id,
-            type: payment.type,
             guestName,
             roomNumber,
             amount: payment.amount,
             method: payment.method,
             status: payment.status,
             description,
-            receiptUrl: payment.receiptUrl,
+            notes: payment.notes,
             createdAt: payment.createdAt
         };
     });
