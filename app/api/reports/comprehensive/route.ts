@@ -49,14 +49,20 @@ export async function GET(request: NextRequest) {
             getDetailedUsers()
         ]);
 
+        // Calculate total expenses including salary and expense payments
+        const totalExpenses = (financialData.summary.totalExpenses || 0) + (expenseData.summary.totalAmount || 0);
+        const netProfit = financialData.summary.totalRevenue - totalExpenses;
+        const profitMargin = financialData.summary.totalRevenue > 0 
+            ? ((netProfit / financialData.summary.totalRevenue) * 100).toFixed(2)
+            : 0;
+
         return NextResponse.json({
             summary: {
                 ...dashboardStats.summary,
                 ...financialData.summary,
-                netProfit: financialData.summary.totalRevenue - financialData.summary.totalExpenses,
-                profitMargin: financialData.summary.totalRevenue > 0
-                    ? ((financialData.summary.totalRevenue - financialData.summary.totalExpenses) / financialData.summary.totalRevenue * 100).toFixed(2)
-                    : 0
+                totalExpenses,
+                netProfit,
+                profitMargin: parseFloat(profitMargin.toString())
             },
             financial: financialData,
             salary: salaryData,
@@ -121,13 +127,10 @@ export async function getDashboardStats(dateFilter: any, hostelFilter: any) {
     });
     const occupancyRate = totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0;
 
-    // Get revenue data
+    // Get revenue data from all payment types
     const totalRevenue = await prisma.payment.aggregate({
         where: {
             ...dateFilter,
-            booking: {
-                ...hostelFilter
-            },
             status: "COMPLETED"
         },
         _sum: {
@@ -151,13 +154,10 @@ export async function getDashboardStats(dateFilter: any, hostelFilter: any) {
 }
 
 export async function getFinancialData(dateFilter: any, hostelFilter: any) {
-    // Get booking payments
-    const bookingPayments = await prisma.payment.aggregate({
+    // Get all completed payments (booking, salary, expense)
+    const allPayments = await prisma.payment.aggregate({
         where: {
             ...dateFilter,
-            booking: {
-                ...hostelFilter
-            },
             status: "COMPLETED"
         },
         _sum: {
@@ -186,9 +186,6 @@ export async function getFinancialData(dateFilter: any, hostelFilter: any) {
     const pendingPayments = await prisma.payment.aggregate({
         where: {
             ...dateFilter,
-            booking: {
-                ...hostelFilter
-            },
             status: "PENDING"
         },
         _sum: {
@@ -204,9 +201,6 @@ export async function getFinancialData(dateFilter: any, hostelFilter: any) {
         by: ['method'],
         where: {
             ...dateFilter,
-            booking: {
-                ...hostelFilter
-            },
             status: "COMPLETED"
         },
         _sum: {
@@ -217,14 +211,15 @@ export async function getFinancialData(dateFilter: any, hostelFilter: any) {
         }
     });
 
-    // Get revenue by room type
+    // Get revenue by room type (only for booking payments)
     const revenueByRoomType = await prisma.payment.findMany({
         where: {
             ...dateFilter,
             booking: {
                 ...hostelFilter
             },
-            status: "COMPLETED"
+            status: "COMPLETED",
+            type: "booking"
         },
         include: {
             booking: {
@@ -250,7 +245,7 @@ export async function getFinancialData(dateFilter: any, hostelFilter: any) {
         return acc;
     }, {});
 
-    const totalRevenue = bookingPayments._sum.amount || 0;
+    const totalRevenue = allPayments._sum.amount || 0;
     const totalExpenses = salaryPayments._sum.netAmount || 0;
     const pendingRevenue = pendingPayments._sum.amount || 0;
 
@@ -259,7 +254,7 @@ export async function getFinancialData(dateFilter: any, hostelFilter: any) {
             totalRevenue,
             totalExpenses,
             pendingRevenue,
-            bookingCount: bookingPayments._count.amount || 0,
+            paymentCount: allPayments._count.amount || 0,
             salaryCount: salaryPayments._count.netAmount || 0,
             pendingCount: pendingPayments._count.amount || 0
         },
@@ -523,10 +518,7 @@ export async function getDetailedBookings(dateFilter: any, hostelFilter: any) {
 export async function getDetailedPayments(dateFilter: any, hostelFilter: any) {
     const payments = await prisma.payment.findMany({
         where: {
-            ...dateFilter,
-            booking: {
-                ...hostelFilter
-            }
+            ...dateFilter
         },
         include: {
             booking: {
@@ -542,6 +534,24 @@ export async function getDetailedPayments(dateFilter: any, hostelFilter: any) {
                         }
                     }
                 }
+            },
+            salary: {
+                include: {
+                    staff: {
+                        select: {
+                            name: true
+                        }
+                    }
+                }
+            },
+            expense: {
+                include: {
+                    user: {
+                        select: {
+                            name: true
+                        }
+                    }
+                }
             }
         },
         orderBy: {
@@ -549,18 +559,38 @@ export async function getDetailedPayments(dateFilter: any, hostelFilter: any) {
         }
     });
 
-    return payments.map((payment: any) => ({
-        id: payment.id,
-        bookingId: payment.bookingId,
-        guestName: payment.booking?.user?.name || 'Unknown',
-        roomNumber: payment.booking?.room?.roomNumber || 'N/A',
-        amount: payment.amount,
-        method: payment.method,
-        status: payment.status,
-        description: payment.description,
-        receiptUrl: payment.receiptUrl,
-        createdAt: payment.createdAt
-    }));
+    return payments.map((payment: any) => {
+        let guestName = 'Unknown';
+        let roomNumber = 'N/A';
+        let description = payment.description || 'Payment';
+
+        if (payment.type === 'booking' && payment.booking) {
+            guestName = payment.booking.user?.name || 'Unknown';
+            roomNumber = payment.booking.room?.roomNumber || 'N/A';
+            description = 'Booking payment';
+        } else if (payment.type === 'salary' && payment.salary) {
+            guestName = payment.salary.staff?.name || 'Unknown';
+            roomNumber = 'N/A';
+            description = 'Salary payment';
+        } else if (payment.type === 'expense' && payment.expense) {
+            guestName = payment.expense.user?.name || 'Unknown';
+            roomNumber = 'N/A';
+            description = payment.expense.title || 'Expense payment';
+        }
+
+        return {
+            id: payment.id,
+            type: payment.type,
+            guestName,
+            roomNumber,
+            amount: payment.amount,
+            method: payment.method,
+            status: payment.status,
+            description,
+            receiptUrl: payment.receiptUrl,
+            createdAt: payment.createdAt
+        };
+    });
 }
 
 export async function getDetailedRooms(hostelFilter: any) {

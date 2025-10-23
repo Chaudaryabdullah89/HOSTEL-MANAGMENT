@@ -527,7 +527,7 @@ const UserProfilePage = () => {
                                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                                             <div>
                                                                 <p className="text-xs text-muted-foreground">Amount</p>
-                                                                <p className="font-semibold text-green-600">₦{payment.amount.toLocaleString()}</p>
+                                                                <p className="font-semibold text-green-600">PKR{payment.amount.toLocaleString()}</p>
                                                             </div>
                                                             <div>
                                                                 <p className="text-xs text-muted-foreground">Method</p>
