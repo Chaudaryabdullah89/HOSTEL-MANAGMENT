@@ -15,8 +15,8 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { userId, newRole, hostelId } = body;
-    console.log(userId, newRole, hostelId)
+    const { userId, newRole, hostelId: hostelIds } = body;
+    console.log(userId, newRole, hostelIds)
 
     if (!userId || !newRole) {
       return NextResponse.json(
@@ -65,7 +65,7 @@ export async function PUT(request: NextRequest) {
 
       if (newRoleUpper === "WARDEN") {
         await tx.warden.create({
-          data: { userId: userId, hostelId: hostelId },
+          data: { userId: userId, hostelIds: [hostelIds] },
         });
       }
 

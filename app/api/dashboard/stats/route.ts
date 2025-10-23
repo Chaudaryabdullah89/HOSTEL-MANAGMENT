@@ -217,18 +217,42 @@ export async function GET(request: NextRequest) {
                 ...dateFilter,
                 ...hostelFilter
             }
+
         });
 
-        const totalExpenseAmount = await prisma.expense.aggregate({
+        // Calculate total expense amount by summing 'amount' from BOTH Expense and SaryExpense models
+        const expenseResult = await prisma.expense.aggregate({
             where: {
-                status: "APPROVED",
+                // status: { in: ["APPROVED", "PAID"] },
                 ...dateFilter,
-                ...hostelFilter
+                ...hostelFilter,
             },
             _sum: {
-                amount: true
-            }
+                amount: true,
+            },
         });
+
+        const saryExpenseResult = await prisma.saryExpense
+            ? await prisma.saryExpense.aggregate({
+                where: {
+                    // status: { in: ["APPROVED", "PAID"] },
+                    ...dateFilter,
+                    ...hostelFilter,
+                },
+                _sum: {
+                    amount: true,
+                },
+            })
+            : { _sum: { amount: 0 } };
+
+        const totalExpenseAmount = {
+            _sum: {
+                amount:
+                    (expenseResult._sum.amount || 0) +
+                    (saryExpenseResult._sum.amount || 0),
+            },
+        };
+
 
         // 7. RECENT ACTIVITIES
         const recentBookings = await prisma.booking.findMany({
@@ -374,7 +398,7 @@ export async function GET(request: NextRequest) {
             roomNumber: room.roomNumber,
             floor: room.floor,
             totalRevenue: room.bookings.reduce((sum: number, booking: any) =>
-                sum + (booking.payment?.amount || 0), 0
+                sum + booking.payments.reduce((innerSum: number, p: any) => innerSum + (p.amount || 0), 0), 0
             ),
             bookingCount: room.bookings.length
         })).sort((a: any, b: any) => b.totalRevenue - a.totalRevenue);
