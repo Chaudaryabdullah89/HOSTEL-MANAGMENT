@@ -1383,24 +1383,43 @@ const page = () => {
             <DollarSign className="w-4 h-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {(() => {
-                let total = 0;
-                filteredBookings.forEach((booking) => {
-                  const status = (booking.status || "").toUpperCase();
-                  const paymentStatus = booking.payment?.status?.toUpperCase();
-                  if (
-                    ["COMPLETED", "CHECKED_OUT", "CONFIRMED"].includes(status) &&
-                    paymentStatus === "COMPLETED"
-                  ) {
-                    const amount = Number(booking.payment?.amount || 0);
-                    if (!isNaN(amount)) total += amount;
-                  }
-                });
-                return total.toLocaleString();
-              })()}{" "}
-              PKR
-            </div>
+            {(() => {
+              // Safer, clearer revenue calculation using reduce.
+              // Supports both booking.payment (single) and booking.payments (array).
+              const totalRevenue = filteredBookings.reduce((acc, booking) => {
+                const status = (booking.status || "").toUpperCase();
+
+                // Normalize payments into an array (handles both `payment` and `payments`).
+                const payments = Array.isArray(booking.payments)
+                  ? booking.payments
+                  : booking.payment
+                    ? [booking.payment]
+                    : [];
+
+                // Sum only completed payments for this booking.
+                const completedAmount = payments.reduce((sum, p) => {
+                  const pStatus = (p?.status || "").toUpperCase();
+                  const amount = Number(p?.amount) || 0;
+                  return pStatus === "COMPLETED" ? sum + amount : sum;
+                }, 0);
+
+                // Only include revenue for bookings with an appropriate final status.
+                if (
+                  (status === "COMPLETED" || status === "CHECKED_OUT" || status === "CONFIRMED") &&
+                  completedAmount > 0
+                ) {
+                  return acc + completedAmount;
+                }
+
+                return acc;
+              }, 0);
+
+              return (
+                <div className="text-2xl font-bold">
+                  {totalRevenue.toLocaleString()} PKR
+                </div>
+              );
+            })()}
             <p className="text-xs text-muted-foreground">
               Revenue from bookings
             </p>
