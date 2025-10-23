@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useContext } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -38,6 +38,59 @@ import { PageLoadingSkeleton, LoadingSpinner, ItemLoadingOverlay } from "@/compo
 import { usePayments, useUnifiedApprovePayment, useUnifiedRejectPayment } from '@/hooks/usePayments'
 
 export default function PaymentApprovalsPage() {
+    const PreviewBooking = ({ booking }) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <PreviewItem label="Booking ID" value={`#${booking.id?.slice(-8)}`} />
+            <PreviewItem label="Room" value={booking.room?.roomNumber || 'N/A'} />
+            <PreviewItem label="Hostel" value={booking.hostel?.hostelName || 'N/A'} />
+            <PreviewItem
+                label="Dates"
+                value={`${booking.checkin ? format(new Date(booking.checkin), 'MMM dd') : 'N/A'
+                    } — ${booking.checkout
+                        ? format(new Date(booking.checkout), 'MMM dd, yyyy')
+                        : 'N/A'
+                    }`}
+            />
+        </div>
+    );
+
+    const PreviewSalary = ({ salary }) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <PreviewItem label="Staff" value={salary.staff?.name || 'N/A'} />
+            <PreviewItem label="Pay Period" value={salary.payPeriod || 'N/A'} />
+            <PreviewItem
+                label="Net Amount"
+                value={`PKR ${salary.netAmount?.toLocaleString() || '0'}`}
+            />
+            <PreviewItem
+                label="Base"
+                value={`PKR ${salary.baseAmount?.toLocaleString() || '0'}`}
+            />
+        </div>
+    );
+    const PreviewItem = ({ label, value }) => (
+        <div>
+            <div className="text-xs text-gray-500">{label}</div>
+            <div className="text-sm font-medium text-gray-900">{value}</div>
+        </div>
+    );
+
+    const PreviewExpense = ({ expense }) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <PreviewItem label="Title" value={expense.title || 'N/A'} />
+            <PreviewItem label="Category" value={expense.category || 'N/A'} />
+            <PreviewItem
+                label="Amount"
+                value={`PKR ${expense.amount?.toLocaleString() || '0'}`}
+            />
+            {expense.hostel && (
+                <PreviewItem
+                    label="Hostel"
+                    value={expense.hostel.hostelName || 'N/A'}
+                />
+            )}
+        </div>
+    );
     const session = useContext(SessionContext)
     const [searchTerm, setSearchTerm] = useState('')
     const [approvalStatus, setApprovalStatus] = useState('All Status')
@@ -316,152 +369,255 @@ export default function PaymentApprovalsPage() {
             </Card>
 
             {/* Payments List */}
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 bg-white p-6 my-6 shadow-sm rounded-md">
                 {filteredPayments.length > 0 ? (
-                    filteredPayments.map(payment => (
+                    filteredPayments.map((payment) => (
                         <Card
                             key={payment.id}
-                            className="border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 bg-white"
+                            className="mb-4 relative"
                         >
-                            <CardContent className="p-5 space-y-5">
-                                {/* Header */}
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                    <div className="flex items-center gap-3">
-                                        {getMethodIcon(payment.method)}
-                                        <div>
-                                            <p className="text-lg font-semibold text-gray-900">
-                                                PKR {payment.amount.toLocaleString()}
-                                            </p>
-                                            <p className="text-sm text-gray-500 capitalize">{payment.method?.toLowerCase()}</p>
+                            <CardHeader>
+                                <div>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`p-2 rounded-lg ${payment.method === 'CASH' ? 'bg-green-100 text-green-700' :
+                                                payment.method === 'CARD' ? 'bg-blue-100 text-blue-700' :
+                                                    payment.method === 'UPI' ? 'bg-purple-100 text-purple-700' :
+                                                        'bg-gray-100 text-gray-700'
+                                                }`}>
+                                                {getMethodIcon(payment.method)}
+                                            </div>
+                                            <div>
+                                                <p className="text-md font-medium">
+                                                    Payment #{payment.id.slice(-8)}
+                                                </p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {payment.createdAt ? format(new Date(payment.createdAt), "MMM dd, yyyy") : "Date N/A"}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            {getApprovalStatusBadge(payment.approvalStatus)}
+                                            {getPaymentStatusBadge(payment.status)}
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <Badge
-                                            variant="outline"
-                                            className={
-                                                payment.type === "salary"
-                                                    ? "bg-blue-50 text-blue-700 border-blue-200"
-                                                    : payment.type === "expense"
-                                                        ? "bg-purple-50 text-purple-700 border-purple-200"
-                                                        : "bg-green-50 text-green-700 border-green-200"
-                                            }
-                                        >
-                                            {payment.type.charAt(0).toUpperCase() + payment.type.slice(1)}
-                                        </Badge>
-                                        {getApprovalStatusBadge(payment.approvalStatus)}
+                                    <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                                        {/* User Section */}
+                                        <div className="flex flex-col gap-2 bg-white rounded-xl p-4 h-full">
+                                            <div>
+                                                <p className="text-md font-medium flex items-center gap-2">
+                                                    <User className="w-4 h-4" />
+                                                    <span className="text-sm font-semibold text-gray-800">
+                                                        User
+                                                    </span>
+                                                </p>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-medium text-gray-900 truncate">
+                                                    {payment.user?.name ||
+                                                        payment.booking?.user?.name ||
+                                                        "Unknown User"}
+                                                </p>
+                                                <p className="text-xs text-gray-600 truncate">
+                                                    {payment.user?.email ||
+                                                        payment.booking?.user?.email ||
+                                                        "No email"}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    Role: {payment.user?.role || "N/A"}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Payment Method Section */}
+                                        <div className="flex flex-col gap-2 bg-white rounded-xl p-4 h-full">
+                                            <div>
+                                                <p className="text-md font-medium flex items-center gap-2">
+                                                    <CreditCard className="w-4 h-4" />
+                                                    <span className="text-sm font-semibold text-gray-800">
+                                                        Payment
+                                                    </span>
+                                                </p>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-medium text-gray-900">
+                                                    PKR {payment.amount?.toLocaleString() || "0"}
+                                                </p>
+                                                <p className="text-xs text-gray-600">
+                                                    Method: {payment.method || "N/A"}
+                                                </p>
+                                                {payment.transactionId && (
+                                                    <p className="text-xs text-gray-500 font-mono">
+                                                        Txn: #{payment.transactionId.slice(-8)}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Type Section */}
+                                        <div className="flex flex-col gap-2 bg-white rounded-xl p-4 h-full">
+                                            <div>
+                                                <p className="text-md font-medium flex items-center gap-2">
+                                                    {payment.type === 'booking' ? <Calendar className="w-4 h-4" /> :
+                                                        payment.type === 'salary' ? <DollarSign className="w-4 h-4" /> :
+                                                            <FileText className="w-4 h-4" />}
+                                                    <span className="text-sm font-semibold text-gray-800">
+                                                        Type
+                                                    </span>
+                                                </p>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-medium text-gray-900 capitalize">
+                                                    {payment.type || "N/A"}
+                                                </p>
+                                                <p className="text-xs text-gray-600">
+                                                    Status: {payment.status || "N/A"}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    Approval: {payment.approvalStatus || "N/A"}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Details Section */}
+                                        <div className="flex flex-col gap-2 bg-white rounded-xl p-4 h-full">
+                                            <div>
+                                                <p className="text-md font-medium flex items-center gap-2">
+                                                    <FileText className="w-4 h-4" />
+                                                    <span className="text-sm font-semibold text-gray-800">
+                                                        Details
+                                                    </span>
+                                                </p>
+                                            </div>
+                                            <div className="space-y-1">
+                                                {payment.type === "booking" && payment.booking ? (
+                                                    <>
+                                                        <p className="text-sm font-medium text-gray-900">
+                                                            Room {payment.booking.room?.roomNumber || "N/A"}
+                                                        </p>
+                                                        <p className="text-xs text-gray-600">
+                                                            {payment.booking.checkin ? format(new Date(payment.booking.checkin), 'MMM dd') : 'N/A'} — {payment.booking.checkout ? format(new Date(payment.booking.checkout), 'MMM dd, yyyy') : 'N/A'}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500">
+                                                            Hostel: {payment.booking.hostel?.hostelName || 'N/A'}
+                                                        </p>
+                                                    </>
+                                                ) : payment.type === "salary" && payment.salary ? (
+                                                    <>
+                                                        <p className="text-sm font-medium text-gray-900">
+                                                            {payment.salary.staff?.name || 'N/A'}
+                                                        </p>
+                                                        <p className="text-xs text-gray-600">
+                                                            Period: {payment.salary.payPeriod || 'N/A'}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500">
+                                                            Net: PKR {payment.salary.netAmount?.toLocaleString() || '0'}
+                                                        </p>
+                                                    </>
+                                                ) : payment.type === "expense" && payment.expense ? (
+                                                    <>
+                                                        <p className="text-sm font-medium text-gray-900">
+                                                            {payment.expense.title || 'N/A'}
+                                                        </p>
+                                                        <p className="text-xs text-gray-600">
+                                                            Category: {payment.expense.category || 'N/A'}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500">
+                                                            Hostel: {payment.expense.hostel?.hostelName || 'N/A'}
+                                                        </p>
+                                                    </>
+                                                ) : (
+                                                    <p className="text-xs text-gray-500">No details available</p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Actions Section */}
+                                        <div className="flex flex-col gap-2 bg-white rounded-xl p-4 h-full">
+                                            <div>
+                                                <p className="text-md font-medium flex items-center gap-2">
+                                                    <CheckCircle className="w-4 h-4" />
+                                                    <span className="text-sm font-semibold text-gray-800">
+                                                        Actions
+                                                    </span>
+                                                </p>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="w-full text-xs cursor-pointer "
+                                                    onClick={() => { setSelectedPayment(payment); setIsDetailsDialogOpen(true); }}
+                                                >
+                                                    <Eye className="h-3 w-3 mr-1" />
+                                                    View Details
+                                                </Button>
+
+                                                {payment.approvalStatus === "PENDING" && (
+                                                    <div className="space-y-1">
+                                                        <Button
+                                                            size="sm"
+                                                            className="w-full bg-green-500 hover:bg-green-600 cursor-pointer text-white text-xs"
+                                                            onClick={() => { setSelectedPayment(payment); setIsApprovalDialogOpen(true); }}
+                                                        >
+                                                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                                                            Approve
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="destructive"
+                                                            className="w-full text-xs cursor-pointer "
+                                                            onClick={() => { setSelectedPayment(payment); setIsRejectionDialogOpen(true); }}
+                                                        >
+                                                            <XCircle className="h-3 w-3 mr-1" />
+                                                            Reject
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-
-                                {/* User Info */}
-                                <div className="flex flex-col sm:flex-row justify-between text-sm text-gray-600 border-t pt-3">
-                                    <div>
-                                        <span className="font-medium text-gray-800">
-                                            {payment.user?.name || "Unknown User"}
-                                        </span>
-                                        {payment.user?.email && (
-                                            <span className="text-gray-400 ml-2">({payment.user.email})</span>
+                            </CardHeader>
+                            <hr />
+                            <CardFooter>
+                                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 w-full">
+                                    <div className="text-sm text-muted-foreground">
+                                        {/* Payment ID: {payment.id} | Created: {payment.createdAt ? format(new Date(payment.createdAt), "MMM dd, yyyy 'at' h:mm a") : "N/A"} */}
+                                        {payment.notes && (
+                                            <div className="mt-1">
+                                                <span className="font-medium">Notes:</span> {payment.notes}
+                                            </div>
                                         )}
                                     </div>
-                                    <span>{format(new Date(payment.createdAt), "MMM dd, yyyy hh:mm a")}</span>
+                                    <div className="flex gap-2">
+                                        <Badge
+                                            variant="outline"
+                                            className="bg-white border-gray-200 text-gray-700 flex items-center gap-1"
+                                        >
+                                            {getMethodIcon(payment.method)}
+                                            <span className="capitalize text-xs">{payment.method?.toLowerCase()}</span>
+                                        </Badge>
+                                        <Badge
+                                            variant="outline"
+                                            className={`capitalize text-xs cursor-pointer ${payment.type === 'booking' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                payment.type === 'salary' ? 'bg-green-50  text-green-500 border-green-200' :
+                                                    'bg-orange-50 text-orange-500 border-orange-200'
+                                                }`}
+                                        >
+                                            {payment.type}
+                                        </Badge>
+                                    </div>
                                 </div>
-
-                                {/* Payment Details */}
-                                <div className="bg-gray-50 border rounded-lg p-4 space-y-1 text-sm text-gray-700">
-                                    {payment.type === "booking" && payment.booking && (
-                                        <>
-                                            <p>
-                                                <span className="font-medium text-gray-800">Booking ID:</span> #
-                                                {payment.booking.id?.slice(-8)}
-                                            </p>
-                                            <p>
-                                                <span className="font-medium text-gray-800">Room:</span>{" "}
-                                                {payment.booking.room?.roomNumber || "N/A"}
-                                            </p>
-                                            <p>
-                                                <span className="font-medium text-gray-800">Hostel:</span>{" "}
-                                                {payment.booking.hostel?.hostelName || "N/A"}
-                                            </p>
-                                        </>
-                                    )}
-
-                                    {payment.type === "salary" && payment.salary && (
-                                        <>
-                                            <p>
-                                                <span className="font-medium text-gray-800">Pay Period:</span>{" "}
-                                                {payment.salary.payPeriod}
-                                            </p>
-                                            <p>
-                                                <span className="font-medium text-gray-800">Net Amount:</span> PKR{" "}
-                                                {payment.salary.netAmount?.toLocaleString()}
-                                            </p>
-                                        </>
-                                    )}
-
-                                    {payment.type === "expense" && payment.expense && (
-                                        <>
-                                            <p>
-                                                <span className="font-medium text-gray-800">Title:</span>{" "}
-                                                {payment.expense.title}
-                                            </p>
-                                            <p>
-                                                <span className="font-medium text-gray-800">Category:</span>{" "}
-                                                {payment.expense.category}
-                                            </p>
-                                        </>
-                                    )}
-                                </div>
-
-                                {/* Actions */}
-                                <div className="flex flex-wrap justify-end gap-2 pt-2 border-t">
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => {
-                                            setSelectedPayment(payment);
-                                            setIsDetailsDialogOpen(true);
-                                        }}
-                                        className="text-gray-700 hover:bg-gray-100"
-                                    >
-                                        <Eye className="h-4 w-4 mr-1" /> View Details
-                                    </Button>
-
-                                    {payment.approvalStatus === "PENDING" && (
-                                        <>
-                                            <Button
-                                                size="sm"
-                                                onClick={() => {
-                                                    setSelectedPayment(payment);
-                                                    setIsApprovalDialogOpen(true);
-                                                }}
-                                                className="bg-green-100 hover:bg-green-200 text-green-800"
-                                            >
-                                                <CheckCircle2 className="h-4 w-4 mr-1" /> Approve
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant="destructive"
-                                                onClick={() => {
-                                                    setSelectedPayment(payment);
-                                                    setIsRejectionDialogOpen(true);
-                                                }}
-                                                className="bg-red-100 hover:bg-red-200 text-red-800"
-                                            >
-                                                <XCircle className="h-4 w-4 mr-1" /> Reject
-                                            </Button>
-                                        </>
-                                    )}
-                                </div>
-                            </CardContent>
+                            </CardFooter>
                         </Card>
                     ))
                 ) : (
-                    <Card>
-                        <CardContent className="p-8 text-center">
-                            <AlertTriangle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">No payments found</h3>
-                            <p className="text-gray-500">No payments match your current filters.</p>
-                        </CardContent>
-                    </Card>
+                    <div className="text-center py-8">
+                        <AlertTriangle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No payments found</h3>
+                        <p className="text-gray-500">Try adjusting your search criteria or filters.</p>
+                    </div>
                 )}
             </div>
 

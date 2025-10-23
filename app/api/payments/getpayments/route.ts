@@ -37,14 +37,6 @@ export async function GET(request: Request) {
                 rejectedBy: true,
                 rejectedAt: true,
                 rejectionReason: true,
-                approver: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                        phone: true,
-                    }
-                },
                 booking: {
                     select: {
                         id: true,
