@@ -58,43 +58,49 @@ export async function PUT(request: NextRequest) {
     }
 
     const result = await prisma.$transaction(async (tx: any) => {
-      const updatedUser = await tx.user.update({
-        where: { id: userId },
-        data: { role: newRoleUpper as UserRole },
-      });
-
-      if (newRoleUpper === "WARDEN") {
-        await tx.warden.create({
-          data: { userId: userId, hostelIds: [hostelIds] },
-        });
-      }
-
-
+      // 1️⃣ Remove existing role relations first
       if (currentRole === "ADMIN" && currentUser.admin) {
         await tx.admin.delete({
           where: { userId: userId },
         });
-      } else if (currentRole === "WARDEN" && currentUser.wardens.length > 0) {
+      }
 
-
+      if (currentRole === "WARDEN" && currentUser.wardens.length > 0) {
         await tx.warden.deleteMany({
           where: { userId: userId },
         });
-      } else if (currentRole === "GUEST" && currentUser.guest) {
+      }
+
+      if (currentRole === "GUEST" && currentUser.guest) {
         await tx.guest.delete({
           where: { userId: userId },
         });
       }
 
+      // 2️⃣ Update User Role
+      const updatedUser = await tx.user.update({
+        where: { id: userId },
+        data: { role: newRoleUpper as UserRole },
+      });
+
+      // 3️⃣ Add the new role relationships
       if (newRoleUpper === "ADMIN") {
         await tx.admin.create({
           data: { userId: userId },
         });
       } else if (newRoleUpper === "WARDEN") {
-        // Warden role assigned, but Warden model will be created when assigned to a hostel
+        await tx.warden.upsert({
+          where: { userId: userId },
+          update: { hostelIds: [hostelIds] },
+          create: { userId: userId, hostelIds: [hostelIds] },
+        });
       } else if (newRoleUpper === "GUEST") {
-        await tx.guest.create({
-          data: { userId: userId },
+        await tx.guest.upsert({
+          where: { userId: userId },
+          update: {},
+          create: {
+            userId: userId,
+          }
         });
       }
 
