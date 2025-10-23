@@ -94,6 +94,16 @@ export async function PUT(request: NextRequest) {
           update: { hostelIds: [hostelIds] },
           create: { userId: userId, hostelIds: [hostelIds] },
         });
+
+        // ✅ Update hostel to push warden id into wardenIds array
+        await tx.hostel.update({
+          where: { id: hostelIds },
+          data: {
+            wardensIds: {
+              push: userId,
+            },
+          },
+        });
       } else if (newRoleUpper === "GUEST") {
         await tx.guest.upsert({
           where: { userId: userId },
@@ -101,6 +111,7 @@ export async function PUT(request: NextRequest) {
           create: {
             userId: userId,
           }
+
         });
       }
 
