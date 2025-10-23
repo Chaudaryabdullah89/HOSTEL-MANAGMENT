@@ -46,10 +46,10 @@ export function PaymentInfo({ payments }: PaymentInfoProps) {
             <Badge
               variant={
                 payment.status === 'COMPLETED'
-                  ? 'success'
+                  ? 'default'
                   : payment.status === 'PENDING'
-                  ? 'warning'
-                  : 'destructive'
+                    ? 'secondary'
+                    : 'destructive'
               }
             >
               {payment.status}

@@ -40,9 +40,8 @@ export function BookingCard({ booking, isBookingLoading }: BookingCardProps) {
   return (
     <Card
       key={booking.id}
-      className={`mb-4 relative ${
-        isBookingLoading ? "opacity-75 pointer-events-none" : ""
-      }`}
+      className={`mb-4 relative ${isBookingLoading ? "opacity-75 pointer-events-none" : ""
+        }`}
     >
       {isBookingLoading && (
         <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
@@ -71,12 +70,12 @@ export function BookingCard({ booking, isBookingLoading }: BookingCardProps) {
                 booking.status === "PENDING"
                   ? "secondary"
                   : booking.status === "CONFIRMED"
-                  ? "default"
-                  : booking.status === "CHECKED_IN"
-                  ? "outline"
-                  : booking.status === "CHECKED_OUT"
-                  ? "default"
-                  : "destructive"
+                    ? "default"
+                    : booking.status === "CHECKED_IN"
+                      ? "outline"
+                      : booking.status === "CHECKED_OUT"
+                        ? "default"
+                        : "destructive"
               }
             >
               {booking.status}
@@ -109,7 +108,7 @@ export function BookingCard({ booking, isBookingLoading }: BookingCardProps) {
 
             {/* Payment Section */}
             <div className="flex flex-col gap-2 bg-white rounded-xl p-4 h-full col-span-2">
-              <BookingPaymentInfo payments={booking.payments} />
+              <BookingPaymentInfo payments={booking.payments || []} />
             </div>
 
             {/* Room Section */}

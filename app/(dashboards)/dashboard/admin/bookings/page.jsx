@@ -938,15 +938,15 @@ const page = () => {
                                     </span>
                                     <span
                                       className={`text-xs px-2 py-1 rounded-full ${currentselectedroom.status ===
-                                          "AVAILABLE"
-                                          ? "bg-green-100 text-green-800"
+                                        "AVAILABLE"
+                                        ? "bg-green-100 text-green-800"
+                                        : currentselectedroom.status ===
+                                          "OCCUPIED"
+                                          ? "bg-red-100 text-red-800"
                                           : currentselectedroom.status ===
-                                            "OCCUPIED"
-                                            ? "bg-red-100 text-red-800"
-                                            : currentselectedroom.status ===
-                                              "MAINTENANCE"
-                                              ? "bg-yellow-100 text-yellow-800"
-                                              : "bg-gray-100 text-gray-800"
+                                            "MAINTENANCE"
+                                            ? "bg-yellow-100 text-yellow-800"
+                                            : "bg-gray-100 text-gray-800"
                                         }`}
                                     >
                                       {currentselectedroom.status}
@@ -1712,64 +1712,6 @@ const page = () => {
                               </span>
                             </p>
                           </div>
-<<<<<<< HEAD
-  {
-    booking.payment ? (
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500">
-            Status
-          </span>
-          <span
-            className={`inline-flex items-center px-4 py-1 rounded-full text-xs font-medium ${booking.payments.status === "COMPLETED"
-                ? "bg-green-100 text-green-800"
-                : booking.payments.status === "PENDING"
-                  ? "bg-yellow-100 text-yellow-800"
-                  : booking.payments.status === "FAILED"
-                    ? "bg-red-100 text-red-800"
-                    : "bg-gray-100 text-gray-800"
-              }`}
-          >
-            {booking.payments.status || "N/A"}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500">
-            Amount
-          </span>
-          <span className="text-sm font-medium text-gray-900">
-            PKR
-            {booking.payments.amount?.toLocaleString() ||
-              "0"}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500">
-            Method
-          </span>
-          <span className="text-sm text-gray-900">
-            {booking.payments.method || "N/A"}
-          </span>
-        </div>
-        {booking.payments.transactionId && (
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-500">
-              Txn ID
-            </span>
-            <span className="text-xs text-gray-600 font-mono truncate max-w-20">
-              {booking.payments.transactionId}
-            </span>
-          </div>
-        )}
-        {booking.payments.notes && (
-                                <div className="pt-1 border-t">
-                                  <span className="text-xs text-gray-500">
-                                    Notes
-                                  </span>
-                                  <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                                    {booking.payments.notes}
-                                  </p>
-=======
                           {/* {booking.payments && booking.payments.length > 0 ? (
                             booking.payments.map((payment) => (
                               <div key={payment.id} className="space-y-2 border-b pb-2 last:border-0">
@@ -1796,7 +1738,6 @@ const page = () => {
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs text-gray-500">Method</span>
                                   <span className="text-sm text-gray-900">{payment.method || "N/A"}</span>
->>>>>>> 8e04021 (safd)
                                 </div>
                                 {payment.transactionId && (
                                   <div className="flex items-center justify-between">
@@ -1831,35 +1772,35 @@ const page = () => {
                               <p className="text-xs text-gray-500">No payment data</p>
                             </div>
                           )} */}
-            {booking.payments && booking.payments.length > 0 ? (
-              <div className="space-y-1">
-                <div className="flex justify-between">
-                  <p className="text-sm text-muted-foreground " >Total Paid</p>
-                  <p className="text-sm font-medium " >{booking.payments.reduce((acc, payment) => acc + (payment.amount || 0), 0).toLocaleString()} PKR</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Last Payment:</p>
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium text-gray-900">
-                      {new Date(booking.payments[booking.payments.length - 1].createdAt).toLocaleDateString()}
-                    </span>
-                    <span className="text-sm font-medium text-gray-900">
-                      PKR {booking.payments[booking.payments.length - 1].amount?.toLocaleString() || 0}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                          {booking.payments && booking.payments.length > 0 ? (
+                            <div className="space-y-1">
+                              <div className="flex justify-between">
+                                <p className="text-sm text-muted-foreground " >Total Paid</p>
+                                <p className="text-sm font-medium " >{booking.payments.reduce((acc, payment) => acc + (payment.amount || 0), 0).toLocaleString()} PKR</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500">Last Payment:</p>
+                                <div className="flex justify-between">
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {new Date(booking.payments[booking.payments.length - 1].createdAt).toLocaleDateString()}
+                                  </span>
+                                  <span className="text-sm font-medium text-gray-900">
+                                    PKR {booking.payments[booking.payments.length - 1].amount?.toLocaleString() || 0}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
 
-            ) : (
-              <div className="text-center py-2">
-                <p className="text-xs text-gray-500">No payment data</p>
-              </div>
-            )}
+                          ) : (
+                            <div className="text-center py-2">
+                              <p className="text-xs text-gray-500">No payment data</p>
+                            </div>
+                          )}
 
-          </div>
-          <p className="text-muted-foreground ml-0 md:ml-4 text-md">
-            Notes: {booking.notes || "No notes"}
-          </p>
+                        </div>
+                        <p className="text-muted-foreground ml-0 md:ml-4 text-md">
+                          Notes: {booking.notes || "No notes"}
+                        </p>
                       </div>
                     </div >
                   </CardHeader >
@@ -1867,88 +1808,87 @@ const page = () => {
                   <CardFooter>
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 w-full">
                       <div>
-                       
-                                    <Dialog>
-  <DialogTrigger>
-    <Button>See All Payments</Button>
-  </DialogTrigger>
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>
-        <h2>ALL PAYMENTS</h2>
-      </DialogTitle>
-        <p>All the payments made by the user</p>
-      <DialogDescription>
-      <div>
-            {booking.payments.map((payment) => (
-              <div
-                key={payment.id}
-                className="my-4 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 bg-white"
-              >
-                <div className="flex flex-col md:flex-row md:items-center justify-between p-4 gap-4">
-                  <div className="space-y-1">
-                    <h4 className="text-sm font-semibold text-gray-800">
-                      Payment ID:{" "}
-                      <span className="font-normal text-gray-600">{payment.id}</span>
-                    </h4>
-                    <p className="text-sm text-gray-700">
-                      Amount:{" "}
-                      <span className="font-semibold text-blue-700">
-                        PKR {payment.amount?.toLocaleString() || 0}
-                      </span>
-                    </p>
-                    <p className="text-sm text-gray-700">
-                      Method:{" "}
-                      <span className="font-medium text-gray-800">
-                        {payment.method || "N/A"}
-                      </span>
-                    </p>
-                    {payment.transactionId && (
-                      <p className="text-sm text-gray-700">
-                        Transaction ID:{" "}
-                        <span className="font-mono text-gray-600">
-                          {payment.transactionId}
-                        </span>
-                      </p>
-                    )}
-                    {payment.createdAt && (
-                      <p className="text-sm text-gray-700">
-                        Date:{" "}
-                        <span className="text-gray-600">
-                          {new Date(payment.createdAt).toLocaleString()}
-                        </span>
-                      </p>
-                    )}
-                    {payment.notes && (
-                      <div className="mt-2">
-                        <p className="text-sm text-gray-700">Notes:</p>
-                        <p className="text-sm text-gray-600 italic">{payment.notes}</p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center">
-                    <Badge
-                      className={`px-3 py-1 text-xs font-medium rounded-full ${
-                        getPaymentStatus(payment.status) === "COMPLETED"
-                          ? "bg-green-100 text-green-800"
-                          : getPaymentStatus(payment.status) === "PENDING"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : getPaymentStatus(payment.status) === "FAILED"
-                          ? "bg-red-100 text-red-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {getPaymentStatus(payment.status)}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            ))}
-      </div>
-      </DialogDescription>
-    </DialogHeader>
-  </DialogContent>
-</Dialog>
+
+                        <Dialog>
+                          <DialogTrigger>
+                            <Button>See All Payments</Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>
+                                <h2>ALL PAYMENTS</h2>
+                              </DialogTitle>
+                              <p>All the payments made by the user</p>
+                              <DialogDescription>
+                                <div>
+                                  {booking.payments.map((payment) => (
+                                    <div
+                                      key={payment.id}
+                                      className="my-4 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 bg-white"
+                                    >
+                                      <div className="flex flex-col md:flex-row md:items-center justify-between p-4 gap-4">
+                                        <div className="space-y-1">
+                                          <h4 className="text-sm font-semibold text-gray-800">
+                                            Payment ID:{" "}
+                                            <span className="font-normal text-gray-600">{payment.id}</span>
+                                          </h4>
+                                          <p className="text-sm text-gray-700">
+                                            Amount:{" "}
+                                            <span className="font-semibold text-blue-700">
+                                              PKR {payment.amount?.toLocaleString() || 0}
+                                            </span>
+                                          </p>
+                                          <p className="text-sm text-gray-700">
+                                            Method:{" "}
+                                            <span className="font-medium text-gray-800">
+                                              {payment.method || "N/A"}
+                                            </span>
+                                          </p>
+                                          {payment.transactionId && (
+                                            <p className="text-sm text-gray-700">
+                                              Transaction ID:{" "}
+                                              <span className="font-mono text-gray-600">
+                                                {payment.transactionId}
+                                              </span>
+                                            </p>
+                                          )}
+                                          {payment.createdAt && (
+                                            <p className="text-sm text-gray-700">
+                                              Date:{" "}
+                                              <span className="text-gray-600">
+                                                {new Date(payment.createdAt).toLocaleString()}
+                                              </span>
+                                            </p>
+                                          )}
+                                          {payment.notes && (
+                                            <div className="mt-2">
+                                              <p className="text-sm text-gray-700">Notes:</p>
+                                              <p className="text-sm text-gray-600 italic">{payment.notes}</p>
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="flex items-center">
+                                          <Badge
+                                            className={`px-3 py-1 text-xs font-medium rounded-full ${getPaymentStatus(payment.status) === "COMPLETED"
+                                                ? "bg-green-100 text-green-800"
+                                                : getPaymentStatus(payment.status) === "PENDING"
+                                                  ? "bg-yellow-100 text-yellow-800"
+                                                  : getPaymentStatus(payment.status) === "FAILED"
+                                                    ? "bg-red-100 text-red-800"
+                                                    : "bg-gray-100 text-gray-800"
+                                              }`}
+                                          >
+                                            {getPaymentStatus(payment.status)}
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </DialogDescription>
+                            </DialogHeader>
+                          </DialogContent>
+                        </Dialog>
 
                       </div>
 
@@ -2161,7 +2101,7 @@ const page = () => {
                               : "Delete"}
                           </Button>
                         )}
-                  
+
 
                         {/* Delete Confirmation Dialog */}
                         <AlertDialog
@@ -2247,15 +2187,15 @@ const page = () => {
             })}
           </>
         ) : (
-  <div className="text-center py-8">
-    <p className="text-gray-500">
-      No bookings found for "{activeStatus}"
-    </p>
-  </div>
-)}
+          <div className="text-center py-8">
+            <p className="text-gray-500">
+              No bookings found for "{activeStatus}"
+            </p>
+          </div>
+        )}
       </div >
 
-  {/* Toast notifications */ }
+      {/* Toast notifications */}
     </div >
   );
 };
