@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   Users,
   ChevronDown,
@@ -41,6 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SessionContext } from "@/app/context/sessiondata";
 import {
   Dialog,
   DialogContent,
@@ -96,6 +97,36 @@ const page = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [wardenHostels, setWardenHostels] = useState([]);
+
+  // Get current user session
+  const { session } = useContext(SessionContext);
+  const currentUserId = session?.user?.id;
+
+  // Fetch warden's hostels
+  useEffect(() => {
+    const fetchWardenHostels = async () => {
+      try {
+        const response = await fetch('/api/hostel/gethostels');
+        if (response.ok) {
+          const hostels = await response.json();
+          setWardenHostels(hostels);
+
+          // If warden has only one hostel, auto-select it
+          if (hostels.length === 1) {
+            setHostelFilter(hostels[0].hostelName);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching warden hostels:', error);
+      }
+    };
+
+    if (currentUserId) {
+      fetchWardenHostels();
+    }
+  }, [currentUserId]);
+
   const [isCreating, setIsCreating] = useState(false);
   const [replyText, setReplyText] = useState("");
 
@@ -142,6 +173,14 @@ const page = () => {
     if (!complaintsData.complaints) return [];
 
     let filtered = [...complaintsData.complaints];
+
+    // Filter by warden's assigned hostels
+    if (wardenHostels.length > 0) {
+      const wardenHostelIds = wardenHostels.map(h => h.id);
+      filtered = filtered.filter(complaint =>
+        wardenHostelIds.includes(complaint.hostelId)
+      );
+    }
 
     // Filter by status
     if (statusFilter !== "All Status") {
@@ -376,10 +415,20 @@ const page = () => {
       {/* Header */}
       <div className="flex md:flex-row flex-col justify-between px-4">
         <div className="mt-4">
-          <h1 className="text-3xl font-bold">Complaints Management</h1>
+          <h1 className="text-3xl font-bold">Warden Complaints</h1>
           <p className="text-muted-foreground leading-loose">
-            Manage and respond to guest complaints
+            {wardenHostels.length > 0
+              ? `Manage complaints for your ${wardenHostels.length} assigned hostel${wardenHostels.length > 1 ? 's' : ''}`
+              : 'Manage and respond to guest complaints'
+            }
           </p>
+          {wardenHostels.length > 0 && (
+            <div className="mt-2">
+              <p className="text-sm text-blue-600">
+                📍 Showing complaints for: {wardenHostels.map(h => h.hostelName).join(', ')}
+              </p>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2 mt-4 md:mt-0">
           <Button
@@ -537,8 +586,8 @@ const page = () => {
                 <SelectValue placeholder="All Hostels" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="All Hostels">All Hostels</SelectItem>
-                {hostels.map((hostel) => (
+                <SelectItem value="All Hostels">All My Hostels</SelectItem>
+                {wardenHostels.map((hostel) => (
                   <SelectItem key={hostel.id} value={hostel.id}>
                     {hostel.hostelName}
                   </SelectItem>
@@ -586,10 +635,10 @@ const page = () => {
               dateFilter !== "All Time" ||
               sortBy !== "newest" ||
               searchTerm) && (
-              <Badge variant="secondary" className="text-sm">
-                Filtered
-              </Badge>
-            )}
+                <Badge variant="secondary" className="text-sm">
+                  Filtered
+                </Badge>
+              )}
           </div>
           <div className="text-sm text-muted-foreground">
             {sortBy === "newest" && "Sorted by newest first"}
@@ -801,10 +850,10 @@ const page = () => {
               </h3>
               <p className="text-gray-500 mb-4">
                 {searchTerm ||
-                statusFilter !== "All Status" ||
-                priorityFilter !== "All Priority" ||
-                categoryFilter !== "All Categories" ||
-                hostelFilter !== "All Hostels"
+                  statusFilter !== "All Status" ||
+                  priorityFilter !== "All Priority" ||
+                  categoryFilter !== "All Categories" ||
+                  hostelFilter !== "All Hostels"
                   ? "Try adjusting your filters to see more results."
                   : "No complaints have been submitted yet."}
               </p>

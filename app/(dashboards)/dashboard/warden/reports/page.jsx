@@ -1,19 +1,19 @@
 "use client"
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Download, 
-  RefreshCw, 
-  Users, 
-  User, 
-  Calendar, 
-  DollarSign, 
-  TrendingUp, 
+import {
+  Download,
+  RefreshCw,
+  Users,
+  User,
+  Calendar,
+  DollarSign,
+  TrendingUp,
   TrendingDown,
   Bed,
   Wrench,
@@ -27,34 +27,64 @@ import {
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { format } from 'date-fns'
+import { SessionContext } from '@/app/context/sessiondata'
 
 const ReportsPage = () => {
   const [reportData, setReportData] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [wardenHostels, setWardenHostels] = useState([])
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
     hostelId: ''
   })
 
+  // Get current user session
+  const { session } = useContext(SessionContext)
+  const currentUserId = session?.user?.id
+
+  // Fetch warden's hostels
+  useEffect(() => {
+    const fetchWardenHostels = async () => {
+      try {
+        const response = await fetch('/api/hostel/gethostels')
+        if (response.ok) {
+          const hostels = await response.json()
+          setWardenHostels(hostels)
+
+          // If warden has only one hostel, auto-select it
+          if (hostels.length === 1) {
+            setFilters(prev => ({ ...prev, hostelId: hostels[0].id }))
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching warden hostels:', error)
+      }
+    }
+
+    if (currentUserId) {
+      fetchWardenHostels()
+    }
+  }, [currentUserId])
+
   // Set default date range to last 30 days
   useEffect(() => {
     const endDate = new Date()
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - 30)
-    
-    setFilters({
+
+    setFilters(prev => ({
+      ...prev,
       startDate: startDate.toISOString().split('T')[0],
-      endDate: endDate.toISOString().split('T')[0],
-      hostelId: ''
-    })
+      endDate: endDate.toISOString().split('T')[0]
+    }))
   }, [])
 
   const fetchReportData = async () => {
     setIsLoading(true)
     setError(null)
-    
+
     try {
       const params = new URLSearchParams()
       if (filters.startDate) params.append('startDate', filters.startDate)
@@ -94,16 +124,16 @@ const ReportsPage = () => {
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      
+
       const startDateStr = filters.startDate ? new Date(filters.startDate).toISOString().split('T')[0] : 'all'
       const endDateStr = filters.endDate ? new Date(filters.endDate).toISOString().split('T')[0] : 'all'
       link.download = `hostel-report-${startDateStr}-to-${endDateStr}.xlsx`
-      
+
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
-      
+
       toast.success('Excel report downloaded successfully!')
     } catch (error) {
       console.error('Error downloading Excel report:', error)
@@ -177,21 +207,31 @@ const ReportsPage = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Comprehensive Reports</h1>
+          <h1 className="text-3xl font-bold">Warden Reports</h1>
           <p className="text-muted-foreground">
-            Detailed insights into your hostel's performance and operations
+            {wardenHostels.length > 0
+              ? `Detailed insights for your ${wardenHostels.length} assigned hostel${wardenHostels.length > 1 ? 's' : ''}`
+              : 'Detailed insights into your hostel\'s performance and operations'
+            }
           </p>
+          {wardenHostels.length > 0 && (
+            <div className="mt-2">
+              <p className="text-sm text-blue-600">
+                📍 Showing data for: {wardenHostels.map(h => h.hostelName).join(', ')}
+              </p>
+            </div>
+          )}
         </div>
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={fetchReportData}
             disabled={isLoading}
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
-          <Button 
+          <Button
             onClick={handleDownloadExcel}
             disabled={!reportData}
           >
@@ -230,13 +270,20 @@ const ReportsPage = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="hostelId">Hostel ID (Optional)</Label>
-              <Input
+              <Label htmlFor="hostelId">Select Hostel</Label>
+              <select
                 id="hostelId"
-                placeholder="Enter hostel ID"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={filters.hostelId}
                 onChange={(e) => setFilters(prev => ({ ...prev, hostelId: e.target.value }))}
-              />
+              >
+                <option value="">All My Hostels</option>
+                {wardenHostels.map((hostel) => (
+                  <option key={hostel.id} value={hostel.id}>
+                    {hostel.hostelName} - {hostel.hostelType}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
           <div className="mt-4">
@@ -248,6 +295,31 @@ const ReportsPage = () => {
               )}
               Generate Report
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Debug Panel */}
+      <Card className="bg-blue-50 border-blue-200">
+        <CardContent className="p-4">
+          <h3 className="font-semibold text-blue-800 mb-2">Warden Debug Information</h3>
+          <div className="text-sm text-blue-700 space-y-1">
+            <p>Current User ID: {currentUserId || 'Not logged in'}</p>
+            <p>Warden Hostels: {wardenHostels.length}</p>
+            {wardenHostels.length > 0 && (
+              <div className="mt-2">
+                <p className="font-medium">Assigned Hostels:</p>
+                <ul className="list-disc list-inside ml-2">
+                  {wardenHostels.map((hostel, index) => (
+                    <li key={hostel.id}>
+                      {hostel.hostelName} ({hostel.hostelType}) - {hostel.hostelsStatus}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <p>Selected Hostel ID: {filters.hostelId || 'All Hostels'}</p>
+            <p>Date Range: {filters.startDate} to {filters.endDate}</p>
           </div>
         </CardContent>
       </Card>
@@ -525,8 +597,8 @@ const ReportsPage = () => {
                               <Badge variant={getStatusColor(req.status)}>
                                 {req.status}
                               </Badge>
-                              <Badge variant={req.priority === 'HIGH' ? 'destructive' : 
-                                        req.priority === 'MEDIUM' ? 'warning' : 'success'}>
+                              <Badge variant={req.priority === 'HIGH' ? 'destructive' :
+                                req.priority === 'MEDIUM' ? 'warning' : 'success'}>
                                 {req.priority}
                               </Badge>
                             </div>
@@ -572,7 +644,7 @@ const ReportsPage = () => {
                       <div className="text-sm text-muted-foreground">Average Salary</div>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-4">
                     <h4 className="font-medium">Recent Salary Records ({reportData.salary.details.length})</h4>
                     {reportData.salary.details.slice(0, 10).map((salary) => (

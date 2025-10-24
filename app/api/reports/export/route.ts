@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/server-auth";
+import { requireWardenAuth } from "@/lib/warden-auth";
 import * as XLSX from 'xlsx';
 
 export async function GET(request: NextRequest) {
@@ -9,10 +10,25 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        // Check if user is warden and get their hostel assignments
+        let wardenHostelIds: string[] = [];
+        try {
+            const wardenAuth = await requireWardenAuth(request);
+            wardenHostelIds = wardenAuth.hostelIds;
+        } catch (error) {
+            // If not a warden, continue without filtering (admin access)
+            console.log("No warden auth, showing all reports");
+        }
+
         const { searchParams } = new URL(request.url);
         const startDate = searchParams.get('startDate');
         const endDate = searchParams.get('endDate');
         const hostelId = searchParams.get('hostelId');
+
+        // Validate warden access to specific hostel
+        if (wardenHostelIds.length > 0 && hostelId && !wardenHostelIds.includes(hostelId)) {
+            return NextResponse.json({ error: "Access denied to this hostel" }, { status: 403 });
+        }
 
         // Fetch comprehensive data via HTTP
         const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3001';

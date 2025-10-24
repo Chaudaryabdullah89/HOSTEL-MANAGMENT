@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
         });
 
         const notifications = {
-            newBookings: recentBookings.map(booking => ({
+            newBookings: recentBookings.map((booking: any) => ({
                 id: booking.id,
                 type: 'booking',
                 title: 'New Booking Request',
@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
                 createdAt: booking.createdAt,
                 priority: 'high'
             })),
-            newUsers: newUsers.map(user => ({
+            newUsers: newUsers.map((user: any) => ({
                 id: user.id,
                 type: 'user',
                 title: 'New User Registration',
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
                 createdAt: user.createdAt,
                 priority: 'medium'
             })),
-            pendingPayments: pendingPayments.map(payment => ({
+            pendingPayments: pendingPayments.map((payment: any) => ({
                 id: payment.id,
                 type: 'payment',
                 title: 'Pending Payment',

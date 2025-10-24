@@ -168,15 +168,8 @@ const page = () => {
     fetchAllData();
   }, []);
 
-  // Debug: Log raw bookings data
-  console.log('Raw bookings from API:', bookings);
-  console.log('Bookings count:', bookings?.length || 0);
-  console.log('Current user ID:', currentUserId);
-
   // Filter bookings by current user
   const userBookings = bookings?.filter(booking => booking.userId === currentUserId) || [];
-  console.log('User bookings:', userBookings);
-  console.log('User bookings count:', userBookings.length);
 
   // Enhanced booking data with room and hostel details
   const enhancedBookings = userBookings?.map(booking => {
@@ -217,9 +210,6 @@ const page = () => {
     };
   }) || [];
 
-  // Debug: Log enhanced bookings
-  console.log('Enhanced bookings:', enhancedBookings);
-  console.log('Enhanced bookings count:', enhancedBookings.length);
 
   // Filter and sort bookings
   const filteredBookings = enhancedBookings
@@ -337,23 +327,6 @@ const page = () => {
         </div>
       </div>
 
-      {/* Debug Panel */}
-      <Card className="bg-blue-50 border-blue-200 mb-4">
-        <CardContent className="p-4">
-          <h3 className="font-semibold text-blue-800 mb-2">Debug Information</h3>
-          <div className="text-sm text-blue-700 space-y-1">
-            <p>Current User ID: {currentUserId || 'Not logged in'}</p>
-            <p>Raw bookings from API: {bookings?.length || 0}</p>
-            <p>User bookings (filtered): {userBookings?.length || 0}</p>
-            <p>Enhanced bookings: {enhancedBookings.length}</p>
-            <p>Filtered bookings: {filteredBookings.length}</p>
-            <p>Raw payments from API: {payments?.length || 0}</p>
-            <p>Loading states: Bookings={bookingsLoading ? 'Yes' : 'No'}, Payments={paymentsLoading ? 'Yes' : 'No'}</p>
-            <p>Rooms count: {rooms?.length || 0}</p>
-            <p>Hostels count: {hostels?.length || 0}</p>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

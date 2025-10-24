@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/server-auth";
+import { requireWardenAuth } from "@/lib/warden-auth";
 
 // NEW APPROACH: All stats in one aggregate query per entity, flatten, minimize post-fetch processing, read-only, robust error handling.
 // Each stats section fetched independently, parallelized. No extra mapping is done unless necessary.
@@ -11,6 +12,16 @@ export async function GET(request: NextRequest) {
         const session = await getServerSession(request);
         if (!session) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // Check if user is warden and get their hostel assignments
+        let wardenHostelIds: string[] = [];
+        try {
+            const wardenAuth = await requireWardenAuth(request);
+            wardenHostelIds = wardenAuth.hostelIds;
+        } catch (error) {
+            // If not a warden, continue without filtering (admin access)
+            console.log("No warden auth, showing all reports");
         }
 
         // Query params 
@@ -28,14 +39,30 @@ export async function GET(request: NextRequest) {
                 }
                 : undefined;
 
-        // hostelId could be undefined; build where for entities that have hostelId (most do, but not all)
-        const hostelWhere = hostelId ? { hostelId } : {};
+        // Build hostel filter - prioritize warden's hostels if they exist
+        let hostelWhere = {};
+        if (wardenHostelIds.length > 0) {
+            // If warden, filter by their assigned hostels
+            if (hostelId) {
+                // If specific hostel requested, check if it's in warden's hostels
+                if (wardenHostelIds.includes(hostelId)) {
+                    hostelWhere = { hostelId };
+                } else {
+                    return NextResponse.json({ error: "Access denied to this hostel" }, { status: 403 });
+                }
+            } else {
+                // Show all warden's hostels
+                hostelWhere = { hostelId: { in: wardenHostelIds } };
+            }
+        } else if (hostelId) {
+            // Admin access with specific hostel
+            hostelWhere = { hostelId };
+        }
 
         // For things like payment/booking, we may need to OR both payment.hostelId and payment.booking.hostelId
-        const paymentOr =
-            hostelId && hostelId.length > 0
-                ? [{ hostelId }, { booking: { hostelId } }]
-                : [{}];
+        const paymentOr = Object.keys(hostelWhere).length > 0
+            ? [hostelWhere, { booking: hostelWhere }]
+            : [{}];
 
         // DATA GATHER
         const [

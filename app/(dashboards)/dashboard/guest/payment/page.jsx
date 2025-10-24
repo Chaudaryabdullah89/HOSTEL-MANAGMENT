@@ -182,19 +182,6 @@ const page = () => {
         </div>
       </div>
 
-      {/* Debug Panel */}
-      <Card className="bg-blue-50 border-blue-200 mb-4">
-        <CardContent className="p-4">
-          <h3 className="font-semibold text-blue-800 mb-2">Debug Information</h3>
-          <div className="text-sm text-blue-700 space-y-1">
-            <p>Current User ID: {currentUserId || 'Not logged in'}</p>
-            <p>Total payments from API: {payments?.length || 0}</p>
-            <p>User payments (filtered): {userPayments?.length || 0}</p>
-            <p>Filtered payments: {filteredPayments.length}</p>
-            <p>Loading: {loading ? 'Yes' : 'No'}</p>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
