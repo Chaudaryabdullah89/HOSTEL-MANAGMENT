@@ -7,7 +7,7 @@ echo "Creating 5 hostels..."
 
 # Hostel 1: Budget Hostel
 echo "Creating Hostel 1: Budget Hostel"
-curl -X POST http://localhost:3000/api/hostel/create \
+curl -X POST http://localhost:3001/api/hostel/create \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Sunset Budget Hostel",
@@ -34,7 +34,7 @@ echo -e "\n\n"
 
 # Hostel 2: Standard Hostel
 echo "Creating Hostel 2: Standard Hostel"
-curl -X POST http://localhost:3000/api/hostel/create \
+curl -X POST http://localhost:3001/api/hostel/create \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Riverside Standard Hostel",
@@ -61,7 +61,7 @@ echo -e "\n\n"
 
 # Hostel 3: Premium Hostel
 echo "Creating Hostel 3: Premium Hostel"
-curl -X POST http://localhost:3000/api/hostel/create \
+curl -X POST http://localhost:3001/api/hostel/create \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Luxury Heights Premium Hostel",
@@ -88,7 +88,7 @@ echo -e "\n\n"
 
 # Hostel 4: Budget Hostel
 echo "Creating Hostel 4: Budget Hostel"
-curl -X POST http://localhost:3000/api/hostel/create \
+curl -X POST http://localhost:3001/api/hostel/create \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Student Central Hostel",
@@ -115,7 +115,7 @@ echo -e "\n\n"
 
 # Hostel 5: Standard Hostel
 echo "Creating Hostel 5: Standard Hostel"
-curl -X POST http://localhost:3000/api/hostel/create \
+curl -X POST http://localhost:3001/api/hostel/create \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Garden View Standard Hostel",

@@ -1384,26 +1384,23 @@ const page = () => {
           </CardHeader>
           <CardContent>
             {(() => {
-              // Safer, clearer revenue calculation using reduce.
-              // Supports both booking.payment (single) and booking.payments (array).
+
               const totalRevenue = filteredBookings.reduce((acc, booking) => {
                 const status = (booking.status || "").toUpperCase();
-
-                // Normalize payments into an array (handles both `payment` and `payments`).
                 const payments = Array.isArray(booking.payments)
                   ? booking.payments
                   : booking.payment
                     ? [booking.payment]
                     : [];
 
-                // Sum only completed payments for this booking.
+
                 const completedAmount = payments.reduce((sum, p) => {
                   const pStatus = (p?.status || "").toUpperCase();
                   const amount = Number(p?.amount) || 0;
                   return pStatus === "COMPLETED" ? sum + amount : sum;
                 }, 0);
 
-                // Only include revenue for bookings with an appropriate final status.
+
                 if (
                   (status === "COMPLETED" || status === "CHECKED_OUT" || status === "CONFIRMED") &&
                   completedAmount > 0

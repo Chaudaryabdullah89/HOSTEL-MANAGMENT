@@ -1,557 +1,501 @@
-// This file is a guest version, copied from admin. Adjust logic as needed for guest role.
 "use client"
-import React, { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Plus, Filter, ChevronDown, Search, Edit, Wifi, Tv, Wind, Delete, Bin, Trash } from 'lucide-react'
+import React, { useState, useEffect, useContext } from "react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from '@/components/ui/input'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
+    Bed,
+    Wifi,
+    Tv,
+    Wind,
+    Users,
+    MapPin,
+    Calendar,
+    Search,
+    Filter,
+    Star,
+    Eye,
+    BookOpen,
+    RefreshCw
+} from "lucide-react";
+import { PageLoadingSkeleton, LoadingSpinner } from "@/components/ui/loading-skeleton";
+import { SessionContext } from "@/app/context/sessiondata";
+
+const statusOptions = ["All Status", "AVAILABLE", "OCCUPIED", "MAINTENANCE", "OUT_OF_ORDER"];
+const typeOptions = ["All Types", "SINGLE", "DOUBLE", "TRIPLE", "QUAD", "DORMITORY"];
+
+const statusColor = (status) => {
+    switch (status) {
+        case "AVAILABLE":
+            return "bg-green-100 text-green-800 border-green-200";
+        case "OCCUPIED":
+            return "bg-red-100 text-red-800 border-red-200";
+        case "MAINTENANCE":
+            return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        case "OUT_OF_ORDER":
+            return "bg-gray-100 text-gray-800 border-gray-200";
+        default:
+            return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+};
+
+const typeColor = (type) => {
+    switch (type) {
+        case "SINGLE":
+            return "bg-blue-100 text-blue-800 border-blue-200";
+        case "DOUBLE":
+            return "bg-purple-100 text-purple-800 border-purple-200";
+        case "TRIPLE":
+            return "bg-orange-100 text-orange-800 border-orange-200";
+        case "QUAD":
+            return "bg-pink-100 text-pink-800 border-pink-200";
+        case "DORMITORY":
+            return "bg-indigo-100 text-indigo-800 border-indigo-200";
+        default:
+            return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+};
+
+const getAmenityIcon = (amenity) => {
+    switch (amenity.toLowerCase()) {
+        case "wifi":
+            return <Wifi className="w-4 h-4" />;
+        case "tv":
+            return <Tv className="w-4 h-4" />;
+        case "ac":
+        case "air conditioning":
+            return <Wind className="w-4 h-4" />;
+        default:
+            return <Star className="w-4 h-4" />;
+    }
+};
 
 const page = () => {
-    // ... (admin rooms logic, to be adapted for guest if needed)
-    // Copying the admin logic for now
-    const [activeStatus, setactiveStatus] = useState('All Statuses')
-    const [activeType, setActiveType] = useState('All Types')
-    const [searchTerm, setSearchTerm] = useState('')
-    const [selectedroom, setselectedRoom] = useState([])
-    const handleSelectRoom = (room) => {
-        setselectedRoom(room);
-    };
-    const [del, setdel] = useState('')
-    const [roomType, setRoomType] = useState('All Type')
-    const [roomStatus , setRoomStatus] =  useState('Available')
-    const temproomsdata = [
-        {
-            id: 1,
-            number: "101",
-            floor: 1,
-            type: "Single",
-            status: "Inavailable",
-            capacity: 1,
-            price: 100,
-            amenities: "Wifi, TV, AC",
-            description: "A comfortable single room with a private bathroom",
-            images: "https://via.placeholder.com/150",
-            bookings: [],
-            securitydeposite: 1500,
-            occupants: [],
-            ammenities: [
-                { item: "Wifi", icon: Wifi }
-            ],
-            maintenanceRequests: [],
-            notes: 'this is best room',
-        },
-        {
-            id: 2,
-            number: "102",
-            notes: "this is best room",
-            floor: 1,
-            type: "Double",
-            status: "Available",
-            capacity: 2,
-            price: 200,
-            amenities: "Wifi, TV, AC",
-            securitydeposite: 100,
-            description: "A comfortable double room with a private bathroom",
-            images: "https://via.placeholder.com/150",
-            bookings: [],
-            occupants: [],
-            ammenities: [
-                { item: "Wifi", icon: Wifi },
-                { item: "TV", icon: Tv },
-                { item: "AC", icon: Wind }
-            ],
-            maintenanceRequests: []
-        },
-        {
-            id: 3,
-            number: "103",
-            floor: 1,
-            type: "Triple",
-            status: "Available",
-            capacity: 3,
-            price: 300,
-            amenities: "Wifi, TV, AC",
-            description: "A comfortable triple room with a private bathroom",
-            images: "https://via.placeholder.com/150",
-            bookings: [],
-            occupants: [],
-            ammenities: [
-                { item: "Wifi", icon: Wifi },
-                { item: "TV", icon: Tv },
-                { item: "AC", icon: Wind }
-            ],
-            maintenanceRequests: []
-        }
-    ]
-    const filterstatus = temproomsdata.filter(room => {
-        const matchesStatus = activeStatus === "All Statuses" || room.status === activeStatus;
-        const matchestype = activeType === "All Types" || room.type === activeType
-        const matchesSearch = searchTerm === '' ||
-            room.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            room.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            room.amenities.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            room.description.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesStatus && matchesSearch && matchestype;
+    const [loading, setLoading] = useState(true);
+    const [activeStatus, setActiveStatus] = useState("All Status");
+    const [activeType, setActiveType] = useState("All Types");
+    const [searchTerm, setSearchTerm] = useState("");
+    const [rooms, setRooms] = useState([]);
+    const [hostels, setHostels] = useState([]);
+    const [selectedRoom, setSelectedRoom] = useState(null);
+    const [showDetails, setShowDetails] = useState(false);
+
+    // Get current user session
+    const { session } = useContext(SessionContext);
+    const currentUserId = session?.user?.id;
+
+    // Fetch rooms and hostels data
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                // Fetch rooms
+                const roomsResponse = await fetch('/api/room/getallrooms');
+                if (roomsResponse.ok) {
+                    const roomsData = await roomsResponse.json();
+                    console.log('Fetched rooms:', roomsData);
+                    setRooms(roomsData);
+                }
+
+                // Fetch hostels
+                const hostelsResponse = await fetch('/api/hostel/gethostels');
+                if (hostelsResponse.ok) {
+                    const hostelsData = await hostelsResponse.json();
+                    console.log('Fetched hostels:', hostelsData);
+                    setHostels(hostelsData);
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    const filteredRooms = rooms.filter((room) => {
+        const matchesStatus =
+            activeStatus === "All Status" || room.status === activeStatus;
+        const matchesType =
+            activeType === "All Types" || room.type === activeType;
+        const matchesSearch =
+            room.roomNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            room.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            room.amenities?.some(amenity =>
+                amenity.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        return matchesStatus && matchesType && matchesSearch;
     });
+
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-PK', {
+            style: 'currency',
+            currency: 'PKR',
+            minimumFractionDigits: 0,
+        }).format(amount);
+    };
+
+    const handleRefresh = async () => {
+        setLoading(true);
+        try {
+            // Fetch rooms
+            const roomsResponse = await fetch('/api/room/getallrooms');
+            if (roomsResponse.ok) {
+                const roomsData = await roomsResponse.json();
+                setRooms(roomsData);
+            }
+
+            // Fetch hostels
+            const hostelsResponse = await fetch('/api/hostel/gethostels');
+            if (hostelsResponse.ok) {
+                const hostelsData = await hostelsResponse.json();
+                setHostels(hostelsData);
+            }
+        } catch (error) {
+            console.error('Error refreshing data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleViewDetails = (room) => {
+        setSelectedRoom(room);
+        setShowDetails(true);
+    };
+
+    const handleBookRoom = (room) => {
+        // Redirect to booking page with room pre-selected
+        window.location.href = `/dashboard/guest/bookings?roomId=${room.id}`;
+    };
+
+    // Show loading state while data is being fetched
+    if (loading) {
+        return (
+            <PageLoadingSkeleton
+                title={true}
+                statsCards={4}
+                filterTabs={2}
+                searchBar={true}
+                contentCards={6}
+            />
+        );
+    }
+
     return (
-        <div className='p-2'>
-            {/* The rest of the admin rooms UI, now available for guest */}
-            <div className="flex md:flex-row flex-col justify-between px-4">
-                <div className="mt-4 ">
-                    <h1 className="text-3xl font-bold">Rooms  ! </h1>
-                    <p className="text-muted-foreground leading-loose" >Manage your rooms here.</p>
+        <div className="w-full p-4">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                <div>
+                    <h2 className="text-2xl font-bold">Available Rooms</h2>
+                    <p className="text-muted-foreground">Browse and book available rooms</p>
                 </div>
-                <div className="flex items-center gap-2 mt-4 md:mt-0">
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <Button className="cursor-pointer p-4" variant="outline">
-                                <Plus className="h-4 w-4" /> Add Room
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[600px]">
-                            <DialogHeader>
-                                <DialogTitle className="text-xl font-semibold">Add New Room</DialogTitle>
-                                <DialogDescription className="text-gray-600">
-                                    Create a new room in your hostel with all necessary details.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <form className="space-y-6 mt-6">
-                                {/* Room Basic Information */}
-                                <div className="space-y-4">
-                                    <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Basic Information</h3>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label className="text-sm font-medium text-gray-700">Room Number *</Label>
-                                            <Input placeholder="e.g. 101" className="w-full" required />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-sm font-medium text-gray-700">Floor *</Label>
-                                            <Input placeholder="e.g. 1" type="number" min="0" className="w-full" required />
-                                        </div>
+                <Button onClick={handleRefresh} variant="outline" disabled={loading}>
+                    <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                    {loading ? 'Refreshing...' : 'Refresh'}
+                </Button>
+            </div>
+
+            {/* Debug Panel */}
+            <Card className="bg-blue-50 border-blue-200 mb-4">
+                <CardContent className="p-4">
+                    <h3 className="font-semibold text-blue-800 mb-2">Debug Information</h3>
+                    <div className="text-sm text-blue-700 space-y-1">
+                        <p>Total rooms from API: {rooms?.length || 0}</p>
+                        <p>Filtered rooms: {filteredRooms.length}</p>
+                        <p>Hostels count: {hostels?.length || 0}</p>
+                        <p>Loading: {loading ? 'Yes' : 'No'}</p>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <Card>
+                    <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-muted-foreground">Total Rooms</p>
+                                <p className="text-2xl font-bold">{rooms.length}</p>
+                            </div>
+                            <Bed className="w-8 h-8 text-muted-foreground" />
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-muted-foreground">Available</p>
+                                <p className="text-2xl font-bold">{rooms.filter(r => r.status === 'AVAILABLE').length}</p>
+                            </div>
+                            <Calendar className="w-8 h-8 text-green-600" />
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-muted-foreground">Occupied</p>
+                                <p className="text-2xl font-bold">{rooms.filter(r => r.status === 'OCCUPIED').length}</p>
+                            </div>
+                            <Users className="w-8 h-8 text-red-600" />
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-muted-foreground">Under Maintenance</p>
+                                <p className="text-2xl font-bold">{rooms.filter(r => r.status === 'MAINTENANCE').length}</p>
+                            </div>
+                            <Wind className="w-8 h-8 text-yellow-600" />
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Filters */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                <div className="flex gap-2">
+                    {statusOptions.map((status) => (
+                        <Button
+                            key={status}
+                            variant={activeStatus === status ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setActiveStatus(status)}
+                        >
+                            {status}
+                        </Button>
+                    ))}
+                </div>
+                <div className="flex gap-2">
+                    {typeOptions.map((type) => (
+                        <Button
+                            key={type}
+                            variant={activeType === type ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setActiveType(type)}
+                        >
+                            {type}
+                        </Button>
+                    ))}
+                </div>
+                <div className="flex items-center gap-2">
+                    <Input
+                        placeholder="Search by room number, type, or amenities..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-64"
+                    />
+                    <Search className="w-4 h-4 text-muted-foreground" />
+                </div>
+            </div>
+
+            {/* Rooms List */}
+            {filteredRooms.length === 0 ? (
+                <Card>
+                    <CardContent className="p-6 text-center">
+                        <p className="text-muted-foreground">No rooms found.</p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                            Try adjusting your filters or check back later for new rooms.
+                        </p>
+                    </CardContent>
+                </Card>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredRooms.map((room) => {
+                        const hostel = hostels.find(h => h.id === room.hostelId);
+                        return (
+                            <Card key={room.id} className="hover:shadow-lg transition-shadow">
+                                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                    <div>
+                                        <CardTitle className="text-lg">Room {room.roomNumber}</CardTitle>
+                                        <CardDescription className="flex items-center gap-2 mt-1">
+                                            <MapPin className="w-4 h-4" />
+                                            {hostel?.hostelName || 'Unknown Hostel'}
+                                        </CardDescription>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label className="text-sm font-medium text-gray-700">Room Type *</Label>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="outline" className="w-full justify-between text-left font-normal">
-                                                        {roomType === 'All Type' ? 'Select room type' : roomType}
-                                                        <ChevronDown className="h-4 w-4 opacity-50" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent className="w-full">
-                                                    <DropdownMenuItem onClick={() => setRoomType('Single')} className="flex items-center justify-between">
-                                                        <span>Single Room</span>
-                                                        <span className="text-xs text-gray-500">1 person</span>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => setRoomType('Double')} className="flex items-center justify-between">
-                                                        <span>Double Room</span>
-                                                        <span className="text-xs text-gray-500">2 people</span>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => setRoomType('Triple')} className="flex items-center justify-between">
-                                                        <span>Triple Room</span>
-                                                        <span className="text-xs text-gray-500">3 people</span>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => setRoomType('Dormitory')} className="flex items-center justify-between">
-                                                        <span>Dormitory</span>
-                                                        <span className="text-xs text-gray-500">4+ people</span>
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-sm font-medium text-gray-700">Capacity *</Label>
-                                            <Input placeholder="e.g. 2" type="number" min="1" className="w-full" required />
-                                        </div>
+                                    <div className="flex flex-col items-end gap-2">
+                                        <Badge className={`${statusColor(room.status)} flex items-center gap-1`}>
+                                            {room.status}
+                                        </Badge>
+                                        <Badge className={`${typeColor(room.type)} flex items-center gap-1`}>
+                                            {room.type}
+                                        </Badge>
                                     </div>
-                                </div>
-                                {/* Pricing */}
-                                <div className="space-y-4">
-                                    <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Pricing</h3>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label className="text-sm font-medium text-gray-700">Price per Night (PKR) *</Label>
-                                            <Input placeholder="e.g. 2000" type="number" min="0" className="w-full" required />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-sm font-medium text-gray-700">Security Deposit (PKR)</Label>
-                                            <Input placeholder="e.g. 5000" type="number" min="0" className="w-full" />
-                                        </div>
-                                    </div>
-                                </div>
-                                {/* Amenities */}
-                                <div className="space-y-4">
-                                    <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Amenities</h3>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label className="text-sm font-medium text-gray-700">Available Amenities</Label>
-                                            <div className="space-y-3">
-                                                <div className="flex items-center space-x-2">
-                                                    <Checkbox id="wifi" />
-                                                    <Label htmlFor="wifi" className="text-sm font-normal flex items-center">
-                                                        <Wifi className="h-4 w-4 mr-2" />
-                                                        WiFi
-                                                    </Label>
-                                                </div>
-                                                <div className="flex items-center space-x-2">
-                                                    <Checkbox id="tv" />
-                                                    <Label htmlFor="tv" className="text-sm font-normal flex items-center">
-                                                        <Tv className="h-4 w-4 mr-2" />
-                                                        TV
-                                                    </Label>
-                                                </div>
-                                                <div className="flex items-center space-x-2">
-                                                    <Checkbox id="ac" />
-                                                    <Label htmlFor="ac" className="text-sm font-normal flex items-center">
-                                                        <Wind className="h-4 w-4 mr-2" />
-                                                        Air Conditioning
-                                                    </Label>
-                                                </div>
-                                                <div className="flex items-center space-x-2">
-                                                    <Checkbox id="heater" />
-                                                    <Label htmlFor="heater" className="text-sm font-normal flex items-center">
-                                                        <Wind className="h-4 w-4 mr-2" />
-                                                        Heater
-                                                    </Label>
-                                                </div>
+                                        <div className="flex items-center gap-2">
+                                            <Users className="w-4 h-4 text-muted-foreground" />
+                                            <div>
+                                                <p className="text-sm font-medium">Capacity</p>
+                                                <p className="text-sm text-muted-foreground">{room.capacity} guests</p>
                                             </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-sm font-medium text-gray-700">Additional Notes</Label>
-                                            <textarea placeholder="Any additional information about the room..." className="w-full h-24 p-3 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                        <div className="flex items-center gap-2">
+                                            <Bed className="w-4 h-4 text-muted-foreground" />
+                                            <div>
+                                                <p className="text-sm font-medium">Floor</p>
+                                                <p className="text-sm text-muted-foreground">Floor {room.floor}</p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                {/* Form Actions */}
-                                <div className="flex justify-end space-x-3 pt-4 border-t">
-                                    <Button className='cursor-pointer' type="button" variant="outline">
-                                        Cancel
-                                    </Button>
-                                    <Button type="submit" className="bg-blue-600 cursor-pointer  hover:bg-blue-700">
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Add Room
-                                    </Button>
-                                </div>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
-                </div>
-            </div>
-            <div className='grid grid-cols-1 md:grid-cols-4 gap-4  bg-white p-6 my-6  shadow-sm rounded-md' >
-                <div className='col-span-3 items-center gap-2 relative'>
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                        <Search className="h-4 w-4" />
-                    </span>
-                    <Input type="text" className="p-4 rounded-sm pl-12" placeholder="Search rooms" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                </div>
-                <div className='flex items-center gap-2'>
-                    <div className='col-span-1 cursor-pointer items-center gap-2'>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button className='p-4 cursor-pointer ' variant="outline"  >
-                                    {activeStatus}
-                                    <ChevronDown className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                                <DropdownMenuItem className='cursor-pointer' onClick={() => setactiveStatus('All Statuses')}>
-                                    All Statuses
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className='cursor-pointer' onClick={() => setactiveStatus('Available')}>
-                                    Available
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className='cursor-pointer' onClick={() => setactiveStatus('Occupied')}>
-                                    Occupied
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className='cursor-pointer' onClick={() => setactiveStatus('Maintenance')}>
-                                    Maintenance
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                    <div className='col-span-1 cursor-pointer items-center gap-2'>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button className='p-4 cursor-pointer ' variant="outline"  >
-                                    {activeType}
-                                    <ChevronDown className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                                <DropdownMenuItem className='cursor-pointer' onClick={() => setActiveType('All Types')}>
-                                    All Types
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className='cursor-pointer' onClick={() => setActiveType('Single')}>
-                                    Single
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className='cursor-pointer' onClick={() => setActiveType('Double')}>
-                                    Double
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className='cursor-pointer' onClick={() => setActiveType('Triple')}>
-                                    Triple
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                </div>
-            </div>
-            <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 p-6 my-6 ${filterstatus.length == 0 ? 'bg-white shadow-sm ' : 'bg-gray-50 shadow-none'} rounded-md `} >
-                {filterstatus.length === 0 && (
-                    <div className="col-span-3 flex bg-white flex-col items-center justify-center py-12">
-                        <span className="text-2xl font-semibold text-gray-400 mb-2">No rooms found</span>
-                        <span className="text-sm text-muted-foreground">Try adjusting your filters or add a new room.</span>
-                    </div>
-                )}
-                {filterstatus.map((room) => (
-                    <div key={room.id}>
-                        <Card>
-                            <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-0'>
-                                <div>
-                                    <CardTitle>{room.number}</CardTitle>
-                                    <CardDescription>{room.floor} | {room.type}</CardDescription>
-                                </div>
-                                <Badge variant="secondary" className={`${room.status === 'Available' ? 'bg-green-100' : 'bg-red-100'}`}>{room.status}</Badge>
-                            </CardHeader>
-                            <CardContent>
-                                <div className='space-y-3 mt-4'>
-                                    <div className='flex items-center justify-between'>
-                                        <p className='text-sm text-muted-foreground'>Capacity</p>
-                                        <p>{room.capacity} Guests</p>
-                                    </div>
-                                    <div className='flex items-center justify-between'>
-                                        <p className='text-sm text-muted-foreground'>Price</p>
-                                        <p>{room.price}PKR/Night</p>
-                                    </div>
-                                    <div className='flex items-center justify-between'>
-                                        <p className='text-sm text-muted-foreground'>Bookings</p>
-                                        <p>{room.bookings.length} Bookings</p>
-                                    </div>
-                                    <div className='flex flex-col gap-4'>
-                                        <p className='text-sm text-muted-foreground'>Ammenities</p>
-                                        <div className='flex flex-wrap gap-2'>
-                                            {room.ammenities.map((ammenity, idx) => (
-                                                <Button key={idx} variant="outline" className='px-2 py-1 text-xs h-6 min-h-0 rounded'>
-                                                    <ammenity.icon className='h-4 w-4' />
-                                                    {ammenity.item}
-                                                </Button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className='flex gap-2 items-center justify-end'>
-                                        {/* room edit */}
-                                        <Dialog>
-                                            <DialogTrigger asChild>
-                                                <Button onClick={() => handleSelectRoom(room)} variant="outline" className='px-2 py-1 cursor-pointer text-xs h-6 min-h-0 rounded'>
-                                                    <Edit className='h-4 w-4' />
-                                                </Button>
-                                            </DialogTrigger>
-                                            <DialogContent className="sm:max-w-[600px]">
-                                                <DialogHeader>
-                                                    <DialogTitle className="text-xl font-semibold">Add New Room</DialogTitle>
-                                                    <DialogDescription className="text-gray-600">
-                                                        Create a new room in your hostel with all necessary details.
-                                                    </DialogDescription>
-                                                </DialogHeader>
-                                                <form className="space-y-6 mt-6">
-                                                    {/* Room Basic Information */}
-                                                    <div className="space-y-4">
-                                                        <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Basic Information</h3>
-                                                        <div className="grid grid-cols-2 gap-4">
-                                                            <div className="space-y-2">
-                                                                <Label className="text-sm font-medium text-gray-700">Room Number *</Label>
-                                                                <Input placeholder="e.g. 101" defaultValue={selectedroom.number} className="w-full" required />
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <Label className="text-sm font-medium text-gray-700">Floor *</Label>
-                                                                <Input placeholder="e.g. 1" type="number" defaultValue={selectedroom.floor} min="0" className="w-full" required />
-                                                            </div>
-                                                        </div>
-                                                        <div className="grid grid-cols-2 gap-4">
-                                                            <div className="space-y-2">
-                                                                <Label className="text-sm font-medium text-gray-700">Room Type *</Label>
-                                                                <DropdownMenu>
-                                                                    <DropdownMenuTrigger asChild>
-                                                                        <Button variant="outline" className="w-full justify-between text-left font-normal">
-                                                                            {selectedroom.type}
-                                                                            <ChevronDown className="h-4 w-4 opacity-50" />
-                                                                        </Button>
-                                                                    </DropdownMenuTrigger>
-                                                                    <DropdownMenuContent className="w-full">
-                                                                        <DropdownMenuItem onClick={() => setRoomType('Single')} className="flex items-center justify-between">
-                                                                            <span>Single Room</span>
-                                                                            <span className="text-xs text-gray-500">1 person</span>
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuItem onClick={() => setRoomType('Double')} className="flex items-center justify-between">
-                                                                            <span>Double Room</span>
-                                                                            <span className="text-xs text-gray-500">2 people</span>
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuItem onClick={() => setRoomType('Triple')} className="flex items-center justify-between">
-                                                                            <span>Triple Room</span>
-                                                                            <span className="text-xs text-gray-500">3 people</span>
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuItem onClick={() => setRoomType('Dormitory')} className="flex items-center justify-between">
-                                                                            <span>Dormitory</span>
-                                                                            <span className="text-xs text-gray-500">4+ people</span>
-                                                                        </DropdownMenuItem>
-                                                                    </DropdownMenuContent>
-                                                                </DropdownMenu>
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <Label className="text-sm font-medium text-gray-700">Room Availabity</Label>
-                                                                <DropdownMenu>
-                                                                    <DropdownMenuTrigger asChild>
-                                                                        <Button variant="outline" className="w-full justify-between text-left font-normal">
-                                                                            {roomStatus}
-                                                                            <ChevronDown className="h-4 w-4 opacity-50" />
-                                                                        </Button>
-                                                                    </DropdownMenuTrigger>
-                                                                    <DropdownMenuContent className="w-full">
-                                                                        <DropdownMenuItem onClick={() => setRoomStatus('Available')} className="flex items-center justify-between">
-                                                                            <span>Available</span>
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuItem onClick={() => setRoomStatus('Occupied')} className="flex items-center justify-between">
-                                                                            <span>Occupied</span>
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuItem onClick={() => setRoomStatus('Maintenance')} className="flex items-center justify-between">
-                                                                            <span>Maintenance</span>
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuItem onClick={() => setRoomType('Out of order')} className="flex items-center justify-between">
-                                                                            <span>Out of Order</span>
-                                                                        </DropdownMenuItem>
-                                                                    </DropdownMenuContent>
-                                                                </DropdownMenu>
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <Label className="text-sm font-medium text-gray-700">Capacity *</Label>
-                                                                <Input placeholder="e.g. 2" type="number" min="1" defaultValue={selectedroom.capacity} className="w-full" required />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    {/* Pricing */}
-                                                    <div className="space-y-4">
-                                                        <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Pricing</h3>
-                                                        <div className="grid grid-cols-2 gap-4">
-                                                            <div className="space-y-2">
-                                                                <Label className="text-sm font-medium text-gray-700">Price per Night (PKR) *</Label>
-                                                                <Input placeholder="e.g. 2000" type="number" min="0" className="w-full" defaultValue={selectedroom.price} />
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <Label className="text-sm font-medium text-gray-700">Security Deposit (PKR)</Label>
-                                                                <Input placeholder="e.g. 5000" type="number" min="0" className="w-full" defaultValue={selectedroom.securitydeposite} />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    {/* Amenities */}
-                                                    <div className="space-y-4">
-                                                        <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Amenities</h3>
-                                                        <div className="grid grid-cols-2 gap-4">
-                                                            <div className="space-y-2">
-                                                                <Label className="text-sm font-medium text-gray-700">Available Amenities</Label>
-                                                                <div className="space-y-3">
-                                                                    <div className="flex items-center space-x-2">
-                                                                        <Checkbox id="wifi" />
-                                                                        <Label htmlFor="wifi" className="text-sm font-normal flex items-center">
-                                                                            <Wifi className="h-4 w-4 mr-2" />
-                                                                            WiFi
-                                                                        </Label>
-                                                                    </div>
-                                                                    <div className="flex items-center space-x-2">
-                                                                        <Checkbox id="tv" />
-                                                                        <Label htmlFor="tv" className="text-sm font-normal flex items-center">
-                                                                            <Tv className="h-4 w-4 mr-2" />
-                                                                            TV
-                                                                        </Label>
-                                                                    </div>
-                                                                    <div className="flex items-center space-x-2">
-                                                                        <Checkbox id="ac" />
-                                                                        <Label htmlFor="ac" className="text-sm font-normal flex items-center">
-                                                                            <Wind className="h-4 w-4 mr-2" />
-                                                                            Air Conditioning
-                                                                        </Label>
-                                                                    </div>
-                                                                    <div className="flex items-center space-x-2">
-                                                                        <Checkbox id="heater" />
-                                                                        <Label htmlFor="heater" className="text-sm font-normal flex items-center">
-                                                                            <Wind className="h-4 w-4 mr-2" />
-                                                                            Heater
-                                                                        </Label>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <Label className="text-sm font-medium text-gray-700">Additional Notes</Label>
-                                                                <textarea defaultValue={selectedroom.notes} placeholder="Any additional information about the room..." className="w-full h-24 p-3 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    {/* Form Actions */}
-                                                    <div className="flex justify-end space-x-3 pt-4 border-t">
-                                                        <Button type="submit" className="bg-blue-600 cursor-pointer  hover:bg-blue-700">
-                                                            Update
-                                                        </Button>
-                                                    </div>
-                                                </form>
-                                            </DialogContent>
-                                        </Dialog>
-                                        <AlertDialog>
-                                            <AlertDialogTrigger>
-                                                <Button onClick={() => setdel(room)} variant="outline" className='px-2 py-1 cursor-pointer text-xs h-6 min-h-0 rounded'>
-                                                    <Trash className='h-4 w-4' />
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Are you absolutely sure to delect the room ?  </AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        This action cannot be undone. This will permanently delete your account
-                                                        and remove your data from our servers.
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel className='cursor-pointer' >Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction className='cursor-pointer' >Continue</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                ))}
-            </div>
-        </div>
-    )
-}
 
-export default page
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-medium">Pricing</p>
+                                        <div className="flex justify-between">
+                                            <span className="text-sm text-muted-foreground">Per Night:</span>
+                                            <span className="font-semibold">{formatCurrency(room.pricePerNight)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-sm text-muted-foreground">Per Month:</span>
+                                            <span className="font-semibold">{formatCurrency(room.pricePerMonth)}</span>
+                                        </div>
+                                    </div>
+
+                                    {room.amenities && room.amenities.length > 0 && (
+                                        <div className="space-y-2">
+                                            <p className="text-sm font-medium">Amenities</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {room.amenities.slice(0, 3).map((amenity, index) => (
+                                                    <Badge key={index} variant="outline" className="flex items-center gap-1">
+                                                        {getAmenityIcon(amenity)}
+                                                        {amenity}
+                                                    </Badge>
+                                                ))}
+                                                {room.amenities.length > 3 && (
+                                                    <Badge variant="outline">
+                                                        +{room.amenities.length - 3} more
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </CardContent>
+                                <CardFooter className="flex justify-between">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleViewDetails(room)}
+                                    >
+                                        <Eye className="w-4 h-4 mr-1" />
+                                        View Details
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        onClick={() => handleBookRoom(room)}
+                                        disabled={room.status !== 'AVAILABLE'}
+                                    >
+                                        <BookOpen className="w-4 h-4 mr-1" />
+                                        {room.status === 'AVAILABLE' ? 'Book Now' : 'Not Available'}
+                                    </Button>
+                                </CardFooter>
+                            </Card>
+                        );
+                    })}
+                </div>
+            )}
+
+            {/* Room Details Modal */}
+            {showDetails && selectedRoom && (
+                <div className="fixed inset-0 bg-gray-500 bg-opacity-30 flex items-center justify-center p-4 z-50">
+                    <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle className="text-xl">Room Details</CardTitle>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowDetails(false)}
+                            >
+                                ✕
+                            </Button>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {/* Room Overview */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <h3 className="font-semibold">Room Information</h3>
+                                    <div className="space-y-1 text-sm">
+                                        <p><span className="font-medium">Room Number:</span> {selectedRoom.roomNumber}</p>
+                                        <p><span className="font-medium">Type:</span>
+                                            <Badge className={`ml-2 ${typeColor(selectedRoom.type)}`}>
+                                                {selectedRoom.type}
+                                            </Badge>
+                                        </p>
+                                        <p><span className="font-medium">Status:</span>
+                                            <Badge className={`ml-2 ${statusColor(selectedRoom.status)}`}>
+                                                {selectedRoom.status}
+                                            </Badge>
+                                        </p>
+                                        <p><span className="font-medium">Floor:</span> {selectedRoom.floor}</p>
+                                        <p><span className="font-medium">Capacity:</span> {selectedRoom.capacity} guests</p>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="font-semibold">Pricing</h3>
+                                    <div className="space-y-1 text-sm">
+                                        <p><span className="font-medium">Per Night:</span> {formatCurrency(selectedRoom.pricePerNight)}</p>
+                                        <p><span className="font-medium">Per Month:</span> {formatCurrency(selectedRoom.pricePerMonth)}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Hostel Information */}
+                            {hostels.find(h => h.id === selectedRoom.hostelId) && (
+                                <div className="space-y-2">
+                                    <h3 className="font-semibold">Hostel Information</h3>
+                                    <div className="space-y-1 text-sm">
+                                        <p><span className="font-medium">Hostel:</span> {hostels.find(h => h.id === selectedRoom.hostelId)?.hostelName}</p>
+                                        <p><span className="font-medium">Type:</span> {hostels.find(h => h.id === selectedRoom.hostelId)?.hostelType}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Amenities */}
+                            {selectedRoom.amenities && selectedRoom.amenities.length > 0 && (
+                                <div className="space-y-2">
+                                    <h3 className="font-semibold">Amenities</h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                        {selectedRoom.amenities.map((amenity, index) => (
+                                            <Badge key={index} variant="outline" className="flex items-center gap-1 justify-center">
+                                                {getAmenityIcon(amenity)}
+                                                {amenity}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Notes */}
+                            {selectedRoom.notes && (
+                                <div className="space-y-2">
+                                    <h3 className="font-semibold">Additional Notes</h3>
+                                    <p className="text-sm text-muted-foreground">{selectedRoom.notes}</p>
+                                </div>
+                            )}
+                        </CardContent>
+                        <CardFooter className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setShowDetails(false)}>
+                                Close
+                            </Button>
+                            <Button
+                                onClick={() => handleBookRoom(selectedRoom)}
+                                disabled={selectedRoom.status !== 'AVAILABLE'}
+                            >
+                                <BookOpen className="w-4 h-4 mr-2" />
+                                {selectedRoom.status === 'AVAILABLE' ? 'Book This Room' : 'Not Available'}
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default page;

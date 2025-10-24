@@ -43,6 +43,9 @@ model User {
   assignedMaintenance Maintenance[]        @relation("MaintenanceAssignee")
   expenses            Expense[]
   approvedExpenses    Expense[]            @relation("ExpenseApprover")
+  complaints          Complaint[]
+  assignedComplaints  Complaint[]          @relation("ComplaintAssignee")
+  repliedComplaints   Complaint[]          @relation("ComplaintReplier")
 }
 
 model Guest {
@@ -93,6 +96,7 @@ model Hostel {
   staff         staff[]
   wardens       User[]        @relation("HostelWardens")
   expenses      Expense[]
+  complaints    Complaint[]
 }
 
 model staff {
@@ -165,6 +169,7 @@ model Room {
   bookings      Booking[]
   maintenances  Maintenance[]
   payments      Payment[]
+  complaints    Complaint[]
   hostel        Hostel        @relation(fields: [hostelId], references: [id], onDelete: Cascade)
   guestsInRooms Guest[]       @relation("GuestInRooms")
 }
@@ -218,6 +223,30 @@ model Maintenance {
   room          Room?               @relation(fields: [roomId], references: [id])
   user          User?               @relation(fields: [reportedBy], references: [id])
   assignee      User?               @relation("MaintenanceAssignee", fields: [assignedTo], references: [id])
+}
+
+model Complaint {
+  id          String            @id @default(uuid())
+  title       String
+  description String
+  category    ComplaintCategory @default(GENERAL)
+  priority    ComplaintPriority @default(MEDIUM)
+  status      ComplaintStatus   @default(PENDING)
+  reportedBy  String
+  assignedTo  String?
+  roomId      String?
+  hostelId    String
+  images      String[]
+  adminReply  String?
+  repliedAt   DateTime?
+  repliedBy   String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  user        User?             @relation(fields: [reportedBy], references: [id])
+  assignee    User?             @relation("ComplaintAssignee", fields: [assignedTo], references: [id])
+  replier     User?             @relation("ComplaintReplier", fields: [repliedBy], references: [id])
+  room        Room?             @relation(fields: [roomId], references: [id])
+  hostel      Hostel            @relation(fields: [hostelId], references: [id], onDelete: Cascade)
 }
 
 model Salary {
@@ -431,4 +460,27 @@ enum SalaryAdjustmentType {
   COMMISSION
   PENALTY
   OTHER
+}
+
+enum ComplaintCategory {
+  GENERAL
+  MAINTENANCE
+  NOISE
+  CLEANLINESS
+  SECURITY
+  OTHER
+}
+
+enum ComplaintPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ComplaintStatus {
+  PENDING
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
 }

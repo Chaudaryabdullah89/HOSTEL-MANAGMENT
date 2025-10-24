@@ -130,6 +130,7 @@ export async function POST(request) {
     return NextResponse.json({
       message: "User created successfully",
       user: newuser,
+      token: token, // Also return token in response for frontend
     });
   } catch (error) {
     console.error(error);

@@ -22,6 +22,7 @@ import {
   DollarSign,
   User,
 } from "lucide-react";
+import { NotificationBadge } from "@/components/notification-badge";
 import { usePathname } from "next/navigation";
 
 import {
@@ -54,26 +55,28 @@ const menuItems = {
       url: "/dashboard/guest/bookings",
       icon: Calendar,
     },
-    {
-      title: "Available Rooms",
-      url: "/dashboard/guest/rooms",
-      icon: Bed,
-    },
+
     {
       title: "Payments",
       url: "/dashboard/guest/payment",
       icon: CreditCard,
     },
     {
-      title: "Profile",
-      url: "/dashboard/guest/profile",
-      icon: UserCheck,
-    },
-    {
       title: "Maintenance",
       url: "/dashboard/guest/maintenance",
       icon: Wrench,
     },
+    {
+      title: "Complaints",
+      url: "/dashboard/guest/complaints",
+      icon: MessageSquare,
+    },
+    {
+      title: "Profile",
+      url: "/dashboard/guest/profile",
+      icon: UserCheck,
+    },
+
   ],
   admin: [
     {
@@ -180,18 +183,18 @@ const menuItems = {
       url: "/dashboard/warden/payment-approvals",
       icon: UserCheck,
     },
-    {
-      title: "Salaries",
-      url: "/dashboard/warden/salaries",
-      icon: DollarSign,
-    },
+    // {
+    //   title: "Salaries",
+    //   url: "/dashboard/warden/salaries",
+    //   icon: DollarSign,
+    // },
 
 
-    {
-      title: "Roles",
-      url: "/dashboard/warden/roles",
-      icon: User,
-    },
+    // {
+    //   title: "Roles",
+    //   url: "/dashboard/warden/roles",
+    //   icon: User,
+    // },
     {
       title: "Users Records",
       url: "/dashboard/warden/records",
@@ -199,7 +202,7 @@ const menuItems = {
     },
     {
       title: "Reports",
-      url: "/dashboard/warden/report",
+      url: "/dashboard/warden/reports",
       icon: FileText,
     },
     {
@@ -248,9 +251,12 @@ export function AppSidebar() {
     <Sidebar className="h-screen w-64 bg-white shadow-lg border-r">
       {/* Sidebar Header */}
       <SidebarHeader className="px-6 py-4 border-b">
-        <h2 className="text-xl font-bold tracking-wide text-gray-800">
-          {roleDisplayNames[currentRole]}
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold tracking-wide text-gray-800">
+            {roleDisplayNames[currentRole]}
+          </h2>
+          <NotificationBadge />
+        </div>
       </SidebarHeader>
 
       {/* Sidebar Content */}

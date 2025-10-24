@@ -286,7 +286,7 @@ export default function PaymentApprovalsPage() {
                         <XCircle className="h-4 w-4 text-red-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-black">
+                        <div className="text-2xl font-bold text-gray-600">
                             {payments.filter(p => p.approvalStatus === 'REJECTED').length}
                         </div>
                     </CardContent>

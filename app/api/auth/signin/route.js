@@ -46,7 +46,7 @@ export async function POST(request) {
 
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    
+
     if (!isPasswordValid) {
       return NextResponse.json(
         { error: "Invalid email or password" },
@@ -54,10 +54,10 @@ export async function POST(request) {
       );
     }
 
-    const token = jwt.sign({ 
-      id: user.id, 
-      email: user.email, 
-      role: user.role 
+    const token = jwt.sign({
+      id: user.id,
+      email: user.email,
+      role: user.role
     }, process.env.JWT_SECRET, {
       expiresIn: "48h",
     });
@@ -74,10 +74,11 @@ export async function POST(request) {
 
     // Return user data without password
     const { password: _, ...userWithoutPassword } = user;
-    
+
     return NextResponse.json({
       message: "User logged in successfully",
       user: userWithoutPassword,
+      token: token, // Also return token in response for frontend
     });
   } catch (error) {
     console.error("Signin error:", error);

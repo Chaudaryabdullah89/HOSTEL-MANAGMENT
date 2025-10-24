@@ -21,7 +21,7 @@ export default function RootLayout({ children }) {
           </AppDataProvider>
         </QueryProvider>
         <ToastContainer />
-     
+
       </body>
     </html>
   );

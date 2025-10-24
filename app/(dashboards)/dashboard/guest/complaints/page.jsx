@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
-    Wrench,
+    MessageSquare,
     AlertTriangle,
     CheckCircle,
     Clock,
@@ -18,15 +18,17 @@ import {
     Calendar,
     MapPin,
     User,
-    DollarSign,
     Image,
     Send,
-    XCircle
+    XCircle,
+    Flag,
+    Star
 } from "lucide-react";
 import { PageLoadingSkeleton, LoadingSpinner } from "@/components/ui/loading-skeleton";
 import { SessionContext } from "@/app/context/sessiondata";
 
-const statusOptions = ["All Status", "PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
+const statusOptions = ["All Status", "PENDING", "IN_PROGRESS", "RESOLVED", "CLOSED"];
+const categoryOptions = ["GENERAL", "MAINTENANCE", "NOISE", "CLEANLINESS", "SECURITY", "OTHER"];
 const priorityOptions = ["LOW", "MEDIUM", "HIGH", "URGENT"];
 
 const statusColor = (status) => {
@@ -35,10 +37,10 @@ const statusColor = (status) => {
             return "bg-yellow-100 text-yellow-800 border-yellow-200";
         case "IN_PROGRESS":
             return "bg-blue-100 text-blue-800 border-blue-200";
-        case "COMPLETED":
+        case "RESOLVED":
             return "bg-green-100 text-green-800 border-green-200";
-        case "CANCELLED":
-            return "bg-red-100 text-red-800 border-red-200";
+        case "CLOSED":
+            return "bg-gray-100 text-gray-800 border-gray-200";
         default:
             return "bg-gray-100 text-gray-800 border-gray-200";
     }
@@ -59,15 +61,34 @@ const priorityColor = (priority) => {
     }
 };
 
+const categoryColor = (category) => {
+    switch (category) {
+        case "GENERAL":
+            return "bg-blue-100 text-blue-800 border-blue-200";
+        case "MAINTENANCE":
+            return "bg-orange-100 text-orange-800 border-orange-200";
+        case "NOISE":
+            return "bg-red-100 text-red-800 border-red-200";
+        case "CLEANLINESS":
+            return "bg-green-100 text-green-800 border-green-200";
+        case "SECURITY":
+            return "bg-purple-100 text-purple-800 border-purple-200";
+        case "OTHER":
+            return "bg-gray-100 text-gray-800 border-gray-200";
+        default:
+            return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+};
+
 const getStatusIcon = (status) => {
     switch (status) {
         case "PENDING":
             return <Clock className="w-4 h-4" />;
         case "IN_PROGRESS":
-            return <Wrench className="w-4 h-4" />;
-        case "COMPLETED":
+            return <MessageSquare className="w-4 h-4" />;
+        case "RESOLVED":
             return <CheckCircle className="w-4 h-4" />;
-        case "CANCELLED":
+        case "CLOSED":
             return <XCircle className="w-4 h-4" />;
         default:
             return <Clock className="w-4 h-4" />;
@@ -83,9 +104,28 @@ const getPriorityIcon = (priority) => {
         case "HIGH":
             return <AlertTriangle className="w-4 h-4" />;
         case "URGENT":
-            return <AlertTriangle className="w-4 h-4" />;
+            return <Flag className="w-4 h-4" />;
         default:
             return <Clock className="w-4 h-4" />;
+    }
+};
+
+const getCategoryIcon = (category) => {
+    switch (category) {
+        case "GENERAL":
+            return <MessageSquare className="w-4 h-4" />;
+        case "MAINTENANCE":
+            return <AlertTriangle className="w-4 h-4" />;
+        case "NOISE":
+            return <Flag className="w-4 h-4" />;
+        case "CLEANLINESS":
+            return <Star className="w-4 h-4" />;
+        case "SECURITY":
+            return <User className="w-4 h-4" />;
+        case "OTHER":
+            return <MessageSquare className="w-4 h-4" />;
+        default:
+            return <MessageSquare className="w-4 h-4" />;
     }
 };
 
@@ -93,8 +133,8 @@ const page = () => {
     const [loading, setLoading] = useState(true);
     const [activeStatus, setActiveStatus] = useState("All Status");
     const [searchTerm, setSearchTerm] = useState("");
-    const [maintenanceRequests, setMaintenanceRequests] = useState([]);
-    const [selectedRequest, setSelectedRequest] = useState(null);
+    const [complaints, setComplaints] = useState([]);
+    const [selectedComplaint, setSelectedComplaint] = useState(null);
     const [showDetails, setShowDetails] = useState(false);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -103,10 +143,11 @@ const page = () => {
     const { session } = useContext(SessionContext);
     const currentUserId = session?.user?.id;
 
-    // Create maintenance form state
+    // Create complaint form state
     const [createForm, setCreateForm] = useState({
         title: "",
         description: "",
+        category: "GENERAL",
         priority: "MEDIUM",
         roomId: "",
         hostelId: "",
@@ -116,17 +157,17 @@ const page = () => {
     // Get user's bookings to populate room and hostel options
     const [userBookings, setUserBookings] = useState([]);
 
-    // Fetch maintenance requests and user bookings
+    // Fetch complaints and user bookings
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                // Fetch maintenance requests
-                const maintenanceResponse = await fetch('/api/maintenance');
-                if (maintenanceResponse.ok) {
-                    const maintenanceData = await maintenanceResponse.json();
-                    console.log('Fetched maintenance requests:', maintenanceData);
-                    setMaintenanceRequests(maintenanceData);
+                // Fetch complaints
+                const complaintsResponse = await fetch('/api/complaints');
+                if (complaintsResponse.ok) {
+                    const complaintsData = await complaintsResponse.json();
+                    console.log('Fetched complaints:', complaintsData);
+                    setComplaints(complaintsData.complaints || complaintsData);
                 }
 
                 // Fetch user bookings to get room and hostel options
@@ -147,22 +188,23 @@ const page = () => {
         fetchData();
     }, [currentUserId]);
 
-    // Filter maintenance requests by current user
-    const userRequests = maintenanceRequests?.filter(request =>
-        request.user?.id === currentUserId
+    // Filter complaints by current user
+    const userComplaints = complaints?.filter(complaint =>
+        complaint.user?.id === currentUserId || complaint.reportedBy === currentUserId
     ) || [];
 
     console.log('Current user ID:', currentUserId);
-    console.log('User maintenance requests:', userRequests);
+    console.log('User complaints:', userComplaints);
 
-    const filteredRequests = userRequests.filter((request) => {
+    const filteredComplaints = userComplaints.filter((complaint) => {
         const matchesStatus =
-            activeStatus === "All Status" || request.status === activeStatus;
+            activeStatus === "All Status" || complaint.status === activeStatus;
         const matchesSearch =
-            request.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            request.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            request.room?.roomNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            request.hostel?.hostelName?.toLowerCase().includes(searchTerm.toLowerCase());
+            complaint.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            complaint.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            complaint.room?.roomNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            complaint.hostel?.hostelName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            complaint.category?.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesStatus && matchesSearch;
     });
 
@@ -176,22 +218,14 @@ const page = () => {
         });
     };
 
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('en-PK', {
-            style: 'currency',
-            currency: 'PKR',
-            minimumFractionDigits: 0,
-        }).format(amount);
-    };
-
     const handleRefresh = async () => {
         setLoading(true);
         try {
-            // Fetch maintenance requests
-            const maintenanceResponse = await fetch('/api/maintenance');
-            if (maintenanceResponse.ok) {
-                const maintenanceData = await maintenanceResponse.json();
-                setMaintenanceRequests(maintenanceData);
+            // Fetch complaints
+            const complaintsResponse = await fetch('/api/complaints');
+            if (complaintsResponse.ok) {
+                const complaintsData = await complaintsResponse.json();
+                setComplaints(complaintsData.complaints || complaintsData);
             }
 
             // Fetch user bookings
@@ -208,17 +242,17 @@ const page = () => {
         }
     };
 
-    const handleViewDetails = (request) => {
-        setSelectedRequest(request);
+    const handleViewDetails = (complaint) => {
+        setSelectedComplaint(complaint);
         setShowDetails(true);
     };
 
-    const handleCreateRequest = async (e) => {
+    const handleCreateComplaint = async (e) => {
         e.preventDefault();
         setSubmitting(true);
 
         try {
-            const response = await fetch('/api/maintenance', {
+            const response = await fetch('/api/complaints', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -227,25 +261,26 @@ const page = () => {
             });
 
             if (response.ok) {
-                const newRequest = await response.json();
-                setMaintenanceRequests(prev => [newRequest, ...prev]);
+                const newComplaint = await response.json();
+                setComplaints(prev => [newComplaint, ...prev]);
                 setShowCreateForm(false);
                 setCreateForm({
                     title: "",
                     description: "",
+                    category: "GENERAL",
                     priority: "MEDIUM",
                     roomId: "",
                     hostelId: "",
                     images: []
                 });
-                alert('Maintenance request created successfully!');
+                alert('Complaint submitted successfully!');
             } else {
                 const error = await response.json();
                 alert(`Error: ${error.error}`);
             }
         } catch (error) {
-            console.error('Error creating maintenance request:', error);
-            alert('Failed to create maintenance request');
+            console.error('Error creating complaint:', error);
+            alert('Failed to submit complaint');
         } finally {
             setSubmitting(false);
         }
@@ -269,8 +304,8 @@ const page = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                 <div>
-                    <h2 className="text-2xl font-bold">Maintenance Requests</h2>
-                    <p className="text-muted-foreground">Report and track maintenance issues</p>
+                    <h2 className="text-2xl font-bold">Complaints & Feedback</h2>
+                    <p className="text-muted-foreground">Report issues and provide feedback</p>
                 </div>
                 <div className="flex gap-2">
                     <Button onClick={handleRefresh} variant="outline" disabled={loading}>
@@ -279,7 +314,7 @@ const page = () => {
                     </Button>
                     <Button onClick={() => setShowCreateForm(true)}>
                         <Plus className="w-4 h-4 mr-2" />
-                        New Request
+                        New Complaint
                     </Button>
                 </div>
             </div>
@@ -290,9 +325,9 @@ const page = () => {
                     <h3 className="font-semibold text-blue-800 mb-2">Debug Information</h3>
                     <div className="text-sm text-blue-700 space-y-1">
                         <p>Current User ID: {currentUserId || 'Not logged in'}</p>
-                        <p>Total requests from API: {maintenanceRequests?.length || 0}</p>
-                        <p>User requests (filtered): {userRequests?.length || 0}</p>
-                        <p>Filtered requests: {filteredRequests.length}</p>
+                        <p>Total complaints from API: {complaints?.length || 0}</p>
+                        <p>User complaints (filtered): {userComplaints?.length || 0}</p>
+                        <p>Filtered complaints: {filteredComplaints.length}</p>
                         <p>User bookings: {userBookings?.length || 0}</p>
                         <p>Loading: {loading ? 'Yes' : 'No'}</p>
                     </div>
@@ -305,10 +340,10 @@ const page = () => {
                     <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-muted-foreground">Total Requests</p>
-                                <p className="text-2xl font-bold">{userRequests.length}</p>
+                                <p className="text-sm font-medium text-muted-foreground">Total Complaints</p>
+                                <p className="text-2xl font-bold">{userComplaints.length}</p>
                             </div>
-                            <Wrench className="w-8 h-8 text-muted-foreground" />
+                            <MessageSquare className="w-8 h-8 text-muted-foreground" />
                         </div>
                     </CardContent>
                 </Card>
@@ -317,7 +352,7 @@ const page = () => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-muted-foreground">Pending</p>
-                                <p className="text-2xl font-bold">{userRequests.filter(r => r.status === 'PENDING').length}</p>
+                                <p className="text-2xl font-bold">{userComplaints.filter(c => c.status === 'PENDING').length}</p>
                             </div>
                             <Clock className="w-8 h-8 text-yellow-600" />
                         </div>
@@ -328,9 +363,9 @@ const page = () => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-muted-foreground">In Progress</p>
-                                <p className="text-2xl font-bold">{userRequests.filter(r => r.status === 'IN_PROGRESS').length}</p>
+                                <p className="text-2xl font-bold">{userComplaints.filter(c => c.status === 'IN_PROGRESS').length}</p>
                             </div>
-                            <Wrench className="w-8 h-8 text-blue-600" />
+                            <MessageSquare className="w-8 h-8 text-blue-600" />
                         </div>
                     </CardContent>
                 </Card>
@@ -338,8 +373,8 @@ const page = () => {
                     <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-muted-foreground">Completed</p>
-                                <p className="text-2xl font-bold">{userRequests.filter(r => r.status === 'COMPLETED').length}</p>
+                                <p className="text-sm font-medium text-muted-foreground">Resolved</p>
+                                <p className="text-2xl font-bold">{userComplaints.filter(c => c.status === 'RESOLVED').length}</p>
                             </div>
                             <CheckCircle className="w-8 h-8 text-green-600" />
                         </div>
@@ -372,20 +407,20 @@ const page = () => {
                 </div>
             </div>
 
-            {/* Maintenance Requests List */}
-            {filteredRequests.length === 0 ? (
+            {/* Complaints List */}
+            {filteredComplaints.length === 0 ? (
                 <Card>
                     <CardContent className="p-6 text-center">
-                        <p className="text-muted-foreground">No maintenance requests found.</p>
+                        <p className="text-muted-foreground">No complaints found.</p>
                         <p className="text-sm text-muted-foreground mt-2">
-                            {userRequests.length === 0 ? 'You have no maintenance requests yet.' : 'Try adjusting your filters.'}
+                            {userComplaints.length === 0 ? 'You have no complaints yet.' : 'Try adjusting your filters.'}
                         </p>
-                        {userRequests.length === 0 && (
+                        {userComplaints.length === 0 && (
                             <div className="mt-4">
                                 {userBookings.length === 0 ? (
                                     <div className="text-center">
                                         <p className="text-sm text-muted-foreground mb-2">
-                                            You need to have bookings to create maintenance requests.
+                                            You need to have bookings to submit complaints.
                                         </p>
                                         <Button
                                             onClick={() => window.location.href = '/dashboard/guest/bookings'}
@@ -400,7 +435,7 @@ const page = () => {
                                         className="mt-4"
                                     >
                                         <Plus className="w-4 h-4 mr-2" />
-                                        Create Your First Request
+                                        Submit Your First Complaint
                                     </Button>
                                 )}
                             </div>
@@ -409,37 +444,41 @@ const page = () => {
                 </Card>
             ) : (
                 <div className="flex flex-col gap-4">
-                    {filteredRequests.map((request) => (
-                        <Card key={request.id} className="hover:shadow-md transition-shadow">
+                    {filteredComplaints.map((complaint) => (
+                        <Card key={complaint.id} className="hover:shadow-md transition-shadow">
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <div>
-                                    <CardTitle className="text-lg">{request.title}</CardTitle>
+                                    <CardTitle className="text-lg">{complaint.title}</CardTitle>
                                     <CardDescription className="flex items-center gap-2 mt-1">
                                         <Calendar className="w-4 h-4" />
-                                        {formatDate(request.createdAt)}
+                                        {formatDate(complaint.createdAt)}
                                     </CardDescription>
                                 </div>
                                 <div className="flex flex-col items-end gap-2">
-                                    <Badge className={`${statusColor(request.status)} flex items-center gap-1`}>
-                                        {getStatusIcon(request.status)}
-                                        {request.status}
+                                    <Badge className={`${statusColor(complaint.status)} flex items-center gap-1`}>
+                                        {getStatusIcon(complaint.status)}
+                                        {complaint.status}
                                     </Badge>
-                                    <Badge className={`${priorityColor(request.priority)} flex items-center gap-1`}>
-                                        {getPriorityIcon(request.priority)}
-                                        {request.priority}
+                                    <Badge className={`${priorityColor(complaint.priority)} flex items-center gap-1`}>
+                                        {getPriorityIcon(complaint.priority)}
+                                        {complaint.priority}
+                                    </Badge>
+                                    <Badge className={`${categoryColor(complaint.category)} flex items-center gap-1`}>
+                                        {getCategoryIcon(complaint.category)}
+                                        {complaint.category}
                                     </Badge>
                                 </div>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <p className="text-sm text-muted-foreground">{request.description}</p>
+                                <p className="text-sm text-muted-foreground">{complaint.description}</p>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div className="flex items-center gap-2">
                                         <MapPin className="w-4 h-4 text-muted-foreground" />
                                         <div>
-                                            <p className="text-sm font-medium">Room</p>
+                                            <p className="text-sm font-medium">Location</p>
                                             <p className="text-sm text-muted-foreground">
-                                                {request.room?.roomNumber || 'N/A'} - {request.hostel?.hostelName || 'N/A'}
+                                                {complaint.room?.roomNumber || 'N/A'} - {complaint.hostel?.hostelName || 'N/A'}
                                             </p>
                                         </div>
                                     </div>
@@ -449,27 +488,27 @@ const page = () => {
                                         <div>
                                             <p className="text-sm font-medium">Assigned To</p>
                                             <p className="text-sm text-muted-foreground">
-                                                {request.assignee?.name || 'Not assigned'}
+                                                {complaint.assignee?.name || 'Not assigned'}
                                             </p>
                                         </div>
                                     </div>
 
                                     <div className="flex items-center gap-2">
-                                        <DollarSign className="w-4 h-4 text-muted-foreground" />
+                                        <MessageSquare className="w-4 h-4 text-muted-foreground" />
                                         <div>
-                                            <p className="text-sm font-medium">Estimated Cost</p>
+                                            <p className="text-sm font-medium">Response</p>
                                             <p className="text-sm text-muted-foreground">
-                                                {request.estimatedCost ? formatCurrency(request.estimatedCost) : 'Not estimated'}
+                                                {complaint.adminReply ? 'Replied' : 'No response yet'}
                                             </p>
                                         </div>
                                     </div>
                                 </div>
 
-                                {request.images && request.images.length > 0 && (
+                                {complaint.images && complaint.images.length > 0 && (
                                     <div className="pt-2 border-t">
                                         <p className="text-sm font-medium mb-2">Images</p>
                                         <div className="flex gap-2">
-                                            {request.images.map((image, index) => (
+                                            {complaint.images.map((image, index) => (
                                                 <div key={index} className="w-16 h-16 bg-gray-100 rounded border flex items-center justify-center">
                                                     <Image className="w-6 h-6 text-gray-400" />
                                                 </div>
@@ -477,12 +516,26 @@ const page = () => {
                                         </div>
                                     </div>
                                 )}
+
+                                {complaint.adminReply && (
+                                    <div className="pt-2 border-t">
+                                        <p className="text-sm font-medium mb-2">Admin Response</p>
+                                        <p className="text-sm text-muted-foreground bg-gray-50 p-3 rounded">
+                                            {complaint.adminReply}
+                                        </p>
+                                        {complaint.repliedAt && (
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                Replied on: {formatDate(complaint.repliedAt)}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
                             </CardContent>
                             <CardFooter className="flex justify-end">
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => handleViewDetails(request)}
+                                    onClick={() => handleViewDetails(complaint)}
                                 >
                                     <Eye className="w-4 h-4 mr-1" />
                                     View Details
@@ -493,12 +546,12 @@ const page = () => {
                 </div>
             )}
 
-            {/* Create Maintenance Request Modal */}
+            {/* Create Complaint Modal */}
             {showCreateForm && (
                 <div className="fixed inset-0 bg-gray-500 bg-opacity-30 flex items-center justify-center p-4 z-50">
                     <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                         <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle className="text-xl">Create Maintenance Request</CardTitle>
+                            <CardTitle className="text-xl">Submit Complaint</CardTitle>
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -507,7 +560,7 @@ const page = () => {
                                 ✕
                             </Button>
                         </CardHeader>
-                        <form onSubmit={handleCreateRequest}>
+                        <form onSubmit={handleCreateComplaint}>
                             <CardContent className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
@@ -521,6 +574,34 @@ const page = () => {
                                         />
                                     </div>
                                     <div className="space-y-2">
+                                        <Label htmlFor="category">Category</Label>
+                                        <select
+                                            id="category"
+                                            value={createForm.category}
+                                            onChange={(e) => setCreateForm(prev => ({ ...prev, category: e.target.value }))}
+                                            className="w-full p-2 border rounded-md"
+                                        >
+                                            {categoryOptions.map(category => (
+                                                <option key={category} value={category}>{category}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="description">Description *</Label>
+                                    <Textarea
+                                        id="description"
+                                        value={createForm.description}
+                                        onChange={(e) => setCreateForm(prev => ({ ...prev, description: e.target.value }))}
+                                        placeholder="Detailed description of the complaint"
+                                        rows={4}
+                                        required
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
                                         <Label htmlFor="priority">Priority</Label>
                                         <select
                                             id="priority"
@@ -533,21 +614,6 @@ const page = () => {
                                             ))}
                                         </select>
                                     </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="description">Description *</Label>
-                                    <Textarea
-                                        id="description"
-                                        value={createForm.description}
-                                        onChange={(e) => setCreateForm(prev => ({ ...prev, description: e.target.value }))}
-                                        placeholder="Detailed description of the maintenance issue"
-                                        rows={4}
-                                        required
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="hostelId">Select Hostel *</Label>
                                         <select
@@ -565,24 +631,25 @@ const page = () => {
                                             ))}
                                         </select>
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="roomId">Select Room (Optional)</Label>
-                                        <select
-                                            id="roomId"
-                                            value={createForm.roomId}
-                                            onChange={(e) => setCreateForm(prev => ({ ...prev, roomId: e.target.value }))}
-                                            className="w-full p-2 border rounded-md"
-                                        >
-                                            <option value="">Choose a room...</option>
-                                            {userBookings
-                                                .filter(booking => !createForm.hostelId || booking.hostelId === createForm.hostelId)
-                                                .map((booking) => (
-                                                    <option key={booking.roomId} value={booking.roomId}>
-                                                        Room {booking.room?.roomNumber || booking.roomId}
-                                                    </option>
-                                                ))}
-                                        </select>
-                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="roomId">Select Room (Optional)</Label>
+                                    <select
+                                        id="roomId"
+                                        value={createForm.roomId}
+                                        onChange={(e) => setCreateForm(prev => ({ ...prev, roomId: e.target.value }))}
+                                        className="w-full p-2 border rounded-md"
+                                    >
+                                        <option value="">Choose a room...</option>
+                                        {userBookings
+                                            .filter(booking => !createForm.hostelId || booking.hostelId === createForm.hostelId)
+                                            .map((booking) => (
+                                                <option key={booking.roomId} value={booking.roomId}>
+                                                    Room {booking.room?.roomNumber || booking.roomId}
+                                                </option>
+                                            ))}
+                                    </select>
                                 </div>
                             </CardContent>
                             <CardFooter className="flex justify-end gap-2">
@@ -597,12 +664,12 @@ const page = () => {
                                     {submitting ? (
                                         <>
                                             <LoadingSpinner className="w-4 h-4 mr-2" />
-                                            Creating...
+                                            Submitting...
                                         </>
                                     ) : (
                                         <>
                                             <Send className="w-4 h-4 mr-2" />
-                                            Create Request
+                                            Submit Complaint
                                         </>
                                     )}
                                 </Button>
@@ -612,12 +679,12 @@ const page = () => {
                 </div>
             )}
 
-            {/* Maintenance Request Details Modal */}
-            {showDetails && selectedRequest && (
+            {/* Complaint Details Modal */}
+            {showDetails && selectedComplaint && (
                 <div className="fixed inset-0 bg-gray-500 bg-opacity-30 flex items-center justify-center p-4 z-50">
                     <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                         <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle className="text-xl">Maintenance Request Details</CardTitle>
+                            <CardTitle className="text-xl">Complaint Details</CardTitle>
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -627,32 +694,37 @@ const page = () => {
                             </Button>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            {/* Request Overview */}
+                            {/* Complaint Overview */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <h3 className="font-semibold">Request Information</h3>
+                                    <h3 className="font-semibold">Complaint Information</h3>
                                     <div className="space-y-1 text-sm">
-                                        <p><span className="font-medium">Title:</span> {selectedRequest.title}</p>
+                                        <p><span className="font-medium">Title:</span> {selectedComplaint.title}</p>
                                         <p><span className="font-medium">Status:</span>
-                                            <Badge className={`ml-2 ${statusColor(selectedRequest.status)}`}>
-                                                {selectedRequest.status}
+                                            <Badge className={`ml-2 ${statusColor(selectedComplaint.status)}`}>
+                                                {selectedComplaint.status}
                                             </Badge>
                                         </p>
                                         <p><span className="font-medium">Priority:</span>
-                                            <Badge className={`ml-2 ${priorityColor(selectedRequest.priority)}`}>
-                                                {selectedRequest.priority}
+                                            <Badge className={`ml-2 ${priorityColor(selectedComplaint.priority)}`}>
+                                                {selectedComplaint.priority}
                                             </Badge>
                                         </p>
-                                        <p><span className="font-medium">Created:</span> {formatDate(selectedRequest.createdAt)}</p>
+                                        <p><span className="font-medium">Category:</span>
+                                            <Badge className={`ml-2 ${categoryColor(selectedComplaint.category)}`}>
+                                                {selectedComplaint.category}
+                                            </Badge>
+                                        </p>
+                                        <p><span className="font-medium">Created:</span> {formatDate(selectedComplaint.createdAt)}</p>
                                     </div>
                                 </div>
                                 <div className="space-y-2">
                                     <h3 className="font-semibold">Location & Assignment</h3>
                                     <div className="space-y-1 text-sm">
-                                        <p><span className="font-medium">Room:</span> {selectedRequest.room?.roomNumber || 'N/A'}</p>
-                                        <p><span className="font-medium">Hostel:</span> {selectedRequest.hostel?.hostelName || 'N/A'}</p>
-                                        <p><span className="font-medium">Assigned To:</span> {selectedRequest.assignee?.name || 'Not assigned'}</p>
-                                        <p><span className="font-medium">Estimated Cost:</span> {selectedRequest.estimatedCost ? formatCurrency(selectedRequest.estimatedCost) : 'Not estimated'}</p>
+                                        <p><span className="font-medium">Room:</span> {selectedComplaint.room?.roomNumber || 'N/A'}</p>
+                                        <p><span className="font-medium">Hostel:</span> {selectedComplaint.hostel?.hostelName || 'N/A'}</p>
+                                        <p><span className="font-medium">Assigned To:</span> {selectedComplaint.assignee?.name || 'Not assigned'}</p>
+                                        <p><span className="font-medium">Response:</span> {selectedComplaint.adminReply ? 'Replied' : 'No response yet'}</p>
                                     </div>
                                 </div>
                             </div>
@@ -660,28 +732,35 @@ const page = () => {
                             {/* Description */}
                             <div className="space-y-2">
                                 <h3 className="font-semibold">Description</h3>
-                                <p className="text-sm text-muted-foreground">{selectedRequest.description}</p>
+                                <p className="text-sm text-muted-foreground">{selectedComplaint.description}</p>
                             </div>
 
+                            {/* Admin Response */}
+                            {selectedComplaint.adminReply && (
+                                <div className="space-y-2">
+                                    <h3 className="font-semibold">Admin Response</h3>
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        <p className="text-sm text-muted-foreground">{selectedComplaint.adminReply}</p>
+                                        {selectedComplaint.repliedAt && (
+                                            <p className="text-xs text-muted-foreground mt-2">
+                                                Replied on: {formatDate(selectedComplaint.repliedAt)}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Images */}
-                            {selectedRequest.images && selectedRequest.images.length > 0 && (
+                            {selectedComplaint.images && selectedComplaint.images.length > 0 && (
                                 <div className="space-y-2">
                                     <h3 className="font-semibold">Images</h3>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                        {selectedRequest.images.map((image, index) => (
+                                        {selectedComplaint.images.map((image, index) => (
                                             <div key={index} className="w-full h-24 bg-gray-100 rounded border flex items-center justify-center">
                                                 <Image className="w-8 h-8 text-gray-400" />
                                             </div>
                                         ))}
                                     </div>
-                                </div>
-                            )}
-
-                            {/* Updates/Notes */}
-                            {selectedRequest.notes && (
-                                <div className="space-y-2">
-                                    <h3 className="font-semibold">Notes</h3>
-                                    <p className="text-sm text-muted-foreground">{selectedRequest.notes}</p>
                                 </div>
                             )}
                         </CardContent>
