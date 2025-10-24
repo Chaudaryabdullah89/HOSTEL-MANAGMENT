@@ -39,7 +39,7 @@ export default function Home() {
   useEffect(() => {
     if (!session || !session.user) {
       alert("You need to login to access this page.");
-      router.replace("/login");
+      router.replace("/auth/signin");
     }
   }, [session, router]);
 

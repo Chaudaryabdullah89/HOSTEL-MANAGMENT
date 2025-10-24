@@ -1,16 +1,15 @@
-"use client"
+"use client";
 import React, { useState, useEffect, useContext } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Users, User, Calendar, TrendingUp, BookIcon, Bed, RefreshCcw, Download, CreditCard, Wrench, AlertCircle, CheckCircle, Clock, DollarSign, Home, Settings, FileText, Bell, MapPin, Star, Activity, BarChart3, PieChart, TrendingDown, Eye, MessageSquare, Shield, Zap } from "lucide-react";
+import { Users, User, Calendar, TrendingUp, BookIcon, Bed, RefreshCcw, CreditCard, Wrench, AlertCircle, CheckCircle, Clock, Home, Settings, Bell, MapPin, Star, Activity } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { PageLoadingSkeleton, LoadingSpinner, ItemLoadingOverlay } from "@/components/ui/loading-skeleton";
+import { PageLoadingSkeleton, LoadingSpinner } from "@/components/ui/loading-skeleton";
 import { useBookings } from "@/hooks/useBookings";
 import { usePayments } from "@/hooks/usePayments";
 import { useMaintenance } from "@/hooks/useMaintenance";
-import { useDashboard } from "@/hooks/useDashboard";
 import { SessionContext } from "@/app/context/sessiondata";
 
 // Helper function to format currency
@@ -45,9 +44,6 @@ const getBookingStatus = (checkIn, checkOut) => {
 const page = () => {
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [complaints, setComplaints] = useState([]);
-  const [hostels, setHostels] = useState([]);
-  const [rooms, setRooms] = useState([]);
 
   // Get current user session
   const { session } = useContext(SessionContext);
@@ -57,7 +53,6 @@ const page = () => {
   const { bookings, loading: bookingsLoading, fetchBookings } = useBookings();
   const { payments, loading: paymentsLoading, fetchPayments } = usePayments();
   const { maintenanceRequests, loading: maintenanceLoading, fetchMaintenance } = useMaintenance();
-  const { dashboardStats, loading: statsLoading, fetchDashboardStats } = useDashboard();
 
   // Fetch all data on component mount
   useEffect(() => {
@@ -67,35 +62,8 @@ const page = () => {
         await Promise.all([
           fetchBookings(),
           fetchPayments(),
-          fetchMaintenance(),
-          fetchDashboardStats()
+          fetchMaintenance()
         ]);
-
-        // Fetch additional data
-        try {
-          // Fetch complaints
-          const complaintsResponse = await fetch('/api/complaints');
-          if (complaintsResponse.ok) {
-            const complaintsData = await complaintsResponse.json();
-            setComplaints(complaintsData);
-          }
-
-          // Fetch hostels
-          const hostelsResponse = await fetch('/api/hostel/gethostels');
-          if (hostelsResponse.ok) {
-            const hostelsData = await hostelsResponse.json();
-            setHostels(hostelsData);
-          }
-
-          // Fetch rooms
-          const roomsResponse = await fetch('/api/room/getallrooms');
-          if (roomsResponse.ok) {
-            const roomsData = await roomsResponse.json();
-            setRooms(roomsData);
-          }
-        } catch (error) {
-          console.error('Error fetching additional data:', error);
-        }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -117,7 +85,6 @@ const page = () => {
     payment.user?.id === currentUserId || payment.booking?.user?.id === currentUserId
   ) || [];
   const userMaintenanceRequests = maintenanceRequests?.filter(req => req.reportedBy === currentUserId) || [];
-  const userComplaints = complaints?.filter(complaint => complaint.reportedBy === currentUserId) || [];
 
   // Calculate stats from user-specific data
   const totalBookings = userBookings?.length || 0;
@@ -131,89 +98,10 @@ const page = () => {
     payment.status === 'Completed' ? sum + payment.amount : sum, 0
   ) || 0;
 
-  // Additional stats (user-specific)
-  const totalMaintenanceRequests = userMaintenanceRequests?.length || 0;
-  const pendingMaintenance = userMaintenanceRequests?.filter(req => req.status === 'Pending').length || 0;
-  const totalComplaints = userComplaints?.length || 0;
-  const pendingComplaints = userComplaints?.filter(complaint => complaint.status === 'PENDING').length || 0;
-  const availableRooms = rooms?.filter(room => room.status === 'AVAILABLE').length || 0;
-  const totalHostels = hostels?.length || 0;
-
-  // Get recent data (last 5 items) - user-specific
-  const recentBookings = userBookings?.slice(0, 5) || [];
-  const recentPayments = userPayments?.slice(0, 5) || [];
-  const recentMaintenance = userMaintenanceRequests?.slice(0, 5) || [];
-  const recentComplaints = userComplaints?.slice(0, 5) || [];
-
-  // Stats cards data
-  const guestStats = [
-    {
-      title: "Total Bookings",
-      value: totalBookings,
-      icon: <BookIcon className="h-4 w-4 text-muted-foreground" />,
-      description: "All your bookings",
-      trend: totalBookings > 0 ? "+" : "0",
-      color: "text-blue-600"
-    },
-    {
-      title: "Active Stay",
-      value: activeBookings,
-      icon: <Bed className="h-4 w-4 text-muted-foreground" />,
-      description: "Currently checked in",
-      trend: activeBookings > 0 ? "+" : "0",
-      color: "text-green-600"
-    },
-    {
-      title: "Upcoming Bookings",
-      value: upcomingBookings,
-      icon: <Calendar className="h-4 w-4 text-muted-foreground" />,
-      description: "Future stays",
-      trend: upcomingBookings > 0 ? "+" : "0",
-      color: "text-blue-600"
-    },
-    {
-      title: "Total Spent",
-      value: formatCurrency(totalSpent),
-      icon: <TrendingUp className="h-4 w-4 text-muted-foreground" />,
-      description: "Total amount paid",
-      trend: totalSpent > 0 ? "+" : "0",
-      color: "text-green-600"
-    },
-  ];
-
-  // Additional stats for expanded dashboard
-  const additionalStats = [
-    {
-      title: "Maintenance Requests",
-      value: totalMaintenanceRequests,
-      icon: <Wrench className="h-4 w-4 text-muted-foreground" />,
-      description: "Total requests",
-      pending: pendingMaintenance,
-      color: "text-orange-600"
-    },
-    {
-      title: "Complaints",
-      value: totalComplaints,
-      icon: <MessageSquare className="h-4 w-4 text-muted-foreground" />,
-      description: "Total complaints",
-      pending: pendingComplaints,
-      color: "text-red-600"
-    },
-    {
-      title: "Available Rooms",
-      value: availableRooms,
-      icon: <Home className="h-4 w-4 text-muted-foreground" />,
-      description: "Rooms available",
-      color: "text-green-600"
-    },
-    {
-      title: "Total Hostels",
-      value: totalHostels,
-      icon: <MapPin className="h-4 w-4 text-muted-foreground" />,
-      description: "Hostels in system",
-      color: "text-purple-600"
-    },
-  ];
+  // Get recent data (last 3 items) - user-specific
+  const recentBookings = userBookings?.slice(0, 3) || [];
+  const recentPayments = userPayments?.slice(0, 3) || [];
+  const recentMaintenance = userMaintenanceRequests?.slice(0, 3) || [];
 
   // Show loading state while data is being fetched
   if (loading) {
@@ -223,7 +111,7 @@ const page = () => {
         statsCards={4}
         filterTabs={0}
         searchBar={false}
-        contentCards={4}
+        contentCards={3}
       />
     );
   }
@@ -248,57 +136,54 @@ const page = () => {
             <RefreshCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             {loading ? 'Refreshing...' : 'Refresh'}
           </Button>
-          <Button className="flex items-center gap-1">
-            <Download className="w-4 h-4" /> Download Summary
-          </Button>
         </div>
       </div>
 
-
       {/* Primary Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {guestStats.map((stat) => (
-          <Card key={stat.title} className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              {stat.icon}
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <div className="text-2xl font-bold">{stat.value}</div>
-                {stat.trend && (
-                  <Badge variant="outline" className={`text-xs ${stat.color}`}>
-                    {stat.trend}
-                  </Badge>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">{stat.description}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0">
+            <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
+            <BookIcon className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalBookings}</div>
+            <p className="text-xs text-muted-foreground">All your bookings</p>
+          </CardContent>
+        </Card>
 
-      {/* Additional Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {additionalStats.map((stat) => (
-          <Card key={stat.title} className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              {stat.icon}
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <div className="text-2xl font-bold">{stat.value}</div>
-                {stat.pending !== undefined && stat.pending > 0 && (
-                  <Badge variant="destructive" className="text-xs">
-                    {stat.pending} pending
-                  </Badge>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">{stat.description}</p>
-            </CardContent>
-          </Card>
-        ))}
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0">
+            <CardTitle className="text-sm font-medium">Active Stay</CardTitle>
+            <Bed className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{activeBookings}</div>
+            <p className="text-xs text-muted-foreground">Currently checked in</p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0">
+            <CardTitle className="text-sm font-medium">Upcoming Bookings</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{upcomingBookings}</div>
+            <p className="text-xs text-muted-foreground">Future stays</p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0">
+            <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(totalSpent)}</div>
+            <p className="text-xs text-muted-foreground">Total amount paid</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Quick Actions */}
@@ -342,7 +227,7 @@ const page = () => {
         </CardContent>
       </Card>
 
-      {/* Main Sections: Bookings, Payments, Maintenance */}
+      {/* Recent Activity */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {/* Recent Bookings */}
         <Card>
@@ -372,22 +257,7 @@ const page = () => {
                         </span>
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {status === "Active" && (
-                          <>
-                            Checked in: {formatDate(booking.checkIn)}
-                            <span className="ml-2">| Out: {formatDate(booking.checkOut)}</span>
-                          </>
-                        )}
-                        {status === "Upcoming" && (
-                          <>
-                            Upcoming: {formatDate(booking.checkIn)} - {formatDate(booking.checkOut)}
-                          </>
-                        )}
-                        {status === "Completed" && (
-                          <>
-                            Past: {formatDate(booking.checkIn)} - {formatDate(booking.checkOut)}
-                          </>
-                        )}
+                        {formatDate(booking.checkIn)}
                       </div>
                     </div>
                   );
@@ -528,7 +398,7 @@ const page = () => {
         </Card>
       </div>
 
-      {/* Notifications and Alerts */}
+      {/* Notifications */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -590,236 +460,6 @@ const page = () => {
           </div>
         </CardContent>
       </Card>
-
-      {/* Analytics and Insights */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Booking Analytics */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-muted-foreground" />
-              Booking Analytics
-            </CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
-              Your booking patterns and insights
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Booking Success Rate</span>
-                <span className="text-sm font-bold text-green-600">95%</span>
-              </div>
-              <Progress value={95} className="h-2" />
-
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Average Stay Duration</span>
-                <span className="text-sm font-bold">7 days</span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Preferred Room Type</span>
-                <span className="text-sm font-bold">Single Room</span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Total Nights Booked</span>
-                <span className="text-sm font-bold">{totalBookings * 7}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Payment Analytics */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <PieChart className="w-5 h-5 text-muted-foreground" />
-              Payment Analytics
-            </CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
-              Your payment history and trends
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Payment Success Rate</span>
-                <span className="text-sm font-bold text-green-600">98%</span>
-              </div>
-              <Progress value={98} className="h-2" />
-
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Average Payment</span>
-                <span className="text-sm font-bold">{formatCurrency(totalSpent / Math.max(totalBookings, 1))}</span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Preferred Payment Method</span>
-                <span className="text-sm font-bold">Credit Card</span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">On-time Payments</span>
-                <span className="text-sm font-bold text-green-600">100%</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Recent Activity Timeline */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Activity className="w-5 h-5 text-muted-foreground" />
-            Recent Activity Timeline
-          </CardTitle>
-          <CardDescription className="text-sm text-muted-foreground">
-            Your recent activities and interactions
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {recentBookings.length > 0 && recentBookings.map((booking, index) => (
-              <div key={booking.id} className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <BookIcon className="w-4 h-4 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">New booking created</p>
-                  <p className="text-xs text-muted-foreground">Room {booking.roomNumber} • {formatDate(booking.checkIn)}</p>
-                </div>
-                <Badge variant="outline" className="text-xs">
-                  {getBookingStatus(booking.checkIn, booking.checkOut)}
-                </Badge>
-              </div>
-            ))}
-
-            {recentPayments.length > 0 && recentPayments.slice(0, 3).map((payment, index) => (
-              <div key={payment.id} className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <CreditCard className="w-4 h-4 text-green-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Payment {payment.status.toLowerCase()}</p>
-                  <p className="text-xs text-muted-foreground">{formatCurrency(payment.amount)} • {formatDate(payment.date)}</p>
-                </div>
-                <Badge variant={payment.status === 'Completed' ? 'default' : 'secondary'} className="text-xs">
-                  {payment.status}
-                </Badge>
-              </div>
-            ))}
-
-            {recentMaintenance.length > 0 && recentMaintenance.slice(0, 2).map((request, index) => (
-              <div key={request.id} className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg">
-                <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                  <Wrench className="w-4 h-4 text-orange-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Maintenance request submitted</p>
-                  <p className="text-xs text-muted-foreground">{request.title} • {formatDate(request.createdAt)}</p>
-                </div>
-                <Badge variant="outline" className="text-xs">
-                  {request.status}
-                </Badge>
-              </div>
-            ))}
-
-            {recentComplaints.length > 0 && recentComplaints.slice(0, 2).map((complaint, index) => (
-              <div key={complaint.id} className="flex items-center gap-3 p-3 bg-red-50 rounded-lg">
-                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                  <MessageSquare className="w-4 h-4 text-red-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Complaint submitted</p>
-                  <p className="text-xs text-muted-foreground">{complaint.title} • {formatDate(complaint.createdAt)}</p>
-                </div>
-                <Badge variant="outline" className="text-xs">
-                  {complaint.status}
-                </Badge>
-              </div>
-            ))}
-
-            {recentBookings.length === 0 && recentPayments.length === 0 && recentMaintenance.length === 0 && recentComplaints.length === 0 && (
-              <div className="text-center py-6 text-muted-foreground">
-                <Activity className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p>No recent activity</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* System Status and Health */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <Shield className="w-5 h-5 text-muted-foreground" />
-              Account Health
-            </CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
-              Your account status and security
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Account Status</span>
-                <Badge className="bg-green-100 text-green-800">Active</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Email Verified</span>
-                <Badge className="bg-green-100 text-green-800">Verified</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Phone Verified</span>
-                <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Last Login</span>
-                <span className="text-sm text-muted-foreground">Today</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <Zap className="w-5 h-5 text-muted-foreground" />
-              Quick Stats
-            </CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
-              Your performance metrics
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Member Since</span>
-                <span className="text-sm text-muted-foreground">6 months</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Loyalty Points</span>
-                <span className="text-sm font-bold text-blue-600">1,250</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Preferred Hostel</span>
-                <span className="text-sm text-muted-foreground">Downtown Hostel</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Satisfaction Rating</span>
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                  <span className="text-sm font-bold">4.8/5</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 };
