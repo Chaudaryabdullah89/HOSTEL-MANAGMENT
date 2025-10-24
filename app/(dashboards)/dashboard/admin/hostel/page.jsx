@@ -44,6 +44,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { ImageUpload } from "@/components/ui/image-upload";
 import {
   Card,
   CardHeader,
@@ -103,7 +104,7 @@ const HostelPage = () => {
   const [floors, setFloors] = useState("");
   // const [capacity, setCapacity] = useState("");
   // const [occupiedRooms, setOccupiedRooms] = useState("");
-  // const [image, setImage] = useState("");
+  const [image, setImage] = useState("");
   // const [revenue, setRevenue] = useState("");
   const [description, setDescription] = useState("");
   const [currenteditinghostelid, setcurrenteditinghostelid] = useState("");
@@ -242,7 +243,7 @@ const HostelPage = () => {
         amenities: amenitiesArray,
 
         // occupiedRooms: occupiedRooms,
-        // image: image,
+        image: image,
         // revenue: revenue,
         wardensIds: wardensIds,
         description: description,
@@ -1367,6 +1368,16 @@ const HostelPage = () => {
                               placeholder="Short description of the hostel..."
                               value={description}
                               onChange={e => setDescription(e.target.value)}
+                            />
+                          </div>
+
+                          {/* Image Upload */}
+                          <div>
+                            <ImageUpload
+                              value={image}
+                              onChange={(url) => setImage(url)}
+                              label="Hostel Image"
+                              maxSize={5}
                             />
                           </div>
                         </div>

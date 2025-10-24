@@ -70,6 +70,7 @@ import { Label } from "@/components/ui/label";
 import { PageLoadingSkeleton, LoadingSpinner, ItemLoadingOverlay } from "@/components/ui/loading-skeleton";
 import { useRooms, useRoomsByHostel, useCreateRoom, useUpdateRoom, useDeleteRoom } from '@/hooks/useRooms';
 import { useHostels } from '@/hooks/useHostels';
+import { ImageUpload } from "@/components/ui/image-upload";
 
 const page = () => {
   // filter logic is here
@@ -802,15 +803,12 @@ const page = () => {
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-700">
-                          Image URL
-                        </Label>
-                        <Input
-                          placeholder="e.g. https://example.com/room.jpg"
-                          className="w-full"
+                      <div className="col-span-2 space-y-2">
+                        <ImageUpload
                           value={image}
-                          onChange={(e) => setImage(e.target.value)}
+                          onChange={(url) => setImage(url)}
+                          label="Room Image *"
+                          maxSize={5}
                         />
                       </div>
                     </div>

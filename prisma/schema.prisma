@@ -83,6 +83,7 @@ model Hostel {
   hostelName    String
   hostelType    HostelType?
   hostelsStatus HostelStatus?
+  image         String?
   updatedAt     DateTime      @updatedAt
   userId        String
   wardensIds    String[]
