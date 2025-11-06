@@ -6,14 +6,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Download, 
-  RefreshCw, 
-  Users, 
-  User, 
-  Calendar, 
-  DollarSign, 
-  TrendingUp, 
+import {
+  Download,
+  RefreshCw,
+  Users,
+  User,
+  Calendar,
+  DollarSign,
+  TrendingUp,
   TrendingDown,
   Bed,
   Wrench,
@@ -43,7 +43,7 @@ const ReportsPage = () => {
     const endDate = new Date()
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - 30)
-    
+
     setFilters({
       startDate: startDate.toISOString().split('T')[0],
       endDate: endDate.toISOString().split('T')[0],
@@ -54,7 +54,7 @@ const ReportsPage = () => {
   const fetchReportData = async () => {
     setIsLoading(true)
     setError(null)
-    
+
     try {
       const params = new URLSearchParams()
       if (filters.startDate) params.append('startDate', filters.startDate)
@@ -63,20 +63,59 @@ const ReportsPage = () => {
 
       const response = await fetch(`/api/reports/comprehensive?${params.toString()}`)
       if (!response.ok) {
-        throw new Error('Failed to fetch report data')
+        const errorData = await response.json().catch(() => ({ error: 'Failed to fetch report data' }))
+        throw new Error(errorData.error || 'Failed to fetch report data')
       }
 
       const data = await response.json()
-      setReportData(data)
+      console.log('Report data received:', data)
+
+      // Validate and normalize data structure
+      const normalizedData = {
+        summary: {
+          totalUsers: data.summary?.totalUsers || 0,
+          guestsCount: data.summary?.guestsCount || 0,
+          staffCount: data.summary?.staffCount || 0,
+          totalRevenue: data.summary?.totalRevenue || 0,
+          pendingRevenue: data.summary?.pendingRevenue || 0,
+          netProfit: data.summary?.netProfit || 0,
+          profitMargin: data.summary?.profitMargin || 0,
+          occupancyRate: data.summary?.occupancyRate || 0,
+          totalRooms: data.summary?.totalRooms || 0,
+          occupiedRooms: data.summary?.occupiedRooms || 0,
+        },
+        financial: {
+          summary: data.financial?.summary || {},
+          revenueByMethod: data.financial?.revenueByMethod || [],
+          revenueByRoomType: data.financial?.revenueByRoomType || [],
+        },
+        bookings: data.bookings || [],
+        payments: data.payments || [],
+        rooms: data.rooms || [],
+        maintenance: {
+          summary: data.maintenance?.summary || {},
+          details: data.maintenance?.details || [],
+        },
+        salary: {
+          summary: data.salary?.summary || {},
+          details: data.salary?.details || [],
+        },
+        expenses: data.expenses || {},
+        users: data.users || [],
+      }
+
+      setReportData(normalizedData)
       toast.success('Report data loaded successfully!')
     } catch (error) {
       console.error('Error fetching report data:', error)
-      setError(error.message)
-      toast.error('Failed to load report data')
+      setError(error.message || 'Failed to load report data')
+      toast.error(error.message || 'Failed to load report data')
     } finally {
       setIsLoading(false)
     }
   }
+
+
 
   const handleDownloadExcel = async () => {
     try {
@@ -94,16 +133,16 @@ const ReportsPage = () => {
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      
+
       const startDateStr = filters.startDate ? new Date(filters.startDate).toISOString().split('T')[0] : 'all'
       const endDateStr = filters.endDate ? new Date(filters.endDate).toISOString().split('T')[0] : 'all'
       link.download = `hostel-report-${startDateStr}-to-${endDateStr}.xlsx`
-      
+
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
-      
+
       toast.success('Excel report downloaded successfully!')
     } catch (error) {
       console.error('Error downloading Excel report:', error)
@@ -183,15 +222,15 @@ const ReportsPage = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={fetchReportData}
             disabled={isLoading}
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
-          <Button 
+          <Button
             onClick={handleDownloadExcel}
             disabled={!reportData}
           >
@@ -263,9 +302,9 @@ const ReportsPage = () => {
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{reportData.summary.totalUsers}</div>
+                <div className="text-2xl font-bold">{reportData.summary?.totalUsers || 0}</div>
                 <p className="text-xs text-muted-foreground">
-                  {reportData.summary.guestsCount} guests, {reportData.summary.staffCount} staff
+                  {reportData.summary?.guestsCount || 0} guests, {reportData.summary?.staffCount || 0} staff
                 </p>
               </CardContent>
             </Card>
@@ -277,10 +316,10 @@ const ReportsPage = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  PKR {reportData.summary.totalRevenue?.toLocaleString() || 0}
+                  PKR {(reportData.summary?.totalRevenue || 0).toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {reportData.summary.pendingRevenue ? `PKR ${reportData.summary.pendingRevenue.toLocaleString()} pending` : 'No pending revenue'}
+                  {reportData.summary?.pendingRevenue ? `PKR ${reportData.summary.pendingRevenue.toLocaleString()} pending` : 'No pending revenue'}
                 </p>
               </CardContent>
             </Card>
@@ -292,10 +331,10 @@ const ReportsPage = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  PKR {reportData.summary.netProfit?.toLocaleString() || 0}
+                  PKR {(reportData.summary?.netProfit || 0).toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {reportData.summary.profitMargin}% profit margin
+                  {reportData.summary?.profitMargin || 0}% profit margin
                 </p>
               </CardContent>
             </Card>
@@ -306,9 +345,9 @@ const ReportsPage = () => {
                 <Bed className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{reportData.summary.occupancyRate}%</div>
+                <div className="text-2xl font-bold">{reportData.summary?.occupancyRate || 0}%</div>
                 <p className="text-xs text-muted-foreground">
-                  {reportData.summary.occupiedRooms} of {reportData.summary.totalRooms} rooms
+                  {reportData.summary?.occupiedRooms || 0} of {reportData.summary?.totalRooms || 0} rooms
                 </p>
               </CardContent>
             </Card>
@@ -334,15 +373,19 @@ const ReportsPage = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      {reportData.financial.revenueByMethod.map((item, index) => (
-                        <div key={index} className="flex justify-between items-center">
-                          <span className="font-medium">{item.method}</span>
-                          <div className="text-right">
-                            <div className="font-bold">PKR {item.amount.toLocaleString()}</div>
-                            <div className="text-xs text-muted-foreground">{item.count} transactions</div>
+                      {reportData.financial?.revenueByMethod && reportData.financial.revenueByMethod.length > 0 ? (
+                        reportData.financial.revenueByMethod.map((item, index) => (
+                          <div key={index} className="flex justify-between items-center">
+                            <span className="font-medium">{item.method || 'Unknown'}</span>
+                            <div className="text-right">
+                              <div className="font-bold">PKR {(item.amount || 0).toLocaleString()}</div>
+                              <div className="text-xs text-muted-foreground">{item.count || 0} transactions</div>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">No revenue data available</p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -353,15 +396,19 @@ const ReportsPage = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      {reportData.financial.revenueByRoomType.map((item, index) => (
-                        <div key={index} className="flex justify-between items-center">
-                          <span className="font-medium">{item.roomType}</span>
-                          <div className="text-right">
-                            <div className="font-bold">PKR {item.amount.toLocaleString()}</div>
-                            <div className="text-xs text-muted-foreground">{item.count} bookings</div>
+                      {reportData.financial?.revenueByRoomType && reportData.financial.revenueByRoomType.length > 0 ? (
+                        reportData.financial.revenueByRoomType.map((item, index) => (
+                          <div key={index} className="flex justify-between items-center">
+                            <span className="font-medium">{item.roomType || 'Unknown'}</span>
+                            <div className="text-right">
+                              <div className="font-bold">PKR {(item.amount || 0).toLocaleString()}</div>
+                              <div className="text-xs text-muted-foreground">{item.count || 0} bookings</div>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">No revenue data available</p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -372,47 +419,51 @@ const ReportsPage = () => {
             <TabsContent value="bookings" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Recent Bookings ({reportData.bookings.length})</CardTitle>
+                  <CardTitle>Recent Bookings ({reportData.bookings?.length || 0})</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {reportData.bookings.slice(0, 10).map((booking) => (
-                      <div key={booking.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h4 className="font-medium">{booking.guestName}</h4>
-                            <p className="text-sm text-muted-foreground">{booking.guestEmail}</p>
-                            <p className="text-sm">Room {booking.roomNumber} - {booking.roomType}</p>
+                    {reportData.bookings && reportData.bookings.length > 0 ? (
+                      reportData.bookings.slice(0, 10).map((booking) => (
+                        <div key={booking.id} className="border rounded-lg p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <h4 className="font-medium">{booking.guestName || 'Unknown Guest'}</h4>
+                              <p className="text-sm text-muted-foreground">{booking.guestEmail || 'N/A'}</p>
+                              <p className="text-sm">Room {booking.roomNumber || 'N/A'} - {booking.roomType || 'N/A'}</p>
+                            </div>
+                            <div className="text-right">
+                              <Badge variant={getStatusColor(booking.status)}>
+                                {booking.status || 'N/A'}
+                              </Badge>
+                              <div className="text-sm font-bold mt-1">
+                                PKR {(booking.price || 0).toLocaleString()}
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <Badge variant={getStatusColor(booking.status)}>
-                              {booking.status}
-                            </Badge>
-                            <div className="text-sm font-bold mt-1">
-                              PKR {booking.price?.toLocaleString() || 'N/A'}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
+                            <div>
+                              <span className="font-medium">Check-in:</span>
+                              <p>{booking.checkin ? format(new Date(booking.checkin), 'MMM dd, yyyy') : 'N/A'}</p>
+                            </div>
+                            <div>
+                              <span className="font-medium">Check-out:</span>
+                              <p>{booking.checkout ? format(new Date(booking.checkout), 'MMM dd, yyyy') : 'N/A'}</p>
+                            </div>
+                            <div>
+                              <span className="font-medium">Hostel:</span>
+                              <p>{booking.hostelName || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <span className="font-medium">Created:</span>
+                              <p>{booking.createdAt ? format(new Date(booking.createdAt), 'MMM dd, yyyy') : 'N/A'}</p>
                             </div>
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
-                          <div>
-                            <span className="font-medium">Check-in:</span>
-                            <p>{format(new Date(booking.checkin), 'MMM dd, yyyy')}</p>
-                          </div>
-                          <div>
-                            <span className="font-medium">Check-out:</span>
-                            <p>{format(new Date(booking.checkout), 'MMM dd, yyyy')}</p>
-                          </div>
-                          <div>
-                            <span className="font-medium">Hostel:</span>
-                            <p>{booking.hostelName}</p>
-                          </div>
-                          <div>
-                            <span className="font-medium">Created:</span>
-                            <p>{format(new Date(booking.createdAt), 'MMM dd, yyyy')}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">No bookings found</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -422,36 +473,40 @@ const ReportsPage = () => {
             <TabsContent value="payments" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Payment Transactions ({reportData.payments.length})</CardTitle>
+                  <CardTitle>Payment Transactions ({reportData.payments?.length || 0})</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {reportData.payments.slice(0, 10).map((payment) => (
-                      <div key={payment.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h4 className="font-medium">Payment #{payment.id.slice(-8)}</h4>
-                            <p className="text-sm text-muted-foreground">{payment.guestName} - Room {payment.roomNumber}</p>
-                            <p className="text-sm">{payment.description || 'Payment for booking'}</p>
+                    {reportData.payments && reportData.payments.length > 0 ? (
+                      reportData.payments.slice(0, 10).map((payment) => (
+                        <div key={payment.id} className="border rounded-lg p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <h4 className="font-medium">Payment #{payment.id ? payment.id.slice(-8) : 'N/A'}</h4>
+                              <p className="text-sm text-muted-foreground">{payment.guestName || 'Unknown'} - Room {payment.roomNumber || 'N/A'}</p>
+                              <p className="text-sm">{payment.description || 'Payment for booking'}</p>
+                            </div>
+                            <div className="text-right">
+                              <div className="flex items-center gap-2 mb-1">
+                                {getStatusIcon(payment.status)}
+                                <Badge variant={getStatusColor(payment.status)}>
+                                  {payment.status || 'N/A'}
+                                </Badge>
+                              </div>
+                              <div className="text-lg font-bold text-green-600">
+                                PKR {(payment.amount || 0).toLocaleString()}
+                              </div>
+                              <div className="text-sm text-muted-foreground">{payment.method || 'N/A'}</div>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <div className="flex items-center gap-2 mb-1">
-                              {getStatusIcon(payment.status)}
-                              <Badge variant={getStatusColor(payment.status)}>
-                                {payment.status}
-                              </Badge>
-                            </div>
-                            <div className="text-lg font-bold text-green-600">
-                              PKR {payment.amount.toLocaleString()}
-                            </div>
-                            <div className="text-sm text-muted-foreground">{payment.method}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {payment.createdAt ? format(new Date(payment.createdAt), 'MMM dd, yyyy HH:mm') : 'N/A'}
                           </div>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          {format(new Date(payment.createdAt), 'MMM dd, yyyy HH:mm')}
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">No payments found</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -461,44 +516,48 @@ const ReportsPage = () => {
             <TabsContent value="rooms" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Room Performance ({reportData.rooms.length})</CardTitle>
+                  <CardTitle>Room Performance ({reportData.rooms?.length || 0})</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {reportData.rooms.slice(0, 10).map((room) => (
-                      <div key={room.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h4 className="font-medium">Room {room.roomNumber}</h4>
-                            <p className="text-sm text-muted-foreground">Floor {room.floor} - {room.type}</p>
-                            <Badge variant={room.status === 'OCCUPIED' ? 'default' : 'secondary'}>
-                              {room.status}
-                            </Badge>
+                    {reportData.rooms && reportData.rooms.length > 0 ? (
+                      reportData.rooms.slice(0, 10).map((room) => (
+                        <div key={room.id} className="border rounded-lg p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <h4 className="font-medium">Room {room.roomNumber || 'N/A'}</h4>
+                              <p className="text-sm text-muted-foreground">Floor {room.floor || 'N/A'} - {room.type || 'N/A'}</p>
+                              <Badge variant={room.status === 'OCCUPIED' ? 'default' : 'secondary'}>
+                                {room.status || 'N/A'}
+                              </Badge>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-bold">
+                                PKR {(room.totalRevenue || 0).toLocaleString()}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {room.bookingCount || 0} bookings
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {room.occupancyRate || 0}% occupancy
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-lg font-bold">
-                              PKR {room.totalRevenue.toLocaleString()}
+                          <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+                            <div>
+                              <span className="font-medium">Price/Night:</span>
+                              <p>PKR {(room.pricePerNight || 0).toLocaleString()}</p>
                             </div>
-                            <div className="text-sm text-muted-foreground">
-                              {room.bookingCount} bookings
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {room.occupancyRate}% occupancy
+                            <div>
+                              <span className="font-medium">Price/Month:</span>
+                              <p>PKR {(room.pricePerMonth || 0).toLocaleString()}</p>
                             </div>
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
-                          <div>
-                            <span className="font-medium">Price/Night:</span>
-                            <p>PKR {room.pricePerNight?.toLocaleString() || 'N/A'}</p>
-                          </div>
-                          <div>
-                            <span className="font-medium">Price/Month:</span>
-                            <p>PKR {room.pricePerMonth?.toLocaleString() || 'N/A'}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">No rooms found</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -508,38 +567,42 @@ const ReportsPage = () => {
             <TabsContent value="maintenance" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Maintenance Requests ({reportData.maintenance.details.length})</CardTitle>
+                  <CardTitle>Maintenance Requests ({reportData.maintenance?.details?.length || 0})</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {reportData.maintenance.details.slice(0, 10).map((req) => (
-                      <div key={req.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h4 className="font-medium">{req.title}</h4>
-                            <p className="text-sm text-muted-foreground">{req.description}</p>
-                            <p className="text-sm">Room {req.roomNumber} - Floor {req.floor}</p>
+                    {reportData.maintenance?.details && reportData.maintenance.details.length > 0 ? (
+                      reportData.maintenance.details.slice(0, 10).map((req) => (
+                        <div key={req.id} className="border rounded-lg p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <h4 className="font-medium">{req.title || 'Untitled Request'}</h4>
+                              <p className="text-sm text-muted-foreground">{req.description || 'No description'}</p>
+                              <p className="text-sm">Room {req.roomNumber || 'N/A'} - Floor {req.floor || 'N/A'}</p>
+                            </div>
+                            <div className="text-right">
+                              <div className="flex gap-2 mb-1">
+                                <Badge variant={getStatusColor(req.status)}>
+                                  {req.status || 'N/A'}
+                                </Badge>
+                                <Badge variant={req.priority === 'HIGH' ? 'destructive' :
+                                  req.priority === 'MEDIUM' ? 'warning' : 'success'}>
+                                  {req.priority || 'N/A'}
+                                </Badge>
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                Assigned to: {req.assignee || 'Unassigned'}
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <div className="flex gap-2 mb-1">
-                              <Badge variant={getStatusColor(req.status)}>
-                                {req.status}
-                              </Badge>
-                              <Badge variant={req.priority === 'HIGH' ? 'destructive' : 
-                                        req.priority === 'MEDIUM' ? 'warning' : 'success'}>
-                                {req.priority}
-                              </Badge>
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              Assigned to: {req.assignee}
-                            </div>
+                          <div className="text-xs text-muted-foreground">
+                            Reported: {req.reportedAt ? format(new Date(req.reportedAt), 'MMM dd, yyyy') : 'N/A'}
                           </div>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          Reported: {format(new Date(req.reportedAt), 'MMM dd, yyyy')}
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">No maintenance requests found</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -555,48 +618,52 @@ const ReportsPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-600">
-                        PKR {reportData.salary.summary.totalPaid.toLocaleString()}
+                        PKR {(reportData.salary?.summary?.totalPaid || 0).toLocaleString()}
                       </div>
                       <div className="text-sm text-muted-foreground">Total Paid</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-yellow-600">
-                        PKR {reportData.salary.summary.totalPending.toLocaleString()}
+                        PKR {(reportData.salary?.summary?.totalPending || 0).toLocaleString()}
                       </div>
                       <div className="text-sm text-muted-foreground">Pending</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold">
-                        PKR {Math.round(reportData.salary.summary.averageSalary).toLocaleString()}
+                        PKR {Math.round(reportData.salary?.summary?.averageSalary || 0).toLocaleString()}
                       </div>
                       <div className="text-sm text-muted-foreground">Average Salary</div>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-4">
-                    <h4 className="font-medium">Recent Salary Records ({reportData.salary.details.length})</h4>
-                    {reportData.salary.details.slice(0, 10).map((salary) => (
-                      <div key={salary.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-medium">{salary.staffName}</h4>
-                            <p className="text-sm text-muted-foreground">{salary.position} - {salary.department}</p>
-                            <p className="text-sm">Pay Date: {format(new Date(salary.payDate), 'MMM dd, yyyy')}</p>
-                          </div>
-                          <div className="text-right">
-                            <Badge variant={getStatusColor(salary.status)}>
-                              {salary.status}
-                            </Badge>
-                            <div className="text-lg font-bold mt-1">
-                              PKR {salary.netAmount.toLocaleString()}
+                    <h4 className="font-medium">Recent Salary Records ({reportData.salary?.details?.length || 0})</h4>
+                    {reportData.salary?.details && reportData.salary.details.length > 0 ? (
+                      reportData.salary.details.slice(0, 10).map((salary) => (
+                        <div key={salary.id} className="border rounded-lg p-4">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-medium">{salary.staffName || 'Unknown Staff'}</h4>
+                              <p className="text-sm text-muted-foreground">{salary.position || 'N/A'} - {salary.department || 'N/A'}</p>
+                              <p className="text-sm">Pay Date: {salary.payDate ? format(new Date(salary.payDate), 'MMM dd, yyyy') : 'N/A'}</p>
                             </div>
-                            <div className="text-sm text-muted-foreground">
-                              Base: PKR {salary.baseAmount.toLocaleString()}
+                            <div className="text-right">
+                              <Badge variant={getStatusColor(salary.status)}>
+                                {salary.status || 'N/A'}
+                              </Badge>
+                              <div className="text-lg font-bold mt-1">
+                                PKR {(salary.netAmount || 0).toLocaleString()}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                Base: PKR {(salary.baseAmount || 0).toLocaleString()}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">No salary records found</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>

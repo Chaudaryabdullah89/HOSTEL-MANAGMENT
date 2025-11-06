@@ -167,6 +167,17 @@ const page = () => {
   const [paymentStatus, setPaymentStatus] = useState("");
   const [btnloading, setBtnloading] = useState(false);
   const [loadingBookingId, setLoadingBookingId] = useState(null);
+
+  // New guest creation state
+  const [guestType, setGuestType] = useState("existing"); // "existing" or "new"
+  const [newGuestName, setNewGuestName] = useState("");
+  const [newGuestEmail, setNewGuestEmail] = useState("");
+  const [newGuestPhone, setNewGuestPhone] = useState("");
+  const [newGuestStreet, setNewGuestStreet] = useState("");
+  const [newGuestCity, setNewGuestCity] = useState("");
+  const [newGuestCountry, setNewGuestCountry] = useState("");
+  const [newGuestPostalCode, setNewGuestPostalCode] = useState("");
+  const [isCreatingGuest, setIsCreatingGuest] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [bookingToDelete, setBookingToDelete] = useState(null);
@@ -296,6 +307,37 @@ const page = () => {
     }
   };
 
+  // Create new guest function
+  const createNewGuest = async (guestData) => {
+    try {
+      const response = await fetch("/api/users/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: guestData.name,
+          email: guestData.email,
+          phone: guestData.phone,
+          role: "GUEST",
+          password: `${guestData.name?.split(" ")[0] || ""}_${guestData.email?.split("@")[0] || ""}_${guestData.phone?.slice(-4) || ""}`,
+          address: guestData.address,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create guest");
+      }
+
+      const newGuest = await response.json();
+      return newGuest;
+    } catch (error) {
+      console.error("Error creating guest:", error);
+      throw error;
+    }
+  };
+
   const handlecreatebooking = async (e) => {
     e.preventDefault();
     setBookingloading(true);
@@ -310,13 +352,59 @@ const page = () => {
       setBookingloading(false);
       return;
     }
-    if (!currentselectedbooking) {
+    if (guestType === "existing" && !currentselectedbooking) {
       toast.error("Please select a user");
       setBookingloading(false);
       return;
     }
+    if (guestType === "new") {
+      if (!newGuestName || !newGuestEmail || !newGuestPhone || !newGuestStreet || !newGuestCity || !newGuestCountry) {
+        toast.error("Please fill in all guest information including address");
+        setBookingloading(false);
+        return;
+      }
+    }
 
     let duration, checkin, checkout;
+    let selectedUserId = currentselectedbooking?.id;
+
+    // Create new guest if needed
+    if (guestType === "new") {
+      try {
+        setIsCreatingGuest(true);
+        const newGuest = await createNewGuest({
+          name: newGuestName,
+          email: newGuestEmail,
+          phone: newGuestPhone,
+          role: "GUEST",
+          address: {
+            street: newGuestStreet,
+            city: newGuestCity,
+            country: newGuestCountry,
+            postalCode: newGuestPostalCode,
+          },
+        });
+
+        // Handle the API response structure - the user data is in newGuest.user
+        if (newGuest.user && newGuest.user.id) {
+          selectedUserId = newGuest.user.id;
+        } else if (newGuest.id) {
+          selectedUserId = newGuest.id;
+        } else {
+          throw new Error("No user ID found in guest creation response");
+        }
+
+        toast.success("New guest created successfully!");
+      } catch (error) {
+        console.error("Error creating guest:", error);
+        toast.error(`Failed to create guest: ${error.message}`);
+        setBookingloading(false);
+        setIsCreatingGuest(false);
+        return;
+      } finally {
+        setIsCreatingGuest(false);
+      }
+    }
 
     if (bookingTypeInput === "MONTHLY") {
       duration = 30;
@@ -344,7 +432,7 @@ const page = () => {
     const payload = {
       hostelId: currentselectedhostel.id,
       roomId: currentselectedroom.id,
-      userId: currentselectedbooking.id,
+      userId: selectedUserId,
       checkin: checkin,
       checkout: checkout,
       price:
@@ -446,6 +534,14 @@ const page = () => {
         setBookingTypeInput("");
         setAdditionalNotes("");
         setPaymentStatus("");
+        setGuestType("existing");
+        setNewGuestName("");
+        setNewGuestEmail("");
+        setNewGuestPhone("");
+        setNewGuestStreet("");
+        setNewGuestCity("");
+        setNewGuestCountry("");
+        setNewGuestPostalCode("");
 
         setTimeout(() => {
           setIsDialogOpen(false);
@@ -805,10 +901,10 @@ const page = () => {
                   className="space-y-6 overflow-visible"
                   onSubmit={handlecreatebooking}
                 >
-                  {currentselectedbooking && (
+                  {(currentselectedbooking || guestType === "new") && (
                     <div className="space-y-4">
                       <h3 className="text-lg font-medium text-gray-900 border-b pb-2">
-                        Selected User Information
+                        {guestType === "new" ? "New Guest Information" : "Selected User Information"}
                       </h3>
                       <div className="bg-gray-50 p-4 rounded-lg">
                         <div className="grid grid-cols-2 gap-4">
@@ -817,7 +913,7 @@ const page = () => {
                               Name
                             </Label>
                             <p className="text-sm text-gray-900">
-                              {currentselectedbooking.name}
+                              {guestType === "new" ? newGuestName : currentselectedbooking?.name}
                             </p>
                           </div>
                           <div>
@@ -825,30 +921,27 @@ const page = () => {
                               Email
                             </Label>
                             <p className="text-sm text-gray-900">
-                              {currentselectedbooking.email}
+                              {guestType === "new" ? newGuestEmail : currentselectedbooking?.email}
                             </p>
                           </div>
                           <div>
                             <Label className="text-sm font-medium text-gray-700">
-                              Role
+                              {guestType === "new" ? "Phone" : "Role"}
                             </Label>
                             <p className="text-sm text-gray-900">
-                              {currentselectedbooking.role}
+                              {guestType === "new" ? newGuestPhone : currentselectedbooking?.role}
                             </p>
                           </div>
-                          {/* <div>
-                                                        <Label className="text-sm font-medium text-gray-700">Room Number</Label>
-                                                        <p className="text-sm text-gray-900">
-
-                                                            {
-                                                                currentselectedbooking.room?.roomNumber
-                                                                || currentselectedbooking.room?.number
-                                                                || currentselectedbooking.roomNumber
-                                                                || currentselectedbooking.number
-                                                                || "N/A"
-                                                            }
-                                                        </p>
-                                                    </div> */}
+                          {guestType === "new" && (
+                            <div>
+                              <Label className="text-sm font-medium text-gray-700">
+                                Address
+                              </Label>
+                              <p className="text-sm text-gray-900">
+                                {newGuestStreet}, {newGuestCity}, {newGuestCountry}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1014,8 +1107,6 @@ const page = () => {
 
 
 
-                    <input type="text" onChange={(e) => setnewname} name="email" />
-                    <input type="text" name="phonenumber" />
 
 
 
@@ -1024,65 +1115,187 @@ const page = () => {
 
 
                     {currentselectedroom && (
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-700">
-                          Select User *
-                        </Label>
-                        {/* Debug info */}
-                        {/* <div className="text-xs text-gray-500">
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">
+                            Guest Type *
+                          </Label>
+                          <div className="flex space-x-4">
+                            <label className="flex items-center space-x-2">
+                              <input
+                                type="radio"
+                                name="guestType"
+                                value="existing"
+                                checked={guestType === "existing"}
+                                onChange={(e) => setGuestType(e.target.value)}
+                                className="text-blue-600"
+                              />
+                              <span className="text-sm">Existing Guest</span>
+                            </label>
+                            <label className="flex items-center space-x-2">
+                              <input
+                                type="radio"
+                                name="guestType"
+                                value="new"
+                                checked={guestType === "new"}
+                                onChange={(e) => setGuestType(e.target.value)}
+                                className="text-blue-600"
+                              />
+                              <span className="text-sm">New Guest</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        {guestType === "existing" && (
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">
+                              Select Existing User *
+                            </Label>
+                            {/* Debug info */}
+                            {/* <div className="text-xs text-gray-500">
                                                     Debug: {users.length} total users, {filteredUsers.length} filtered users
                                                 </div> */}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className="w-full justify-between text-left font-normal"
-                            >
-                              {currentselectedbooking ? (
-                                <div className="flex flex-col items-start">
-                                  <span className="font-medium">
-                                    {currentselectedbooking.name}
-                                  </span>
-                                  {/* <span className="text-sm text-gray-500">{currentselectedbooking.email} ({currentselectedbooking.role})</span> */}
-                                </div>
-                              ) : (
-                                "Select User"
-                              )}
-                              <ChevronDown className="h-4 w-4 opacity-50" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent className="w-full">
-                            {filteredUsers.length > 0 ? (
-                              filteredUsers.map((user) => (
-                                <DropdownMenuItem
-                                  key={user.id}
-                                  onClick={() => {
-                                    setCurrentselectedbooking(user);
-                                    // Don't clear errors when selecting user - only clear when valid room is selected
-                                  }}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className="w-full justify-between text-left font-normal"
                                 >
-                                  <div className="flex flex-col">
-                                    <span className="font-medium">
-                                      {user.name}
+                                  {currentselectedbooking ? (
+                                    <div className="flex flex-col items-start">
+                                      <span className="font-medium">
+                                        {currentselectedbooking.name}
+                                      </span>
+                                      {/* <span className="text-sm text-gray-500">{currentselectedbooking.email} ({currentselectedbooking.role})</span> */}
+                                    </div>
+                                  ) : (
+                                    "Select User"
+                                  )}
+                                  <ChevronDown className="h-4 w-4 opacity-50" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent className="w-full">
+                                {filteredUsers.length > 0 ? (
+                                  filteredUsers.map((user) => (
+                                    <DropdownMenuItem
+                                      key={user.id}
+                                      onClick={() => {
+                                        setCurrentselectedbooking(user);
+                                        // Don't clear errors when selecting user - only clear when valid room is selected
+                                      }}
+                                    >
+                                      <div className="flex flex-col">
+                                        <span className="font-medium">
+                                          {user.name}
+                                        </span>
+                                        <span className="text-sm text-gray-500">
+                                          {user.email}
+                                        </span>
+                                        <span className="text-xs text-blue-600 font-medium">
+                                          {user.role}
+                                        </span>
+                                      </div>
+                                    </DropdownMenuItem>
+                                  ))
+                                ) : (
+                                  <DropdownMenuItem disabled>
+                                    <span className="text-gray-500">
+                                      No users available
                                     </span>
-                                    <span className="text-sm text-gray-500">
-                                      {user.email}
-                                    </span>
-                                    <span className="text-xs text-blue-600 font-medium">
-                                      {user.role}
-                                    </span>
-                                  </div>
-                                </DropdownMenuItem>
-                              ))
-                            ) : (
-                              <DropdownMenuItem disabled>
-                                <span className="text-gray-500">
-                                  No users available
-                                </span>
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        )}
+
+                        {guestType === "new" && (
+                          <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                            <h4 className="text-sm font-medium text-gray-700">
+                              New Guest Information
+                            </h4>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium text-gray-700">
+                                  Full Name *
+                                </Label>
+                                <Input
+                                  placeholder="Enter guest name"
+                                  value={newGuestName}
+                                  onChange={(e) => setNewGuestName(e.target.value)}
+                                  required
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium text-gray-700">
+                                  Email *
+                                </Label>
+                                <Input
+                                  type="email"
+                                  placeholder="Enter email address"
+                                  value={newGuestEmail}
+                                  onChange={(e) => setNewGuestEmail(e.target.value)}
+                                  required
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium text-gray-700">
+                                  Phone Number *
+                                </Label>
+                                <Input
+                                  type="tel"
+                                  placeholder="Enter phone number"
+                                  value={newGuestPhone}
+                                  onChange={(e) => setNewGuestPhone(e.target.value)}
+                                  required
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium text-gray-700">
+                                  Street Address *
+                                </Label>
+                                <Input
+                                  placeholder="Enter street address"
+                                  value={newGuestStreet}
+                                  onChange={(e) => setNewGuestStreet(e.target.value)}
+                                  required
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium text-gray-700">
+                                  City *
+                                </Label>
+                                <Input
+                                  placeholder="Enter city"
+                                  value={newGuestCity}
+                                  onChange={(e) => setNewGuestCity(e.target.value)}
+                                  required
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium text-gray-700">
+                                  Country *
+                                </Label>
+                                <Input
+                                  placeholder="Enter country"
+                                  value={newGuestCountry}
+                                  onChange={(e) => setNewGuestCountry(e.target.value)}
+                                  required
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium text-gray-700">
+                                  Postal Code (Optional)
+                                </Label>
+                                <Input
+                                  placeholder="Enter postal code"
+                                  value={newGuestPostalCode}
+                                  onChange={(e) => setNewGuestPostalCode(e.target.value)}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
