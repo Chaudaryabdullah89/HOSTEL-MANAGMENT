@@ -49,54 +49,70 @@ const page = () => {
   const { session } = useContext(SessionContext);
   const currentUserId = session?.user?.id;
 
-  // API hooks
-  const { bookings, loading: bookingsLoading, fetchBookings } = useBookings();
-  const { payments, loading: paymentsLoading, fetchPayments } = usePayments();
-  const { maintenanceRequests, loading: maintenanceLoading, fetchMaintenance } = useMaintenance();
-
-  // Fetch all data on component mount
-  useEffect(() => {
-    const fetchAllData = async () => {
-      setLoading(true);
-      try {
-        await Promise.all([
-          fetchBookings(),
-          fetchPayments(),
-          fetchMaintenance()
-        ]);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAllData();
-  }, [refreshKey]);
+  // API hooks - React Query automatically fetches data
+  const { data: bookingsData, isLoading: bookingsLoading, refetch: refetchBookings } = useBookings({
+    userId: currentUserId
+  });
+  const { data: paymentsData, isLoading: paymentsLoading, refetch: refetchPayments } = usePayments();
+  const { data: maintenanceData, isLoading: maintenanceLoading, refetch: refetchMaintenance } = useMaintenance();
 
   // Refresh function
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
+    refetchBookings();
+    refetchPayments();
+    refetchMaintenance();
   };
 
+  // Extract data from React Query responses
+  const bookings = Array.isArray(bookingsData) ? bookingsData : bookingsData?.bookings || [];
+  const payments = Array.isArray(paymentsData) ? paymentsData : paymentsData?.payments || [];
+  const maintenanceRequests = Array.isArray(maintenanceData) ? maintenanceData : maintenanceData?.maintenance || [];
+
   // Filter data for current user
-  const userBookings = bookings?.filter(booking => booking.userId === currentUserId) || [];
-  const userPayments = payments?.filter(payment =>
-    payment.user?.id === currentUserId || payment.booking?.user?.id === currentUserId
+  const userBookings = bookings?.filter(booking => 
+    booking.userId === currentUserId || 
+    booking.user?.id === currentUserId ||
+    booking.userId === session?.user?.id
   ) || [];
-  const userMaintenanceRequests = maintenanceRequests?.filter(req => req.reportedBy === currentUserId) || [];
+  
+  const userPayments = payments?.filter(payment =>
+    payment.userId === currentUserId ||
+    payment.user?.id === currentUserId ||
+    payment.userId === session?.user?.id ||
+    payment.booking?.userId === currentUserId ||
+    payment.booking?.user?.id === currentUserId
+  ) || [];
+  
+  const userMaintenanceRequests = maintenanceRequests?.filter(req => 
+    req.reportedBy === currentUserId ||
+    req.userId === currentUserId ||
+    req.user?.id === currentUserId ||
+    req.userId === session?.user?.id
+  ) || [];
+
+  // Update loading state
+  useEffect(() => {
+    setLoading(bookingsLoading || paymentsLoading || maintenanceLoading);
+  }, [bookingsLoading, paymentsLoading, maintenanceLoading]);
 
   // Calculate stats from user-specific data
   const totalBookings = userBookings?.length || 0;
-  const activeBookings = userBookings?.filter(booking =>
-    getBookingStatus(booking.checkIn, booking.checkOut) === 'Active'
-  ).length || 0;
-  const upcomingBookings = userBookings?.filter(booking =>
-    getBookingStatus(booking.checkIn, booking.checkOut) === 'Upcoming'
-  ).length || 0;
-  const totalSpent = userPayments?.reduce((sum, payment) =>
-    payment.status === 'Completed' ? sum + payment.amount : sum, 0
-  ) || 0;
+  const activeBookings = userBookings?.filter(booking => {
+    const checkIn = booking.checkIn || booking.checkInDate;
+    const checkOut = booking.checkOut || booking.checkOutDate;
+    return getBookingStatus(checkIn, checkOut) === 'Active';
+  }).length || 0;
+  const upcomingBookings = userBookings?.filter(booking => {
+    const checkIn = booking.checkIn || booking.checkInDate;
+    const checkOut = booking.checkOut || booking.checkOutDate;
+    return getBookingStatus(checkIn, checkOut) === 'Upcoming';
+  }).length || 0;
+  const totalSpent = userPayments?.reduce((sum, payment) => {
+    const isCompleted = payment.status === 'Completed' || payment.status === 'COMPLETED';
+    const amount = payment.amount || payment.paymentAmount || 0;
+    return isCompleted ? sum + amount : sum;
+  }, 0) || 0;
 
   // Get recent data (last 3 items) - user-specific
   const recentBookings = userBookings?.slice(0, 3) || [];
@@ -241,14 +257,20 @@ const page = () => {
             <div className="flex flex-col gap-3">
               {recentBookings.length > 0 ? (
                 recentBookings.map((booking) => {
-                  const status = getBookingStatus(booking.checkIn, booking.checkOut);
+                  const checkIn = booking.checkIn || booking.checkInDate;
+                  const checkOut = booking.checkOut || booking.checkOutDate;
+                  const status = getBookingStatus(checkIn, checkOut);
                   return (
                     <div
                       key={booking.id}
                       className="flex justify-between items-center border-b pb-2 last:border-b-0"
                     >
                       <div>
-                        <span className="font-medium">Room {booking.roomNumber}</span>
+                        <span className="font-medium">
+                          {booking.room?.roomNumber ? `Room ${booking.room.roomNumber}` : 
+                           booking.roomNumber ? `Room ${booking.roomNumber}` : 
+                           booking.roomId ? `Room ${booking.roomId}` : 'Room N/A'}
+                        </span>
                         <span className={`ml-2 text-xs px-2 py-1 rounded-full ${status === "Active" ? "bg-green-100 text-green-800" :
                           status === "Upcoming" ? "bg-blue-100 text-blue-800" :
                             "bg-gray-100 text-gray-800"
@@ -257,7 +279,7 @@ const page = () => {
                         </span>
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {formatDate(booking.checkIn)}
+                        {formatDate(booking.checkIn || booking.checkInDate || booking.createdAt)}
                       </div>
                     </div>
                   );
@@ -299,24 +321,24 @@ const page = () => {
                     className="flex justify-between items-center border-b pb-2 last:border-b-0"
                   >
                     <div>
-                      <span className="font-medium">{formatCurrency(payment.amount)}</span>
+                      <span className="font-medium">{formatCurrency(payment.amount || payment.paymentAmount || 0)}</span>
                       <span className="ml-2 text-xs text-gray-500">
-                        {payment.method}
+                        {payment.method || payment.paymentMethod || 'N/A'}
                       </span>
                     </div>
                     <div className="flex flex-col items-end">
                       <span className="text-xs text-muted-foreground">
-                        {formatDate(payment.date)}
+                        {formatDate(payment.date || payment.paymentDate || payment.createdAt || payment.paidAt)}
                       </span>
                       <span
-                        className={`text-xs font-medium px-2 py-1 rounded-full ${payment.status === "Completed"
+                        className={`text-xs font-medium px-2 py-1 rounded-full ${payment.status === "Completed" || payment.status === "COMPLETED"
                           ? "bg-green-100 text-green-800"
-                          : payment.status === "Pending"
+                          : payment.status === "Pending" || payment.status === "PENDING"
                             ? "bg-yellow-100 text-yellow-800"
                             : "bg-gray-100 text-gray-800"
                           }`}
                       >
-                        {payment.status}
+                        {payment.status || 'Unknown'}
                       </span>
                     </div>
                   </div>
@@ -358,24 +380,28 @@ const page = () => {
                     className="flex justify-between items-center border-b pb-2 last:border-b-0"
                   >
                     <div>
-                      <span className="font-medium">{req.title}</span>
+                      <span className="font-medium">{req.title || 'Maintenance Request'}</span>
                       <span className="ml-2 text-xs text-gray-500">
-                        Room {req.roomNumber}
+                        {req.room?.roomNumber ? `Room ${req.room.roomNumber}` :
+                         req.roomNumber ? `Room ${req.roomNumber}` :
+                         req.roomId ? `Room ${req.roomId}` : 'General'}
                       </span>
                     </div>
                     <div className="flex flex-col items-end">
                       <span className="text-xs text-muted-foreground">
-                        {formatDate(req.createdAt)}
+                        {formatDate(req.createdAt || req.reportedAt || req.createdAt)}
                       </span>
                       <span
-                        className={`text-xs font-medium px-2 py-1 rounded-full ${req.status === "Resolved"
+                        className={`text-xs font-medium px-2 py-1 rounded-full ${req.status === "Resolved" || req.status === "COMPLETED" || req.status === "RESOLVED"
                           ? "bg-green-100 text-green-800"
-                          : req.status === "In Progress"
+                          : req.status === "In Progress" || req.status === "IN_PROGRESS" || req.status === "In Progress"
                             ? "bg-yellow-100 text-yellow-800"
-                            : "bg-gray-100 text-gray-800"
+                            : req.status === "PENDING" || req.status === "Pending"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-gray-100 text-gray-800"
                           }`}
                       >
-                        {req.status}
+                        {req.status || 'Unknown'}
                       </span>
                     </div>
                   </div>
@@ -431,27 +457,59 @@ const page = () => {
               </div>
             )}
 
-            {userMaintenanceRequests.filter(req => req.status === 'Pending').length > 0 && (
+            {userMaintenanceRequests.filter(req => 
+              req.status === 'Pending' || 
+              req.status === 'PENDING' || 
+              req.status === 'SUBMITTED' ||
+              req.status === 'UNDER_REVIEW'
+            ).length > 0 && (
               <div className="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <AlertCircle className="w-5 h-5 text-yellow-600" />
                 <div>
                   <p className="font-medium text-yellow-900">Pending Maintenance</p>
-                  <p className="text-sm text-yellow-700">You have {userMaintenanceRequests.filter(req => req.status === 'Pending').length} pending maintenance request{userMaintenanceRequests.filter(req => req.status === 'Pending').length > 1 ? 's' : ''}</p>
+                  <p className="text-sm text-yellow-700">You have {userMaintenanceRequests.filter(req => 
+                    req.status === 'Pending' || 
+                    req.status === 'PENDING' || 
+                    req.status === 'SUBMITTED' ||
+                    req.status === 'UNDER_REVIEW'
+                  ).length} pending maintenance request{userMaintenanceRequests.filter(req => 
+                    req.status === 'Pending' || 
+                    req.status === 'PENDING' || 
+                    req.status === 'SUBMITTED' ||
+                    req.status === 'UNDER_REVIEW'
+                  ).length > 1 ? 's' : ''}</p>
                 </div>
               </div>
             )}
 
-            {userPayments.filter(payment => payment.status === 'Pending').length > 0 && (
+            {userPayments.filter(payment => 
+              payment.status === 'Pending' || 
+              payment.status === 'PENDING'
+            ).length > 0 && (
               <div className="flex items-center gap-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                 <Clock className="w-5 h-5 text-orange-600" />
                 <div>
                   <p className="font-medium text-orange-900">Pending Payments</p>
-                  <p className="text-sm text-orange-700">You have {userPayments.filter(payment => payment.status === 'Pending').length} pending payment{userPayments.filter(payment => payment.status === 'Pending').length > 1 ? 's' : ''}</p>
+                  <p className="text-sm text-orange-700">You have {userPayments.filter(payment => 
+                    payment.status === 'Pending' || 
+                    payment.status === 'PENDING'
+                  ).length} pending payment{userPayments.filter(payment => 
+                    payment.status === 'Pending' || 
+                    payment.status === 'PENDING'
+                  ).length > 1 ? 's' : ''}</p>
                 </div>
               </div>
             )}
 
-            {upcomingBookings === 0 && activeBookings === 0 && userMaintenanceRequests.filter(req => req.status === 'Pending').length === 0 && userPayments.filter(payment => payment.status === 'Pending').length === 0 && (
+            {upcomingBookings === 0 && activeBookings === 0 && userMaintenanceRequests.filter(req => 
+              req.status === 'Pending' || 
+              req.status === 'PENDING' || 
+              req.status === 'SUBMITTED' ||
+              req.status === 'UNDER_REVIEW'
+            ).length === 0 && userPayments.filter(payment => 
+              payment.status === 'Pending' || 
+              payment.status === 'PENDING'
+            ).length === 0 && (
               <div className="text-center py-6 text-muted-foreground">
                 <Bell className="w-8 h-8 mx-auto mb-2 opacity-50" />
                 <p>No notifications at this time</p>

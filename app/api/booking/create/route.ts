@@ -144,6 +144,12 @@ export async function POST(request: NextRequest) {
                     },
                 }
             });
+
+            // Mark user active when a booking is created
+            await prisma.user.update({
+                where: { id: userId },
+                data: { isActive: true },
+            });
         } catch (prismaError) {
             console.error("Prisma booking.create failed:", prismaError);
             throw prismaError;

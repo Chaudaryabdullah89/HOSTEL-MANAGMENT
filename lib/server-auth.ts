@@ -17,7 +17,7 @@ export async function getServerSession(request: Request): Promise<SessionData> {
   try {
     // Extract token from cookies
     const cookieHeader = request.headers.get("cookie");
-    
+
     if (!cookieHeader) {
       return { loggedIn: false, user: null, error: "No cookies found" };
     }
@@ -46,6 +46,7 @@ export async function getServerSession(request: Request): Promise<SessionData> {
         name: true,
         email: true,
         role: true,
+        isActive: true,
         image: true,
         createdAt: true,
         updatedAt: true,
@@ -63,6 +64,10 @@ export async function getServerSession(request: Request): Promise<SessionData> {
 
     if (!user) {
       return { loggedIn: false, user: null, error: "User not found" };
+    }
+
+    if (user.isActive === false) {
+      return { loggedIn: false, user: null, error: "User inactive" };
     }
 
     return {

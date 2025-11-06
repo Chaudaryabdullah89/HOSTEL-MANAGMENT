@@ -51,6 +51,13 @@ export default async function middleware(request) {
         try {
             const decoded = verifyJWT(token, process.env.JWT_SECRET);
             const role = decoded.role;
+            const active = decoded.active !== false;
+
+            if (!active) {
+                const response = NextResponse.redirect(new URL("/auth/signin", request.url));
+                response.cookies.set("token", "", { path: "/", maxAge: 0 });
+                return response;
+            }
 
             // Handle root dashboard redirect
             if (pathname === "/dashboard") {

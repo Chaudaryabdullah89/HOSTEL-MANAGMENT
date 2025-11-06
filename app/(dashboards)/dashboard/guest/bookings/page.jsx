@@ -1,5 +1,6 @@
 "use client"
 import React, { useState, useEffect, useContext } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -100,13 +101,12 @@ const getStatusIcon = (status) => {
 };
 
 const page = () => {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [activeStatus, setActiveStatus] = useState("All Bookings");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState("desc");
-  const [selectedBooking, setSelectedBooking] = useState(null);
-  const [showDetails, setShowDetails] = useState(false);
 
   // Get current user session
   const { session } = useContext(SessionContext);
@@ -280,11 +280,9 @@ const page = () => {
     }
   };
 
-  // View booking details
+  // View booking details - navigate to detail page
   const handleViewDetails = (booking) => {
-    console.log('View details clicked for booking:', booking);
-    setSelectedBooking(booking);
-    setShowDetails(true);
+    router.push(`/dashboard/guest/bookings/${booking.id}`);
   };
 
   // Download invoice
@@ -586,233 +584,6 @@ const page = () => {
         </div>
       )}
 
-      {/* Booking Details Modal */}
-      {showDetails && selectedBooking && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-30 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-xl">Booking Details</CardTitle>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowDetails(false)}
-              >
-                ✕
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Booking Overview */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-lg">Booking Information</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="font-medium">Booking ID:</span>
-                      <span className="text-muted-foreground">#{selectedBooking.id}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Status:</span>
-                      <Badge className={`${statusColor(selectedBooking.status)} flex items-center gap-1`}>
-                        {getStatusIcon(selectedBooking.status)}
-                        {selectedBooking.status}
-                      </Badge>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Created:</span>
-                      <span className="text-muted-foreground">{formatDateTime(selectedBooking.createdAt || selectedBooking.created)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Duration:</span>
-                      <span className="text-muted-foreground">{selectedBooking.duration} night{selectedBooking.duration > 1 ? 's' : ''}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-lg">Payment Information</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="font-medium">Total Amount:</span>
-                      <span className="font-bold text-lg">{formatCurrency(selectedBooking.totalAmount || 0)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Payment Status:</span>
-                      <Badge className={`${paymentColor(selectedBooking.payment?.status || 'Pending')} flex items-center gap-1`}>
-                        <CreditCard className="w-3 h-3" />
-                        {selectedBooking.payment?.status || 'Pending'}
-                      </Badge>
-                    </div>
-                    {selectedBooking.payment?.method && (
-                      <div className="flex justify-between">
-                        <span className="font-medium">Payment Method:</span>
-                        <span className="text-muted-foreground">{selectedBooking.payment.method}</span>
-                      </div>
-                    )}
-                    {selectedBooking.payment?.transactionId && (
-                      <div className="flex justify-between">
-                        <span className="font-medium">Transaction ID:</span>
-                        <span className="text-muted-foreground font-mono text-xs">{selectedBooking.payment.transactionId}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Dates and Timing */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-lg">Dates & Timing</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg">
-                    <Calendar className="w-5 h-5 text-blue-600" />
-                    <div>
-                      <p className="font-medium">Check-in Date</p>
-                      <p className="text-sm text-muted-foreground">{formatDate(selectedBooking.checkIn)}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg">
-                    <Calendar className="w-5 h-5 text-green-600" />
-                    <div>
-                      <p className="font-medium">Check-out Date</p>
-                      <p className="text-sm text-muted-foreground">{formatDate(selectedBooking.checkOut)}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Room Details */}
-              {selectedBooking.room && (
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-lg">Room Details</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="font-medium">Room Number:</span>
-                        <span className="text-muted-foreground">{selectedBooking.room.roomNumber}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium">Room Type:</span>
-                        <span className="text-muted-foreground">{selectedBooking.room.type}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium">Capacity:</span>
-                        <span className="text-muted-foreground">{selectedBooking.room.capacity} guests</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium">Floor:</span>
-                        <span className="text-muted-foreground">Floor {selectedBooking.room.floor}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="font-medium">Price per Night:</span>
-                        <span className="text-muted-foreground">{formatCurrency(selectedBooking.room.pricePerNight || 0)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium">Security Deposit:</span>
-                        <span className="text-muted-foreground">{formatCurrency(selectedBooking.room.securityDeposit || 0)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Room Amenities */}
-                  {selectedBooking.room.amenities && selectedBooking.room.amenities.length > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="font-medium">Amenities</h4>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        {selectedBooking.room.amenities.map((amenity, index) => (
-                          <Badge key={index} variant="outline" className="flex items-center gap-1 justify-center">
-                            {amenity}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Room Notes */}
-                  {selectedBooking.room.notes && (
-                    <div className="space-y-2">
-                      <h4 className="font-medium">Room Notes</h4>
-                      <p className="text-sm text-muted-foreground bg-gray-50 p-3 rounded-lg">
-                        {selectedBooking.room.notes}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Hostel Details */}
-              {selectedBooking.hostel && (
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-lg">Hostel Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="font-medium">Hostel Name:</span>
-                        <span className="text-muted-foreground">{selectedBooking.hostel.hostelName}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium">Hostel Type:</span>
-                        <span className="text-muted-foreground">{selectedBooking.hostel.hostelType}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium">Contact:</span>
-                        <span className="text-muted-foreground">{selectedBooking.hostel.contactNumber || 'N/A'}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      {selectedBooking.hostel.address && (
-                        <>
-                          <div className="flex justify-between">
-                            <span className="font-medium">Address:</span>
-                            <span className="text-muted-foreground text-right">{selectedBooking.hostel.address.street}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="font-medium">City:</span>
-                            <span className="text-muted-foreground">{selectedBooking.hostel.address.city}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="font-medium">State:</span>
-                            <span className="text-muted-foreground">{selectedBooking.hostel.address.state}</span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-
-              {/* Special Requests or Notes */}
-              {selectedBooking.specialRequests && (
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-lg">Special Requests</h3>
-                  <p className="text-sm text-muted-foreground bg-blue-50 p-3 rounded-lg">
-                    {selectedBooking.specialRequests}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-            <CardFooter className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowDetails(false)}>
-                Close
-              </Button>
-              <Button
-                onClick={() => {
-                  // Redirect to payments page with booking filter
-                  window.location.href = `/dashboard/guest/payment?bookingId=${selectedBooking.id}`;
-                }}
-              >
-                <CreditCard className="w-4 h-4 mr-2" />
-                View All Payments
-              </Button>
-              <Button onClick={() => handleDownloadInvoice(selectedBooking)}>
-                <Download className="w-4 h-4 mr-2" />
-                Download Invoice
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
-      )}
     </div>
   );
 };

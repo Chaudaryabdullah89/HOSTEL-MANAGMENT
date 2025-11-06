@@ -44,6 +44,13 @@ export async function POST(request) {
       );
     }
 
+    if (user.isActive === false) {
+      return NextResponse.json(
+        { error: "Account is inactive. Contact admin." },
+        { status: 403 },
+      );
+    }
+
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
@@ -57,7 +64,8 @@ export async function POST(request) {
     const token = jwt.sign({
       id: user.id,
       email: user.email,
-      role: user.role
+      role: user.role,
+      active: user.isActive !== false
     }, process.env.JWT_SECRET, {
       expiresIn: "48h",
     });

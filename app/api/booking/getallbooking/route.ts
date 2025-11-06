@@ -31,6 +31,9 @@ export async function GET(request: NextRequest) {
                         status: true,
                         amenities: true,
                         floor: true,
+                        capacity: true,
+                        image: true,
+                        notes: true,
                     }
                 },
                 hostel: {

@@ -255,7 +255,7 @@ export function AppSidebar() {
           <h2 className="text-xl font-bold tracking-wide text-gray-800">
             {roleDisplayNames[currentRole]}
           </h2>
-          <NotificationBadge />
+          {/* <NotificationBadge /> */}
         </div>
       </SidebarHeader>
 

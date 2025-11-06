@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
     MessageSquare,
     AlertTriangle,
@@ -190,11 +191,43 @@ const page = () => {
 
     // Filter complaints by current user
     const userComplaints = complaints?.filter(complaint =>
-        complaint.user?.id === currentUserId || complaint.reportedBy === currentUserId
+        complaint.user?.id === currentUserId ||
+        complaint.reportedBy === currentUserId ||
+        complaint.userId === currentUserId
     ) || [];
 
-    console.log('Current user ID:', currentUserId);
-    console.log('User complaints:', userComplaints);
+    // Calculate stats from user complaints (frontend calculation)
+    const stats = React.useMemo(() => {
+        const total = userComplaints.length;
+        const pending = userComplaints.filter(c =>
+            c.status === 'PENDING' ||
+            c.status === 'SUBMITTED' ||
+            c.status === 'UNDER_REVIEW'
+        ).length;
+        const inProgress = userComplaints.filter(c =>
+            c.status === 'IN_PROGRESS' ||
+            c.status === 'IN PROGRESS'
+        ).length;
+        const resolved = userComplaints.filter(c =>
+            c.status === 'RESOLVED' ||
+            c.status === 'COMPLETED'
+        ).length;
+        const closed = userComplaints.filter(c => c.status === 'CLOSED').length;
+        const rejected = userComplaints.filter(c => c.status === 'REJECTED').length;
+        const withReply = userComplaints.filter(c => c.adminReply).length;
+        const withoutReply = userComplaints.filter(c => !c.adminReply).length;
+
+        return {
+            total,
+            pending,
+            inProgress,
+            resolved,
+            closed,
+            rejected,
+            withReply,
+            withoutReply
+        };
+    }, [userComplaints]);
 
     const filteredComplaints = userComplaints.filter((complaint) => {
         const matchesStatus =
@@ -319,29 +352,16 @@ const page = () => {
                 </div>
             </div>
 
-            {/* Debug Panel */}
-            <Card className="bg-blue-50 border-blue-200 mb-4">
-                <CardContent className="p-4">
-                    <h3 className="font-semibold text-blue-800 mb-2">Debug Information</h3>
-                    <div className="text-sm text-blue-700 space-y-1">
-                        <p>Current User ID: {currentUserId || 'Not logged in'}</p>
-                        <p>Total complaints from API: {complaints?.length || 0}</p>
-                        <p>User complaints (filtered): {userComplaints?.length || 0}</p>
-                        <p>Filtered complaints: {filteredComplaints.length}</p>
-                        <p>User bookings: {userBookings?.length || 0}</p>
-                        <p>Loading: {loading ? 'Yes' : 'No'}</p>
-                    </div>
-                </CardContent>
-            </Card>
 
-            {/* Stats Cards */}
+
+            {/* Stats Cards - Calculated on Frontend */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <Card>
                     <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-muted-foreground">Total Complaints</p>
-                                <p className="text-2xl font-bold">{userComplaints.length}</p>
+                                <p className="text-2xl font-bold">{stats.total}</p>
                             </div>
                             <MessageSquare className="w-8 h-8 text-muted-foreground" />
                         </div>
@@ -352,7 +372,7 @@ const page = () => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-muted-foreground">Pending</p>
-                                <p className="text-2xl font-bold">{userComplaints.filter(c => c.status === 'PENDING').length}</p>
+                                <p className="text-2xl font-bold">{stats.pending}</p>
                             </div>
                             <Clock className="w-8 h-8 text-yellow-600" />
                         </div>
@@ -363,7 +383,7 @@ const page = () => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-muted-foreground">In Progress</p>
-                                <p className="text-2xl font-bold">{userComplaints.filter(c => c.status === 'IN_PROGRESS').length}</p>
+                                <p className="text-2xl font-bold">{stats.inProgress}</p>
                             </div>
                             <MessageSquare className="w-8 h-8 text-blue-600" />
                         </div>
@@ -374,7 +394,7 @@ const page = () => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-muted-foreground">Resolved</p>
-                                <p className="text-2xl font-bold">{userComplaints.filter(c => c.status === 'RESOLVED').length}</p>
+                                <p className="text-2xl font-bold">{stats.resolved}</p>
                             </div>
                             <CheckCircle className="w-8 h-8 text-green-600" />
                         </div>

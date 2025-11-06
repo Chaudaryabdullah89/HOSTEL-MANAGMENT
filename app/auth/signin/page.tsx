@@ -62,7 +62,9 @@ export default function SigninPage() {
           router.push("/dashboard");
         }, 200);
       } else {
-        toast.error(data.message || "Login failed");
+        // Prefer backend-provided error; fall back to generic
+        const msg = data.error || data.message || (response.status === 403 ? "Your account is inactive. Contact admin." : response.status === 401 ? "Invalid email or password" : "Login failed");
+        toast.error(msg);
       }
     } catch (err) {
       toast.error("Network error");

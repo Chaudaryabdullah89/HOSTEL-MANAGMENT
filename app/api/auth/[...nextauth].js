@@ -15,6 +15,7 @@ export const authOptions = {
       if (user) {
         token.role = user.role;
         token.id = user.id;
+        token.active = user.isActive !== false;
       }
       return token;
     },
@@ -22,6 +23,7 @@ export const authOptions = {
       if (token) {
         session.user.role = token.role;
         session.user.id = token.id;
+        session.user.active = token.active;
       }
       return session;
     },
@@ -49,6 +51,11 @@ export const authOptions = {
         });
 
         if (!user) {
+          return null;
+        }
+
+        if (user.isActive === false) {
+          // Returning null denies sign in
           return null;
         }
 

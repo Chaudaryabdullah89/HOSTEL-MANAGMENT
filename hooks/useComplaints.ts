@@ -29,7 +29,15 @@ export const useComplaints = () => {
       if (!response.ok) {
         throw new Error('Failed to fetch complaints');
       }
-      return response.json();
+      const data = await response.json();
+      // Normalize: accept either an array or an object { complaints }
+      if (Array.isArray(data)) {
+        return { complaints: data };
+      }
+      if (data && Array.isArray(data.complaints)) {
+        return data;
+      }
+      return { complaints: [] };
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -86,9 +94,31 @@ export const useCreateComplaint = () => {
 
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['complaints'] });
-      queryClient.invalidateQueries({ queryKey: ['complaint-stats'] });
+    onSuccess: (newComplaint) => {
+      // Optimistically update the complaints list
+      queryClient.setQueryData(['complaints'], (oldData: any) => {
+        if (!oldData) return { complaints: [newComplaint] };
+        return {
+          ...oldData,
+          complaints: [newComplaint, ...(oldData.complaints || [])],
+        };
+      });
+      // Update stats
+      queryClient.setQueryData(['complaint-stats'], (oldStats: any) => {
+        if (!oldStats) return oldStats;
+        return {
+          ...oldStats,
+          summary: {
+            ...oldStats.summary,
+            totalComplaints: (oldStats.summary?.totalComplaints || 0) + 1,
+          },
+          statusBreakdown: oldStats.statusBreakdown?.map((s: any) =>
+            s.status === newComplaint.status
+              ? { ...s, count: (s.count || 0) + 1 }
+              : s
+          ) || [],
+        };
+      });
       toast.success('Complaint submitted successfully');
     },
     onError: (error: Error) => {
@@ -118,10 +148,43 @@ export const useUpdateComplaint = () => {
 
       return response.json();
     },
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['complaints'] });
-      queryClient.invalidateQueries({ queryKey: ['complaint', id] });
-      queryClient.invalidateQueries({ queryKey: ['complaint-stats'] });
+    onSuccess: (updatedComplaint, { id, data }) => {
+      // Get old complaint to check status change
+      const oldData = queryClient.getQueryData(['complaints']) as any;
+      const oldComplaint = oldData?.complaints?.find((c: any) => c.id === id);
+
+      // Optimistically update the complaints list
+      queryClient.setQueryData(['complaints'], (oldData: any) => {
+        if (!oldData || !oldData.complaints) return oldData;
+        return {
+          ...oldData,
+          complaints: oldData.complaints.map((complaint: any) =>
+            complaint.id === id ? updatedComplaint : complaint
+          ),
+        };
+      });
+      // Update single complaint cache
+      queryClient.setQueryData(['complaint', id], updatedComplaint);
+
+      // Update stats if status changed
+      if (oldComplaint && data.status && oldComplaint.status !== data.status) {
+        queryClient.setQueryData(['complaint-stats'], (oldStats: any) => {
+          if (!oldStats) return oldStats;
+          return {
+            ...oldStats,
+            statusBreakdown: oldStats.statusBreakdown?.map((s: any) => {
+              if (s.status === oldComplaint.status) {
+                return { ...s, count: Math.max((s.count || 0) - 1, 0) };
+              }
+              if (s.status === data.status) {
+                return { ...s, count: (s.count || 0) + 1 };
+              }
+              return s;
+            }) || [],
+          };
+        });
+      }
+
       toast.success('Complaint updated successfully');
     },
     onError: (error: Error) => {
@@ -145,11 +208,39 @@ export const useDeleteComplaint = () => {
         throw new Error(error.error || 'Failed to delete complaint');
       }
 
-      return response.json();
+      return { id };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['complaints'] });
-      queryClient.invalidateQueries({ queryKey: ['complaint-stats'] });
+    onSuccess: (_, deletedId) => {
+      // Get old data to find deleted complaint status
+      const oldData = queryClient.getQueryData(['complaints']) as any;
+      const deletedComplaint = oldData?.complaints?.find((c: any) => c.id === deletedId);
+
+      // Optimistically remove from complaints list
+      queryClient.setQueryData(['complaints'], (oldData: any) => {
+        if (!oldData || !oldData.complaints) return oldData;
+        return {
+          ...oldData,
+          complaints: oldData.complaints.filter((complaint: any) => complaint.id !== deletedId),
+        };
+      });
+      // Remove from single complaint cache
+      queryClient.removeQueries({ queryKey: ['complaint', deletedId] });
+      // Update stats
+      queryClient.setQueryData(['complaint-stats'], (oldStats: any) => {
+        if (!oldStats) return oldStats;
+        return {
+          ...oldStats,
+          summary: {
+            ...oldStats.summary,
+            totalComplaints: Math.max((oldStats.summary?.totalComplaints || 0) - 1, 0),
+          },
+          statusBreakdown: oldStats.statusBreakdown?.map((s: any) =>
+            deletedComplaint && s.status === deletedComplaint.status
+              ? { ...s, count: Math.max((s.count || 0) - 1, 0) }
+              : s
+          ) || [],
+        };
+      });
       toast.success('Complaint deleted successfully');
     },
     onError: (error: Error) => {
@@ -179,10 +270,19 @@ export const useReplyToComplaint = () => {
 
       return response.json();
     },
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['complaints'] });
-      queryClient.invalidateQueries({ queryKey: ['complaint', id] });
-      queryClient.invalidateQueries({ queryKey: ['complaint-stats'] });
+    onSuccess: (updatedComplaint, { id }) => {
+      // Optimistically update the complaints list
+      queryClient.setQueryData(['complaints'], (oldData: any) => {
+        if (!oldData || !oldData.complaints) return oldData;
+        return {
+          ...oldData,
+          complaints: oldData.complaints.map((complaint: any) =>
+            complaint.id === id ? updatedComplaint : complaint
+          ),
+        };
+      });
+      // Update single complaint cache
+      queryClient.setQueryData(['complaint', id], updatedComplaint);
       toast.success('Reply sent successfully');
     },
     onError: (error: Error) => {

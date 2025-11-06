@@ -190,30 +190,32 @@ const page = () => {
 
     setIsUpdating(true);
     try {
+      const updateData = {
+        roomnumber: selectedroom.roomNumber,
+        floor: parseInt(selectedroom.floor) || 0,
+        capacity: parseInt(selectedroom.capacity) || 0,
+        pricepernight: parseFloat(selectedroom.pricePerNight) || 0,
+        pricePerMonth: parseFloat(selectedroom.pricePerMonth) || 0,
+        type: selectedroom.type,
+        status: selectedroom.status,
+        amenities: Array.isArray(selectedroom.amenities) ? selectedroom.amenities : [],
+        notes: selectedroom.notes || "",
+        image: selectedroom.image || "",
+      };
+
       const response = await fetch(`/api/room/updateroom/${selectedroom.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          roomnumber: selectedroom.roomNumber,
-          floor: selectedroom.floor,
-          capacity: selectedroom.capacity,
-          pricepernight: selectedroom.pricePerNight,
-          pricePerMonth: selectedroom.pricePerMonth,
-          type: selectedroom.type,
-          status: selectedroom.status,
-          amenities: selectedroom.amenities,
-          notes: selectedroom.notes,
-        }),
+        body: JSON.stringify(updateData),
       });
 
       const data = await response.json();
 
       if (response.ok) {
         toast.success("Room updated successfully!");
-
-        // React Query automatically updates the cache
+        refetchRooms();
         setIsEditDialogOpen(false);
         setselectedRoom(null);
       } else {
@@ -340,13 +342,16 @@ const page = () => {
         const hostelName = hostels.find(h => h.id === formselectedHostelId)?.hostelName;
         toast.success(`Room created successfully in ${hostelName}!`);
 
-        // React Query automatically updates the cache
-
         // Reset form
         resetForm();
 
         // Close dialog immediately
         setIsDialogOpen(false);
+        
+        // Refetch rooms to update the list
+        if (selectedHostelId === formselectedHostelId) {
+          refetchRooms();
+        }
       } else {
         const errorMessage = data.error || "Failed to create room";
         setError(errorMessage);
@@ -574,7 +579,7 @@ const page = () => {
               </DialogHeader>
 
               <div className="overflow-y-auto px-6 pb-6 pt-2" style={{ maxHeight: '70vh' }}>
-                <form className="space-y-6 overflow-visible" onSubmit={handleCreateRoom}>
+                <form id="create-room-form" className="space-y-6 overflow-visible" onSubmit={handleCreateRoom}>
                   {/* Room Basic Information */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium text-gray-900 border-b pb-2">
@@ -807,8 +812,11 @@ const page = () => {
                       <div className="col-span-2 space-y-2">
                         <ImageUpload
                           value={image}
-                          onChange={(url) => setImage(url)}
-                          label="Room Image *"
+                          onChange={(url) => {
+                            setImage(url);
+                            if (error) setError("");
+                          }}
+                          label="Room Image (Optional)"
                           maxSize={5}
                         />
                       </div>
@@ -963,14 +971,25 @@ const page = () => {
                   className="cursor-pointer"
                   type="button"
                   variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
+                  onClick={() => {
+                    setIsDialogOpen(false);
+                    resetForm();
+                  }}
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
+                  form="create-room-form"
                   className="bg-blue-600 cursor-pointer hover:bg-blue-700"
                   disabled={isCreating}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const form = document.getElementById('create-room-form');
+                    if (form && form instanceof HTMLFormElement) {
+                      form.requestSubmit();
+                    }
+                  }}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   {isCreating ? "Creating..." : "Add Room"}
@@ -1569,21 +1588,40 @@ const page = () => {
                                         type="number"
                                         min="0"
                                         className="w-full"
-                                        defaultValue={selectedroom.pricePerNight}
+                                        value={selectedroom.pricePerNight || ""}
+                                        onChange={(e) => setselectedRoom({ ...selectedroom, pricePerNight: e.target.value })}
+                                        required
                                       />
                                     </div>
                                     <div className="space-y-2">
                                       <Label className="text-sm font-medium text-gray-700">
-                                        Price per Month (PKR)
+                                        Price per Month (PKR) *
                                       </Label>
                                       <Input
                                         placeholder="e.g. 5000"
                                         type="number"
                                         min="0"
                                         className="w-full"
-                                        defaultValue={selectedroom.pricePerMonth}
+                                        value={selectedroom.pricePerMonth || ""}
+                                        onChange={(e) => setselectedRoom({ ...selectedroom, pricePerMonth: e.target.value })}
+                                        required
                                       />
                                     </div>
+                                  </div>
+                                </div>
+
+                                {/* Image Upload */}
+                                <div className="space-y-4">
+                                  <h3 className="text-lg font-medium text-gray-900 border-b pb-2">
+                                    Room Image
+                                  </h3>
+                                  <div className="space-y-2">
+                                    <ImageUpload
+                                      value={selectedroom.image || ""}
+                                      onChange={(url) => setselectedRoom({ ...selectedroom, image: url })}
+                                      label="Room Image (Optional)"
+                                      maxSize={5}
+                                    />
                                   </div>
                                 </div>
 
@@ -1612,6 +1650,21 @@ const page = () => {
                                     <p className="text-xs text-gray-500">
                                       💡 Tip: Use commas to separate multiple amenities for better organization
                                     </p>
+                                  </div>
+                                </div>
+
+                                {/* Notes */}
+                                <div className="space-y-4">
+                                  <h3 className="text-lg font-medium text-gray-900 border-b pb-2">
+                                    Additional Notes
+                                  </h3>
+                                  <div className="space-y-2">
+                                    <textarea
+                                      placeholder="Any additional information about the room..."
+                                      className="w-full h-24 p-3 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                      value={selectedroom.notes || ""}
+                                      onChange={(e) => setselectedRoom({ ...selectedroom, notes: e.target.value })}
+                                    />
                                   </div>
                                 </div>
 

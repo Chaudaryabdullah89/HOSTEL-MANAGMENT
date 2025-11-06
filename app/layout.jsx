@@ -3,7 +3,8 @@ import { SessionProvider } from "./context/sessiondata";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { AppDataProvider } from "@/lib/contexts/AppDataContext";
 import { Toaster } from "@/components/ui/toaster";
-import { ToastContainer, toast } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export const metadata = {
   title: "Next.js Session Example",
@@ -20,8 +21,21 @@ export default function RootLayout({ children }) {
             <SessionProvider>{children}</SessionProvider>
           </AppDataProvider>
         </QueryProvider>
-        <ToastContainer />
-
+        {/* Toast notifications - react-hot-toast (used by most pages) */}
+        <Toaster />
+        {/* Toast notifications - react-toastify (used by some pages) */}
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
       </body>
     </html>
   );

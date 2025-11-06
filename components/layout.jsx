@@ -10,6 +10,7 @@ import { useContext } from "react";
 import { Footer } from "./footer";
 import { SessionContext } from "../app/context/sessiondata";
 import Link from "next/link";
+import { NotificationBadge } from "./notification-badge";
 export default function Layout({ children }) {
   const { session, loading } = useContext(SessionContext);
   return (
@@ -19,7 +20,10 @@ export default function Layout({ children }) {
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
           <div className=" flex justify-between w-full p-2 ml-3 items-center gap-2">
-            <h1 className="text-lg font-semibold">Hostel Management System</h1>
+            <div className="flex items-center justify-between gap-3">
+              <h1 className="text-lg font-semibold">Hostel Management System</h1>
+              <NotificationBadge />
+            </div>
             <Link href={`/dashboard/${session?.user?.role.toLowerCase()}/profile`} className="flex items-center justify-center gap-3">
               <Avatar className="h-8 w-8 bg-gray-200 flex items-center justify-center rounded-full">
                 <AvatarImage src={session?.user?.image || ""} />

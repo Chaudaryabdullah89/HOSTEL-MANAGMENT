@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Bell, X, CheckCircle, AlertCircle, User, CreditCard, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,7 @@ export function NotificationBadge({ className }: NotificationBadgeProps) {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     const fetchNotifications = async () => {
         setLoading(true);
@@ -71,6 +72,23 @@ export function NotificationBadge({ className }: NotificationBadgeProps) {
         const interval = setInterval(fetchNotifications, 30000);
         return () => clearInterval(interval);
     }, []);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isOpen]);
 
     const getNotificationIcon = (type: string) => {
         switch (type) {
@@ -113,7 +131,7 @@ export function NotificationBadge({ className }: NotificationBadgeProps) {
     const highPriorityCount = notifications.filter(n => n.priority === 'high').length;
 
     return (
-        <div className={`relative ${className}`}>
+        <div className={`relative ${className}`} ref={dropdownRef}>
             <Button
                 variant="outline"
                 size="sm"
@@ -124,74 +142,97 @@ export function NotificationBadge({ className }: NotificationBadgeProps) {
                 {totalNotifications > 0 && (
                     <Badge
                         variant="destructive"
-                        className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                        className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs font-bold"
                     >
-                        {totalNotifications}
+                        {totalNotifications > 99 ? '99+' : totalNotifications}
                     </Badge>
                 )}
             </Button>
 
             {isOpen && (
-                <Card className="absolute right-0 top-12 w-96 z-50 shadow-lg">
-                    <CardHeader className="pb-3">
+                <Card className="absolute right-0 top-12 w-96 max-w-[calc(100vw-2rem)] z-[9999] shadow-xl border border-gray-200 bg-white">
+                    <CardHeader className="pb-3 border-b">
                         <div className="flex items-center justify-between">
-                            <CardTitle className="text-lg">Notifications</CardTitle>
+                            <CardTitle className="text-lg font-semibold">Notifications</CardTitle>
                             <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setIsOpen(false)}
+                                className="h-8 w-8 p-0"
                             >
                                 <X className="w-4 h-4" />
                             </Button>
                         </div>
                         {highPriorityCount > 0 && (
-                            <Badge variant="destructive" className="w-fit">
-                                {highPriorityCount} High Priority
-                            </Badge>
+                            <div className="mt-2">
+                                <Badge variant="destructive" className="w-fit">
+                                    {highPriorityCount} High Priority
+                                </Badge>
+                            </div>
                         )}
                     </CardHeader>
 
                     <CardContent className="p-0">
-                        <ScrollArea className="h-96">
+                        <ScrollArea className="h-96 max-h-[calc(100vh-12rem)]">
                             {loading ? (
-                                <div className="p-4 text-center text-sm text-muted-foreground">
+                                <div className="p-8 text-center text-sm text-muted-foreground">
+                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 mx-auto mb-2"></div>
                                     Loading notifications...
                                 </div>
                             ) : notifications.length === 0 ? (
-                                <div className="p-4 text-center text-sm text-muted-foreground">
-                                    No new notifications
+                                <div className="p-8 text-center text-sm text-muted-foreground">
+                                    <Bell className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                    <p>No new notifications</p>
                                 </div>
                             ) : (
-                                <div className="space-y-1">
+                                <div className="divide-y divide-gray-100">
                                     {notifications.map((notification) => (
                                         <div
                                             key={notification.id}
-                                            className={`p-3 border-b hover:bg-gray-50 transition-colors ${getPriorityColor(notification.priority)}`}
+                                            className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${notification.priority === 'high' ? 'bg-red-50/50' :
+                                                notification.priority === 'medium' ? 'bg-yellow-50/50' :
+                                                    'bg-white'
+                                                }`}
                                         >
                                             <div className="flex items-start gap-3">
-                                                <div className="flex-shrink-0 mt-1">
+                                                <div className={`flex-shrink-0 mt-1 p-2 rounded-full ${notification.priority === 'high' ? 'bg-red-100 text-red-600' :
+                                                    notification.priority === 'medium' ? 'bg-yellow-100 text-yellow-600' :
+                                                        'bg-blue-100 text-blue-600'
+                                                    }`}>
                                                     {getNotificationIcon(notification.type)}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center justify-between">
-                                                        <h4 className="text-sm font-medium">{notification.title}</h4>
-                                                        <span className="text-xs text-muted-foreground">
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <div className="flex-1">
+                                                            <h4 className="text-sm font-semibold text-gray-900">{notification.title}</h4>
+                                                            <p className="text-sm text-gray-600 mt-1">
+                                                                {notification.message}
+                                                            </p>
+                                                        </div>
+                                                        <span className="text-xs text-gray-400 whitespace-nowrap">
                                                             {formatTime(notification.createdAt)}
                                                         </span>
                                                     </div>
-                                                    <p className="text-sm text-muted-foreground mt-1">
-                                                        {notification.message}
-                                                    </p>
                                                     {notification.user && (
-                                                        <div className="mt-2 text-xs">
+                                                        <div className="mt-2 text-xs text-gray-500">
                                                             <span className="font-medium">User:</span> {notification.user.name} ({notification.user.role})
                                                         </div>
                                                     )}
                                                     {notification.booking && (
-                                                        <div className="mt-1 text-xs">
-                                                            <span className="font-medium">Room:</span> {notification.booking.roomNumber} |
-                                                            <span className="font-medium"> Hostel:</span> {notification.booking.hostelName} |
-                                                            <span className="font-medium"> Amount:</span> {notification.booking.price} PKR
+                                                        <div className="mt-2 text-xs text-gray-500 space-y-1">
+                                                            <div>
+                                                                <span className="font-medium">Room:</span> {notification.booking.roomNumber} |
+                                                                <span className="font-medium"> Hostel:</span> {notification.booking.hostelName}
+                                                            </div>
+                                                            <div>
+                                                                <span className="font-medium">Amount:</span> {notification.booking.price.toLocaleString()} PKR
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {notification.payment && (
+                                                        <div className="mt-2 text-xs text-gray-500">
+                                                            <span className="font-medium">Amount:</span> {notification.payment.amount.toLocaleString()} PKR |
+                                                            <span className="font-medium"> Method:</span> {notification.payment.method}
                                                         </div>
                                                     )}
                                                 </div>

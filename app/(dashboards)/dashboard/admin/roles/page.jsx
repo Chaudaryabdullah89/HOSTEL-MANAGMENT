@@ -82,6 +82,7 @@ import { Label } from "@/components/ui/label";
 import { PageLoadingSkeleton, LoadingSpinner, ItemLoadingOverlay } from "@/components/ui/loading-skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useHostels } from "@/hooks/useHostels";
+import { useToggleUserStatus } from '@/hooks/useUsers';
 
 const page = () => {
     const router = useRouter();
@@ -99,6 +100,7 @@ const page = () => {
     const { data: users = [], isLoading: loading, error: queryError, refetch: refetchUsers } = useUsers();
     const updateUserRoleMutation = useUpdateUserRole();
     const { data: hostels = [], isLoading: loadingHostels, error: queryErrorHostels, refetch: refetchHostels } = useHostels();
+    const toggleUserStatus = useToggleUserStatus();
 
     // Ensure this only runs on the client side
     useEffect(() => {
@@ -567,8 +569,8 @@ const page = () => {
                                                 </div>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-xs text-gray-500">Status</span>
-                                                    <span className="text-xs text-gray-900">
-                                                        {user.role === "GUEST" ? "Guest" : "Active"}
+                                                    <span className={`text-xs ${user.isActive ? 'text-green-700' : 'text-red-700'}`}>
+                                                        {user.isActive ? 'Active' : 'Inactive'}
                                                     </span>
                                                 </div>
                                             </div>
@@ -649,6 +651,23 @@ const page = () => {
                                         >
                                             <Edit className="h-3 w-3" />
                                             Update Role
+                                        </Button>
+                                        <Button
+                                            onClick={() => toggleUserStatus.mutate({ id: user.id, status: user.isActive ? 'inactive' : 'active' })}
+                                            variant={user.isActive ? "destructive" : "secondary"}
+                                            className="px-3 py-2 cursor-pointer text-xs h-8 min-h-0 rounded-md flex items-center gap-1"
+                                            title={user.isActive ? 'Deactivate User' : 'Activate User'}
+                                            disabled={toggleUserStatus.isPending}
+                                        >
+                                            {user.isActive ? (
+                                                <>
+                                                    <UserX className="h-3 w-3" /> Deactivate
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <UserCheck className="h-3 w-3" /> Activate
+                                                </>
+                                            )}
                                         </Button>
                                     </div>
                                 </CardContent>

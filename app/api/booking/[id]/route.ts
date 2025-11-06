@@ -59,6 +59,21 @@ export async function DELETE(
             where: { id: bookingId }
         });
 
+        // If user has no more bookings, set them inactive
+        try {
+            const remainingBookings = await prisma.booking.count({
+                where: { userId: booking.userId },
+            });
+            if (remainingBookings === 0) {
+                await prisma.user.update({
+                    where: { id: booking.userId },
+                    data: { isActive: false },
+                });
+            }
+        } catch (checkError) {
+            console.error("Error updating user active status:", checkError);
+        }
+
         if (booking.roomId) {
             await updateRoomStatusBasedOnCapacity(booking.roomId);
         }

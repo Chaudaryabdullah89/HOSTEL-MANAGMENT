@@ -63,17 +63,23 @@ export function ImageUpload({
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || "Upload failed");
+                const errorData = await response.json().catch(() => ({ error: "Upload failed" }));
+                throw new Error(errorData.error || `Upload failed: ${response.status}`);
             }
 
             const result = await response.json();
-            onChange(result.url);
-            toast.success("Image uploaded successfully");
+            if (result.url) {
+                onChange(result.url);
+                toast.success("Image uploaded successfully");
+            } else {
+                throw new Error("No URL returned from server");
+            }
         } catch (error) {
             console.error("Upload error:", error);
-            toast.error(error instanceof Error ? error.message : "Upload failed");
-            setPreview(null);
+            const errorMessage = error instanceof Error ? error.message : "Upload failed";
+            toast.error(errorMessage);
+            // Don't clear preview on error - let user try again
+            // setPreview(null);
         } finally {
             setUploading(false);
         }

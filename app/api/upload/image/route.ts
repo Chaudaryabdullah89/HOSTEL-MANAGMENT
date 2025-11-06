@@ -43,19 +43,38 @@ export async function POST(request: NextRequest) {
         const uploadsDir = join(process.cwd(), "public", "uploads");
         try {
             await mkdir(uploadsDir, { recursive: true });
-        } catch (error) {
-            // Directory might already exist
+        } catch (error: any) {
+            console.error("Error creating uploads directory:", error);
+            // If directory creation fails, try to continue anyway
+            if (error.code !== 'EEXIST') {
+                throw new Error(`Failed to create uploads directory: ${error.message}`);
+            }
         }
 
         // Generate unique filename
         const timestamp = Date.now();
         const randomString = Math.random().toString(36).substring(2, 15);
-        const fileExtension = file.name.split('.').pop();
+        const fileExtension = file.name.split('.').pop() || 'jpg';
         const filename = `${timestamp}_${randomString}.${fileExtension}`;
         const filepath = join(uploadsDir, filename);
 
         // Write file to disk
-        await writeFile(filepath, buffer);
+        try {
+            await writeFile(filepath, buffer);
+        } catch (error: any) {
+            console.error("Error writing file:", error);
+            // On Vercel/serverless, filesystem might be read-only
+            // Return a base64 data URL as fallback
+            const base64 = Buffer.from(buffer).toString('base64');
+            const dataUrl = `data:${file.type};base64,${base64}`;
+            
+            return NextResponse.json({
+                success: true,
+                url: dataUrl,
+                filename: filename,
+                warning: "File saved as data URL (filesystem not writable)",
+            });
+        }
 
         // Return the public URL
         const publicUrl = `/uploads/${filename}`;
@@ -65,10 +84,13 @@ export async function POST(request: NextRequest) {
             url: publicUrl,
             filename: filename,
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error uploading file:", error);
         return NextResponse.json(
-            { error: "Failed to upload file" },
+            { 
+                error: error.message || "Failed to upload file",
+                details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            },
             { status: 500 }
         );
     }

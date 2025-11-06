@@ -586,10 +586,10 @@ const page = () => {
               dateFilter !== "All Time" ||
               sortBy !== "newest" ||
               searchTerm) && (
-              <Badge variant="secondary" className="text-sm">
-                Filtered
-              </Badge>
-            )}
+                <Badge variant="secondary" className="text-sm">
+                  Filtered
+                </Badge>
+              )}
           </div>
           <div className="text-sm text-muted-foreground">
             {sortBy === "newest" && "Sorted by newest first"}
@@ -801,10 +801,10 @@ const page = () => {
               </h3>
               <p className="text-gray-500 mb-4">
                 {searchTerm ||
-                statusFilter !== "All Status" ||
-                priorityFilter !== "All Priority" ||
-                categoryFilter !== "All Categories" ||
-                hostelFilter !== "All Hostels"
+                  statusFilter !== "All Status" ||
+                  priorityFilter !== "All Priority" ||
+                  categoryFilter !== "All Categories" ||
+                  hostelFilter !== "All Hostels"
                   ? "Try adjusting your filters to see more results."
                   : "No complaints have been submitted yet."}
               </p>
