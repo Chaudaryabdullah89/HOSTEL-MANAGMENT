@@ -109,62 +109,78 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check if user exists and has a valid role for salary
-        const user = await prisma.user.findUnique({
-            where: { id: staffId },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                role: true,
-                phone: true,
-                hostelId: true
-            }
+        // First, try to find if staffId is a staff record ID
+        let staffRecord = await prisma.staff.findUnique({
+            where: { id: staffId }
         });
 
-        if (!user) {
-            return NextResponse.json(
-                { error: "User not found" },
-                { status: 404 }
-            );
-        }
-        const validRoles = ["STAFF", "WARDEN", "ADMIN"];
-        if (!validRoles.includes(user.role)) {
-            return NextResponse.json(
-                { error: "User role does not qualify for salary payments" },
-                { status: 400 }
-            );
-        }
-
-        // Check if staff record exists, if not create one
-        let staffRecord = await prisma.staff.findFirst({
-            where: { email: user.email }
-        });
-
+        // If not found, check if it's a User ID (for users without staff records)
         if (!staffRecord) {
-            // Get a default hostel ID if user doesn't have one assigned
-            let defaultHostelId = user.hostelId;
-            if (!defaultHostelId) {
-                const defaultHostel = await prisma.hostel.findFirst();
-                defaultHostelId = defaultHostel?.id || null;
-            }
-
-            // Create staff record for the user
-            staffRecord = await prisma.staff.create({
-                data: {
-                    name: user.name || 'Unknown User',
-                    email: user.email,
-                    phone: user.phone || '',
-                    hostelId: defaultHostelId || 'default-hostel-id',
-                    position: user.role === "ADMIN" ? "Administrator" :
-                        user.role === "WARDEN" ? "Warden" : "Staff Member",
-                    department: user.role === "ADMIN" ? "Administration" :
-                        user.role === "WARDEN" ? "Management" : "Operations",
-                    baseSalary: 0, // Default value, can be updated later
-                    isActive: true,
-                    joinDate: new Date()
+            const user = await prisma.user.findUnique({
+                where: { id: staffId },
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true,
+                    phone: true,
+                    hostelId: true
                 }
             });
+
+            if (!user) {
+                return NextResponse.json(
+                    { error: "Staff member or user not found" },
+                    { status: 404 }
+                );
+            }
+
+            // Validate user role
+            const validRoles = ["STAFF", "WARDEN", "ADMIN"];
+            if (!validRoles.includes(user.role)) {
+                return NextResponse.json(
+                    { error: "User role does not qualify for salary payments" },
+                    { status: 400 }
+                );
+            }
+
+            // Check if staff record exists by email, if not create one
+            staffRecord = await prisma.staff.findFirst({
+                where: { email: user.email }
+            });
+
+            if (!staffRecord) {
+                // Get a default hostel ID if user doesn't have one assigned
+                let defaultHostelId = user.hostelId;
+                if (!defaultHostelId) {
+                    const defaultHostel = await prisma.hostel.findFirst();
+                    defaultHostelId = defaultHostel?.id || null;
+                }
+
+                if (!defaultHostelId) {
+                    return NextResponse.json(
+                        { error: "No hostel found. Please assign a hostel to the user or create a hostel first." },
+                        { status: 400 }
+                    );
+                }
+
+                // Create staff record for the user
+                staffRecord = await prisma.staff.create({
+                    data: {
+                        name: user.name || 'Unknown User',
+                        email: user.email,
+                        phone: user.phone || '',
+                        hostelId: defaultHostelId,
+                        position: user.role === "ADMIN" ? "Administrator" :
+                            user.role === "WARDEN" ? "Warden" : "Staff Member",
+                        department: user.role === "ADMIN" ? "Administration" :
+                            user.role === "WARDEN" ? "Management" : "Operations",
+                        baseSalary: 0, // Default value, can be updated later
+                        isActive: true,
+                        joinDate: new Date()
+                    }
+                });
+            }
         }
 
         // Use the staff record ID for salary creation
