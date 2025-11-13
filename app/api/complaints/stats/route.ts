@@ -81,34 +81,49 @@ export async function GET(request: NextRequest) {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
+    // Get resolved complaints in last 30 days using repliedAt or updatedAt
     const resolvedComplaints = await prisma.complaint.count({
       where: {
         ...whereClause,
         status: "RESOLVED",
-        resolvedAt: {
-          gte: thirtyDaysAgo,
-        },
+        OR: [
+          {
+            repliedAt: {
+              gte: thirtyDaysAgo,
+            },
+          },
+          {
+            repliedAt: null,
+            updatedAt: {
+              gte: thirtyDaysAgo,
+            },
+          },
+        ],
       },
     });
 
-    // Get average resolution time (in days)
+    // Get average resolution time (in days) using repliedAt or updatedAt
     const resolvedComplaintsWithTimes = await prisma.complaint.findMany({
       where: {
         ...whereClause,
         status: "RESOLVED",
-        resolvedAt: { not: null },
       },
       select: {
         createdAt: true,
-        resolvedAt: true,
+        repliedAt: true,
+        updatedAt: true,
       },
     });
 
     const avgResolutionTime =
       resolvedComplaintsWithTimes.length > 0
         ? resolvedComplaintsWithTimes.reduce((sum: number, complaint: any) => {
+          // Use repliedAt if available, otherwise use updatedAt as fallback
+          const resolvedDate = complaint.repliedAt || complaint.updatedAt;
+          if (!resolvedDate) return sum;
+          
           const resolutionTime =
-            complaint.resolvedAt!.getTime() - complaint.createdAt.getTime();
+            new Date(resolvedDate).getTime() - new Date(complaint.createdAt).getTime();
           return sum + resolutionTime / (1000 * 60 * 60 * 24); // Convert to days
         }, 0) / resolvedComplaintsWithTimes.length
         : 0;

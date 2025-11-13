@@ -422,7 +422,7 @@ const page = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats?.statusBreakdown?.find((s) => s.status === "SUBMITTED")
+              {stats?.statusBreakdown?.find((s) => s.status === "PENDING")
                 ?.count || 0}
             </div>
             <p className="text-xs text-muted-foreground">New complaints</p>
@@ -492,12 +492,10 @@ const page = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="All Status">All Status</SelectItem>
-                <SelectItem value="SUBMITTED">Submitted</SelectItem>
-                <SelectItem value="UNDER_REVIEW">Under Review</SelectItem>
+                <SelectItem value="PENDING">Pending</SelectItem>
                 <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
                 <SelectItem value="RESOLVED">Resolved</SelectItem>
                 <SelectItem value="CLOSED">Closed</SelectItem>
-                <SelectItem value="REJECTED">Rejected</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -943,12 +941,10 @@ const page = () => {
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="SUBMITTED">Submitted</SelectItem>
-                  <SelectItem value="UNDER_REVIEW">Under Review</SelectItem>
+                  <SelectItem value="PENDING">Pending</SelectItem>
                   <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
                   <SelectItem value="RESOLVED">Resolved</SelectItem>
                   <SelectItem value="CLOSED">Closed</SelectItem>
-                  <SelectItem value="REJECTED">Rejected</SelectItem>
                 </SelectContent>
               </Select>
             </div>

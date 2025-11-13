@@ -175,7 +175,7 @@ const page = () => {
             <Wrench className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.summary?.totalRequests || 0}</div>
+            <div className="text-2xl font-bold">{stats?.summary?.totalComplaints || 0}</div>
             <p className="text-xs text-muted-foreground">All complaints</p>
           </CardContent>
         </Card>
@@ -198,7 +198,7 @@ const page = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats?.statusBreakdown?.find(s => s.status === 'COMPLETED')?.count || 0}
+              {stats?.statusBreakdown?.find(s => s.status === 'RESOLVED')?.count || 0}
             </div>
             <p className="text-xs text-muted-foreground">Resolved complaints</p>
           </CardContent>
@@ -291,9 +291,8 @@ const page = () => {
                 <SelectItem value="All Status">All Status</SelectItem>
                 <SelectItem value="PENDING">Open</SelectItem>
                 <SelectItem value="IN_PROGRESS">In Review</SelectItem>
-                <SelectItem value="COMPLETED">Resolved</SelectItem>
-                <SelectItem value="CANCELLED">Closed</SelectItem>
-                <SelectItem value="REJECTED">Rejected</SelectItem>
+                <SelectItem value="RESOLVED">Resolved</SelectItem>
+                <SelectItem value="CLOSED">Closed</SelectItem>
               </SelectContent>
             </Select>
           </div>
