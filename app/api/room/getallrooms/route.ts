@@ -20,7 +20,7 @@ export async function GET(request: Request) {
       const wardenAuth = await requireWardenAuth(request);
       wardenHostelIds = wardenAuth.hostelIds;
       actingRole = "WARDEN";
-      actingUser = wardenAuth.user?.email || "unknown-warden";
+      actingUser = wardenAuth.user?.email || "unknown-warden";  
       wardenTried = true;
       console.log(`[ROOMS][${new Date().toISOString()}] Warden authorized: ${actingUser}. Assigned hostelIds: ${wardenHostelIds.join(",") || "NONE"}`);
     } catch (error) {

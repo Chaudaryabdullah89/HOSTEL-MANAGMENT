@@ -10,9 +10,17 @@ import { useContext } from "react";
 import { Footer } from "./footer";
 import { SessionContext } from "../app/context/sessiondata";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 import { NotificationBadge } from "./notification-badge";
 export default function Layout({ children }) {
+  const { theme, setTheme, resolvedTheme, systemTheme } = useTheme();
   const { session, loading } = useContext(SessionContext);
+  
+  const handleThemeChange = () => {
+    const newTheme = resolvedTheme === "light" ? "dark" : "light";
+    setTheme(newTheme);
+  };
+  
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -22,6 +30,12 @@ export default function Layout({ children }) {
           <div className=" flex justify-between w-full p-2 ml-3 items-center gap-2">
             <div className="flex items-center justify-between gap-3">
               <h1 className="text-lg font-semibold">Hostel Management System</h1>
+              {/* <button 
+                className="bg-white border border-gray-300 rounded-md px-2 py-1 hover:bg-gray-100 text-sm" 
+                onClick={handleThemeChange}
+              >
+                {resolvedTheme === "light" ? "🌙 Dark" : "☀️ Light"}
+              </button> */}
               <NotificationBadge />
             </div>
             <Link href={`/dashboard/${session?.user?.role.toLowerCase()}/profile`} className="flex items-center justify-center gap-3">

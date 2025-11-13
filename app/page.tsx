@@ -50,7 +50,7 @@ export default function Home() {
         <AlertTriangle className="text-yellow-700 h-16 w-16 mb-4" />
         <div className="text-xl text-yellow-900 mb-2 font-semibold">Login Required</div>
         <div className="text-gray-600 mb-6">You must be logged in to view this page.</div>
-        <Button onClick={() => router.replace("/login")}>Go to Login</Button>
+        <Button onClick={() => router.replace("/auth/signin")}>Go to Login</Button>
       </main>
     );
   }

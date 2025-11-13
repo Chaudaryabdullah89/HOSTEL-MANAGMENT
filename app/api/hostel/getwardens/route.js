@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma"; // assumes Prisma is setup in /lib/prisma
 
 export async function GET() {
   try {
-    // Fetch all users with WARDEN role
     const users = await prisma.user.findMany({
       where: {
         role: 'WARDEN'
@@ -23,15 +22,13 @@ export async function GET() {
       }
     });
 
-    // Get hostel information for wardens
     const transformedWardens = [];
 
     for (const user of users) {
-      const wardenRecord = user.wardens[0]; // Should only be one record per user
+      const wardenRecord = user.wardens[0];
       const hostelIds = wardenRecord?.hostelIds || [];
 
       if (hostelIds.length > 0) {
-        // Fetch hostel names for this warden
         const hostels = await prisma.hostel.findMany({
           where: {
             id: { in: hostelIds }

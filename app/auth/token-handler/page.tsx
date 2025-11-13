@@ -15,8 +15,6 @@ function TokenHandlerContent() {
                 const token = searchParams.get('token');
                 const userData = searchParams.get('user');
 
-                console.log('Token handler - Token:', token ? 'Present' : 'Missing');
-                console.log('Token handler - User data:', userData ? 'Present' : 'Missing');
 
                 if (!token) {
                     setStatus('error');

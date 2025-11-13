@@ -300,29 +300,7 @@ const ReportsPage = () => {
       </Card>
 
       {/* Debug Panel */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardContent className="p-4">
-          <h3 className="font-semibold text-blue-800 mb-2">Warden Debug Information</h3>
-          <div className="text-sm text-blue-700 space-y-1">
-            <p>Current User ID: {currentUserId || 'Not logged in'}</p>
-            <p>Warden Hostels: {wardenHostels.length}</p>
-            {wardenHostels.length > 0 && (
-              <div className="mt-2">
-                <p className="font-medium">Assigned Hostels:</p>
-                <ul className="list-disc list-inside ml-2">
-                  {wardenHostels.map((hostel, index) => (
-                    <li key={hostel.id}>
-                      {hostel.hostelName} ({hostel.hostelType}) - {hostel.hostelsStatus}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            <p>Selected Hostel ID: {filters.hostelId || 'All Hostels'}</p>
-            <p>Date Range: {filters.startDate} to {filters.endDate}</p>
-          </div>
-        </CardContent>
-      </Card>
+
 
       {/* Report Data */}
       {reportData && (
